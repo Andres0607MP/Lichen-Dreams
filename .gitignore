@@ -1,0 +1,17 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Flutter
+.dart_tool/
+build/
+
+# Variables de entorno
+.env
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
