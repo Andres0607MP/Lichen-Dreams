@@ -8,10 +8,16 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
+app = FastAPI()
+
+try:
+    from routes.test_route import router
+    app.include_router(router)
+except ImportError:
+    print("Warning: routes.test_route not found")
+
 DB_HOST = os.getenv("DB_HOST")
 JWT_SECRET = os.getenv("JWT_SECRET")
-
-app = FastAPI()
 
 @app.on_event("startup")
 def startup():
@@ -40,8 +46,8 @@ class PasswordRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=72, description="Contraseña (máximo 72 caracteres)")
 
 @app.post("/registro")
-def registro(password: str):
-
+def registro(request: PasswordRequest):
+    password = request.password[:72]
     hash_password = pwd_context.hash(password)
 
     return {
