@@ -5,6 +5,8 @@ from config.database import engine
 from auth.jwt_handler import create_token
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
+from routes.auth_routes import router as auth_router
+from routes.analisis_routes import router as analisis_router
 
 load_dotenv()
 
@@ -54,3 +56,6 @@ def registro(request: PasswordRequest):
         "password_original": password,
         "password_hash": hash_password
     }
+
+app.include_router(auth_router)
+app.include_router(analisis_router)
