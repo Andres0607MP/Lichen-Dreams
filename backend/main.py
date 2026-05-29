@@ -5,18 +5,47 @@ from config.database import engine
 from auth.jwt_handler import create_token
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
-from routes.auth_routes import router as auth_router
-from routes.analisis_routes import router as analisis_router
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para análisis de líquenes")
+
+# Importar y registrar routers
+try:
+    from routes.auth import router as auth_router
+    app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+except ImportError as e:
+    print(f"Warning: auth router not found - {e}")
 
 try:
-    from routes.test_route import router
-    app.include_router(router)
-except ImportError:
-    print("Warning: routes.test_route not found")
+    from routes.users import router as users_router
+    app.include_router(users_router, prefix="/users", tags=["Users"])
+except ImportError as e:
+    print(f"Warning: users router not found - {e}")
+
+try:
+    from routes.analisis import router as analisis_router
+    app.include_router(analisis_router, prefix="/analysis", tags=["Analysis"])
+except ImportError as e:
+    print(f"Warning: analisis router not found - {e}")
+
+try:
+    from routes.location import router as location_router
+    app.include_router(location_router, prefix="/location", tags=["Location"])
+except ImportError as e:
+    print(f"Warning: location router not found - {e}")
+
+try:
+    from routes.history import router as history_router
+    app.include_router(history_router, prefix="/history", tags=["History"])
+except ImportError as e:
+    print(f"Warning: history router not found - {e}")
+
+try:
+    from routes.admin import router as admin_router
+    app.include_router(admin_router, prefix="/admin", tags=["Admin"])
+except ImportError as e:
+    print(f"Warning: admin router not found - {e}")
 
 DB_HOST = os.getenv("DB_HOST")
 JWT_SECRET = os.getenv("JWT_SECRET")
@@ -56,6 +85,3 @@ def registro(request: PasswordRequest):
         "password_original": password,
         "password_hash": hash_password
     }
-
-app.include_router(auth_router)
-app.include_router(analisis_router)
