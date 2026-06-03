@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'register_screen.dart';
+import '../routes/route_names.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 22),
               FilledButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/dashboard');
+                  Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
                 },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),
@@ -75,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 18),
               TextButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, RegisterScreen.routeName);
+                  Navigator.pushNamed(context, AppRoutes.register);
                 },
                 child: const Text('¿No tienes cuenta? Regístrate'),
               ),

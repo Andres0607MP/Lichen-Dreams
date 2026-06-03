@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'login_screen.dart';
+import '../routes/route_names.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -61,9 +61,9 @@ class DashboardScreen extends StatelessWidget {
             children: [
               _HeroSection(
                 onLogout: () {
-                  Navigator.pushAndRemoveUntil(
+                  Navigator.pushNamedAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    AppRoutes.login,
                     (_) => false,
                   );
                 },

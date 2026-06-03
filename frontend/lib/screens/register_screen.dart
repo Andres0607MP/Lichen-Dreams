@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../routes/route_names.dart';
+
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -98,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 22),
               FilledButton(
                 onPressed: () {
-                  Navigator.pushReplacementNamed(context, '/dashboard');
+                  Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
                 },
                 style: FilledButton.styleFrom(
                   minimumSize: const Size.fromHeight(52),

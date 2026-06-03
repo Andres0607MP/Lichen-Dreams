@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'screens/dashboard_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
+import 'routes/app_routes.dart';
+import 'routes/route_names.dart';
 
 void main() {
   runApp(const LichenDreamsApp());
@@ -65,11 +64,8 @@ class LichenDreamsApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const LoginScreen(),
-      routes: {
-        RegisterScreen.routeName: (_) => const RegisterScreen(),
-        DashboardScreen.routeName: (_) => const DashboardScreen(),
-      },
+      initialRoute: AppRoutes.login,
+      routes: AppRouter.routes,
     );
   }
 }
