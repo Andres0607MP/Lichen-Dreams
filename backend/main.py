@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
 from config.database import engine
@@ -9,6 +10,11 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para análisis de líquenes")
+
+# Ensure uploads directory exists and serve it
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Importar y registrar routers
 try:
