@@ -3,7 +3,7 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
 from config.database import engine
-from auth.jwt_handler import create_token
+from auth.jwt_handler import create_access_token as create_token
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 
