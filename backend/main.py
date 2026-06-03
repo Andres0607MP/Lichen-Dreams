@@ -77,6 +77,12 @@ try:
 except ImportError as e:
     print(f"Warning: liquenpedia router not found - {e}")
 
+try:
+    from routes.maps_route import router as maps_router
+    app.include_router(maps_router, tags=["Maps"])
+except ImportError as e:
+    print(f"Warning: maps router not found - {e}")
+
 DB_HOST = os.getenv("DB_HOST")
 JWT_SECRET = os.getenv("JWT_SECRET")
 
