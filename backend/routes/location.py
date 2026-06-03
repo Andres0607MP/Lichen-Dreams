@@ -1,76 +1,63 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
+from sqlalchemy.orm import Session
+
+from config.db import get_db
+from models.core import Ubicacion
 
 router = APIRouter()
 
+
+class LocationCreate(BaseModel):
+    latitude: float
+    longitude: float
+    direccion: Optional[str] = None
+    municipio: Optional[str] = None
+    departamento: Optional[str] = None
+    pais: Optional[str] = None
+
+
 class LocationResponse(BaseModel):
-    id: int
-    analysis_id: int
-    latitude: float
-    longitude: float
-    address: str
-    timestamp: datetime
+    id_ubicacion: int
+    latitud: float
+    longitud: float
+    direccion: Optional[str]
+    municipio: Optional[str]
+    departamento: Optional[str]
+    pais: Optional[str]
+    fecha_registro: datetime
 
-class LocationRequest(BaseModel):
-    latitude: float
-    longitude: float
-    address: str
+    class Config:
+        orm_mode = True
 
-class LocationListResponse(BaseModel):
-    id: int
-    user_id: int
-    latitude: float
-    longitude: float
-    address: str
-    analysis_count: int
-    last_updated: datetime
 
-@router.post("/save/{analysis_id}", response_model=LocationResponse, summary="Guardar ubicación")
-def save_location(analysis_id: int, request: LocationRequest):
-    """
-    Endpoint para guardar la ubicación de un análisis
-    - RF07: Sistema registrar ubicación
-    """
-    return {
-        "id": 1,
-        "analysis_id": analysis_id,
-        "latitude": request.latitude,
-        "longitude": request.longitude,
-        "address": request.address,
-        "timestamp": datetime.now()
-    }
+@router.post("/save", response_model=LocationResponse, summary="Guardar ubicación")
+def save_location(request: LocationCreate, db: Session = Depends(get_db)):
+    ub = Ubicacion(
+        latitud=request.latitude,
+        longitud=request.longitude,
+        direccion=request.direccion,
+        municipio=request.municipio,
+        departamento=request.departamento,
+        pais=request.pais
+    )
+    db.add(ub)
+    db.commit()
+    db.refresh(ub)
+    return ub
+
 
 @router.get("/{location_id}", response_model=LocationResponse, summary="Obtener ubicación por ID")
-def get_location(location_id: int):
-    """
-    Endpoint para obtener información de una ubicación específica
-    - RF08: Sistema mostrar mapa
-    """
-    return {
-        "id": location_id,
-        "analysis_id": 1,
-        "latitude": 4.7110,
-        "longitude": -74.0720,
-        "address": "Bogotá, Colombia",
-        "timestamp": datetime.now()
-    }
+def get_location(location_id: int, db: Session = Depends(get_db)):
+    ub = db.query(Ubicacion).filter(Ubicacion.id_ubicacion == location_id).first()
+    if not ub:
+        raise HTTPException(status_code=404, detail="Ubicación no encontrada")
+    return ub
 
-@router.get("", response_model=List[LocationListResponse], summary="Obtener todas las ubicaciones")
-def get_all_locations():
-    """
-    Endpoint para obtener todas las ubicaciones registradas
-    - RF08: Sistema mostrar mapa
-    """
-    return [
-        {
-            "id": 1,
-            "user_id": 1,
-            "latitude": 4.7110,
-            "longitude": -74.0720,
-            "address": "Bogotá, Colombia",
-            "analysis_count": 5,
-            "last_updated": datetime.now()
-        }
-    ]
+
+@router.get("", response_model=List[LocationResponse], summary="Obtener todas las ubicaciones")
+def get_all_locations(db: Session = Depends(get_db)):
+    items = db.query(Ubicacion).all()
+    return items

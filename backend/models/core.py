@@ -73,3 +73,13 @@ class Ubicacion(Base):
     departamento = Column(String(100))
     pais = Column(String(100))
     fecha_registro = Column(TIMESTAMP, server_default=func.now())
+
+
+class LiquenPedia(Base):
+    __tablename__ = 'liquenpedia'
+    id_articulo = Column(Integer, primary_key=True, autoincrement=True)
+    titulo = Column(String(150))
+    contenido = Column(Text)
+    autor = Column(String(100))
+    categoria = Column(String(100))
+    fecha_publicacion = Column(TIMESTAMP, server_default=func.now())
