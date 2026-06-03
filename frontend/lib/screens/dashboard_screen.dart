@@ -1,11 +1,38 @@
 import 'package:flutter/material.dart';
 
 import '../routes/route_names.dart';
+import '../services/api_service.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   static const routeName = '/dashboard';
+
+  @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  late Future<String> _connectionFuture;
+  final ApiService _apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    _connectionFuture = _apiService.testConnection();
+  }
+
+  @override
+  void dispose() {
+    _apiService.dispose();
+    super.dispose();
+  }
+
+  void _retryConnection() {
+    setState(() {
+      _connectionFuture = _apiService.testConnection();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,6 +98,11 @@ class DashboardScreen extends StatelessWidget {
               const SizedBox(height: 20),
               const _ActionGrid(),
               const SizedBox(height: 20),
+              _ConnectionCard(
+                connectionFuture: _connectionFuture,
+                onRetry: _retryConnection,
+              ),
+              const SizedBox(height: 20),
               const Text(
                 'Texto adicional',
                 style: TextStyle(fontWeight: FontWeight.w700),
@@ -90,6 +122,86 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _ConnectionCard extends StatelessWidget {
+  const _ConnectionCard({
+    required this.connectionFuture,
+    required this.onRetry,
+  });
+
+  final Future<String> connectionFuture;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: const Color(0xFFE1E9DD)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Conexión con backend',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          FutureBuilder<String>(
+            future: connectionFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Row(
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                    SizedBox(width: 10),
+                    Text('Probando conexión...'),
+                  ],
+                );
+              }
+
+              if (snapshot.hasError) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Error: ${snapshot.error}',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: onRetry,
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(snapshot.data ?? 'Backend conectado correctamente'),
+                  const SizedBox(height: 8),
+                  FilledButton.tonal(
+                    onPressed: onRetry,
+                    child: const Text('Probar de nuevo'),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }
