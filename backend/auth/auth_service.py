@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from config.db import get_db
-from models.core import Usuario
+from models.core import Usuario, Sesion
 from .password_handler import verify_password
 from .jwt_handler import decode_token
 
@@ -24,9 +24,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 	if not payload:
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
 	sub = payload.get("sub")
+	sid = payload.get("sid")
 	if not sub:
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
 	user = db.query(Usuario).filter(Usuario.correo == sub).first()
 	if not user:
 		raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado")
+	# If token includes session id, verify session active
+	if sid:
+		ses = db.query(Sesion).filter(Sesion.token_sesion == sid, Sesion.id_usuario == user.id_usuario).first()
+		if not ses or ses.estado_sesion != 'active':
+			raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión inválida o revocada")
 	return user

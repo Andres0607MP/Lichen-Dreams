@@ -4,9 +4,9 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from config.db import get_db
-from models.core import Usuario
+from models.core import Usuario, Sesion
 from auth.password_handler import hash_password, verify_password
-from auth.jwt_handler import create_access_token
+from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
 from auth.auth_service import authenticate_user, get_current_user
 
 router = APIRouter()
@@ -37,6 +37,7 @@ class UserResponse(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
     user: UserResponse
 
@@ -46,8 +47,18 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = authenticate_user(db, request.email, request.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
-    token = create_access_token(subject=user.correo)
-    return {"access_token": token, "token_type": "bearer", "user": user}
+    import uuid
+    sid = uuid.uuid4().hex
+    # create session record
+    from models.core import Sesion
+    ses = Sesion(token_sesion=sid, dispositivo=None, ip_usuario=None, estado_sesion='active', id_usuario=user.id_usuario)
+    db.add(ses)
+    db.commit()
+    db.refresh(ses)
+
+    access = create_access_token(subject=user.correo, sid=sid)
+    refresh = create_refresh_token(subject=user.correo, sid=sid)
+    return {"access_token": access, "refresh_token": refresh, "token_type": "bearer", "user": user}
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, summary="Registrar nuevo usuario")
@@ -75,3 +86,39 @@ def me(current_user: Usuario = Depends(get_current_user)):
 @router.post("/logout", summary="Cerrar sesión")
 def logout():
     return {"message": "Sesión cerrada exitosamente"}
+
+
+@router.post('/refresh', summary='Refresh access token')
+def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+    payload = None
+    try:
+        payload = decode_token(refresh_token)
+    except Exception:
+        raise HTTPException(status_code=401, detail='Token inválido')
+    if not payload:
+        raise HTTPException(status_code=401, detail='Token inválido')
+    sub = payload.get('sub')
+    sid = payload.get('sid')
+    if not sub or not sid:
+        raise HTTPException(status_code=401, detail='Token inválido')
+    ses = db.query(Sesion).filter(Sesion.token_sesion == sid).first()
+    if not ses or ses.estado_sesion != 'active':
+        raise HTTPException(status_code=401, detail='Sesión revocada')
+    # issue new access token including sid
+    access = create_access_token(subject=sub)
+    return {"access_token": access, "token_type": "bearer"}
+
+
+@router.post('/logout_refresh', summary='Logout and revoke refresh token')
+def logout_refresh(refresh_token: str, db: Session = Depends(get_db)):
+    payload = decode_token(refresh_token)
+    if not payload:
+        raise HTTPException(status_code=401, detail='Token inválido')
+    sid = payload.get('sid')
+    if not sid:
+        raise HTTPException(status_code=400, detail='Refresh token inválido')
+    ses = db.query(Sesion).filter(Sesion.token_sesion == sid).first()
+    if ses:
+        ses.estado_sesion = 'revoked'
+        db.commit()
+    return {"message": "Sesión revocada"}
