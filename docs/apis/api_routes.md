@@ -59,3 +59,4 @@ Routers registrados (prefijos)
 Notas y siguientes pasos
 
 - Las rutas devuelven datos simulados (mocks). Para integrarlas con la base de datos y la IA se deben implementar los controladores reales en `backend/routes/*` y las dependencias de `backend/config`.
+

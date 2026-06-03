@@ -47,6 +47,30 @@ try:
 except ImportError as e:
     print(f"Warning: admin router not found - {e}")
 
+try:
+    from routes.modelos import router as modelos_router
+    app.include_router(modelos_router, prefix="/modelos", tags=["Modelos"])
+except ImportError as e:
+    print(f"Warning: modelos router not found - {e}")
+
+try:
+    from routes.datasets import router as datasets_router
+    app.include_router(datasets_router, prefix="/datasets", tags=["Datasets"])
+except ImportError as e:
+    print(f"Warning: datasets router not found - {e}")
+
+try:
+    from routes.imagenes import router as imagenes_router
+    app.include_router(imagenes_router, prefix="/imagenes", tags=["Imagenes"])
+except ImportError as e:
+    print(f"Warning: imagenes router not found - {e}")
+
+try:
+    from routes.liquenpedia import router as liquenpedia_router
+    app.include_router(liquenpedia_router, prefix="/liquenpedia", tags=["LiquenPedia"])
+except ImportError as e:
+    print(f"Warning: liquenpedia router not found - {e}")
+
 DB_HOST = os.getenv("DB_HOST")
 JWT_SECRET = os.getenv("JWT_SECRET")
 
