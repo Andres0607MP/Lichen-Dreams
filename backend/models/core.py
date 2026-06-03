@@ -27,6 +27,18 @@ class Usuario(Base):
     rol = relationship('Role')
 
 
+class Sesion(Base):
+    __tablename__ = 'sesiones'
+    id_sesion = Column(Integer, primary_key=True, autoincrement=True)
+    token_sesion = Column(Text)
+    dispositivo = Column(String(100))
+    ip_usuario = Column(String(50))
+    fecha_inicio = Column(TIMESTAMP, server_default=func.now())
+    estado_sesion = Column(String(50))
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    usuario = relationship('Usuario')
+
+
 class ModeloIA(Base):
     __tablename__ = 'modelos_ia'
     id_modelo = Column(Integer, primary_key=True, autoincrement=True)
