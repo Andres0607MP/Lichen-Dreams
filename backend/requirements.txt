@@ -11,6 +11,7 @@ passlib==1.7.4
 pyasn1==0.6.3
 pydantic==2.13.4
 pydantic_core==2.46.4
+pymysql==1.1.0
 python-dotenv==1.2.2
 python-jose==3.5.0
 python-multipart==0.0.6
