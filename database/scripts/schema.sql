@@ -1,4 +1,4 @@
-CREATE DATABASE lichen_dreams;
+CREATE DATABASE IF NOT EXISTS lichen_dreams;
 USE lichen_dreams;
 
 -- ROLES
@@ -23,7 +23,7 @@ CREATE TABLE usuarios (
     foto_perfil LONGTEXT,
     fecha_nacimiento DATE,
     fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ultimo_acceso TIMESTAMP,
+    ultimo_acceso TIMESTAMP NULL DEFAULT NULL,
     estado_cuenta VARCHAR(50),
     id_rol INT,
     FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
@@ -37,7 +37,7 @@ CREATE TABLE sesiones (
     sistema_operativo VARCHAR(100),
     ip_usuario VARCHAR(50),
     fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_expiracion TIMESTAMP,
+    fecha_expiracion TIMESTAMP NULL DEFAULT NULL,
     estado_sesion VARCHAR(50),
     id_usuario INT,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario)
@@ -53,7 +53,7 @@ CREATE TABLE modelos_ia (
     precision_modelo FLOAT,
     dataset_utilizado VARCHAR(255),
     fecha_entrenamiento DATE,
-    fecha_actualizacion TIMESTAMP,
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL,
     estado_modelo VARCHAR(50),
     observaciones TEXT,
     fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -136,7 +136,7 @@ CREATE TABLE imagenes (
     formato_imagen VARCHAR(20),
     tamano_archivo INT,
     resolucion VARCHAR(50),
-    fecha_subida TIMESTAMP,
+    fecha_subida TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     imagen_original LONGBLOB,
     imagen_procesada LONGBLOB,
     estado_imagen VARCHAR(50),
@@ -166,7 +166,7 @@ CREATE TABLE zonas_ambientales (
     nivel_riesgo VARCHAR(50),
     calidad_promedio_aire VARCHAR(50),
     descripcion TEXT,
-    fecha_actualizacion TIMESTAMP
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- REPORTES
@@ -216,7 +216,7 @@ CREATE TABLE liquenpedia (
     imagen_articulo LONGTEXT,
     estado_publicacion VARCHAR(50),
     fecha_publicacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_actualizacion TIMESTAMP
+    fecha_actualizacion TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 );
 
 -- MODELO - DATASET
