@@ -69,7 +69,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     user = Usuario(
         nombre=request.name,
         correo=request.email,
-        contraseña=hash_password(request.password),
+        contrasena=hash_password(request.password),
         telefono=request.phone
     )
     db.add(user)

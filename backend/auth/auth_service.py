@@ -14,7 +14,7 @@ def authenticate_user(db: Session, email: str, password: str):
 	user = db.query(Usuario).filter(Usuario.correo == email).first()
 	if not user:
 		return None
-	if not verify_password(password, getattr(user, 'contraseña')):
+	if not verify_password(password, getattr(user, 'contrasena')):
 		return None
 	return user
 

@@ -19,7 +19,7 @@ class Usuario(Base):
     nombre = Column(String(100))
     apellido = Column(String(100))
     correo = Column(String(150), unique=True)
-    contraseña = Column(String(255))
+    contrasena = Column('contrasena', String(255))
     telefono = Column(String(20))
     fecha_registro = Column(TIMESTAMP, server_default=func.now())
     estado_cuenta = Column(String(50))
