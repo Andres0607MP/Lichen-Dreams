@@ -1,17 +1,77 @@
-# frontend
+# Frontend — Lichen Dreams
 
-A new Flutter project.
+Aplicación móvil Flutter para análisis de líquenes y estimación de calidad del aire.
 
-## Getting Started
+## Requisitos
 
-This project is a starting point for a Flutter application.
+- Flutter 3.0+
+- Dart 3.0+
+- Android SDK (para emulador/dispositivo Android)
+- iOS SDK (para macOS/iOS)
 
-A few resources to get you started if this is your first Flutter project:
+## Instalación
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+### Windows/Linux/macOS
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+```bash
+flutter pub get
+```
+
+### Configurar conexión con backend
+
+En `lib/config/app_config.dart`, la URL del backend se configura dinámicamente:
+
+- **Android (emulador):** `http://10.0.2.2:8000`
+- **Web/Desktop:** `http://127.0.0.1:8000`
+
+O con parámetro:
+
+```bash
+flutter run --dart-define=API_BASE_URL=http://tu-ip:8000
+```
+
+## Ejecución
+
+```bash
+# Web (Chrome)
+flutter run -d chrome
+
+# Windows (desktop)
+flutter run -d windows
+
+# Android emulator
+flutter run -d emulator
+```
+
+## Estructura
+
+```
+lib/
+├── config/          # Configuración (URLs, temas)
+├── routes/          # Rutas de navegación
+├── screens/         # Pantallas principales
+├── services/        # Servicios (API, autenticación)
+├── widgets/         # Componentes reutilizables
+└── main.dart        # Punto de entrada
+```
+
+## Pantallas principales
+
+- **Login:** Autenticación con correo y contraseña
+- **Dashboard:** Panel principal con funcionalidades
+- **Análisis:** Captura y análisis de imágenes
+- **Historial:** Consulta de análisis anteriores
+- **Mapa:** Visualización de zonas analizadas
+- **Liquenpedia:** Módulo educativo
+
+## Verificación
+
+```bash
+flutter doctor
+```
+
+Confirmar que Flutter esté completamente configurado.
+
+## Documentación completa
+
+Ver: `../README.md`

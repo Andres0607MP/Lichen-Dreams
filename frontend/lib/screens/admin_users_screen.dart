@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../services/api_service.dart';
+import '../widgets/app_theme.dart';
+import '../widgets/modern_widgets.dart';
 
 class AdminUsersScreen extends StatefulWidget {
-  const AdminUsersScreen({super.key});
+  const AdminUsersScreen({Key? key}) : super(key: key);
 
   @override
   State<AdminUsersScreen> createState() => _AdminUsersScreenState();
@@ -77,137 +81,314 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Administración de usuarios')),
+      backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Gestión de usuarios',
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textDark,
+              ),
+            ),
+            Text(
+              'Panel de administración',
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.textGray,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.refresh_rounded, color: Colors.red),
+                onPressed: _refreshUsers,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.green.shade50,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.green.shade200),
-                ),
-                child: const Text(
-                  'Administra usuarios, elimina cuentas y controla el acceso desde aquí.',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+        child: Column(
+          children: [
+            // Header info
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ModernCard(
+                gradient: [
+                  Colors.red.withOpacity(0.1),
+                  Colors.red.withOpacity(0.05),
+                ],
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.all(12),
+                      child: const Icon(
+                        Icons.admin_panel_settings_rounded,
+                        color: Colors.red,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Control total',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppTheme.textDark,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Administra usuarios, elimina cuentas y controla acceso',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: AppTheme.textGray,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 18),
-              Expanded(
-                child: FutureBuilder<List<dynamic>>(
-                  future: _usersFuture,
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.error_outline, color: Colors.red, size: 50),
-                            const SizedBox(height: 12),
-                            Text('Error: ${snapshot.error}'),
-                            const SizedBox(height: 12),
-                            FilledButton(
-                              onPressed: _refreshUsers,
-                              child: const Text('Reintentar'),
-                            ),
-                          ],
-                        ),
-                      );
-                    }
+            ),
 
-                    final users = snapshot.data ?? [];
-                    if (users.isEmpty) {
-                      return const Center(
-                        child: Text('No se encontraron usuarios registrados.'),
-                      );
-                    }
+            // Users list
+            Expanded(
+              child: FutureBuilder<List<dynamic>>(
+                future: _usersFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: EmptyState(
+                        icon: Icons.error_outline,
+                        title: 'Error al cargar usuarios',
+                        description: snapshot.error.toString(),
+                        actionLabel: 'Reintentar',
+                        onAction: _refreshUsers,
+                      ),
+                    );
+                  }
 
-                    return RefreshIndicator(
-                      onRefresh: _refreshUsers,
-                      child: ListView.separated(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemCount: users.length,
-                        itemBuilder: (context, index) {
-                          final user = users[index] as Map<String, dynamic>;
-                          final active = user['activo'] as bool? ?? false;
-                          return Card(
-                            elevation: 1,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
+                  final users = snapshot.data ?? [];
+                  if (users.isEmpty) {
+                    return Center(
+                      child: EmptyState(
+                        icon: Icons.people_outline,
+                        title: 'Sin usuarios',
+                        description: 'No hay usuarios registrados en el sistema',
+                      ),
+                    );
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: _refreshUsers,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        final user = users[index] as Map<String, dynamic>;
+                        final active = user['active'] as bool? ?? false;
+                        final userName = user['name']?.toString() ?? 'Sin nombre';
+                        final userEmail = user['email']?.toString() ?? 'Sin correo';
+                        final userId = user['id'] as int;
+
+                        return ModernCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          userName,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppTheme.textDark,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
                                           children: [
-                                            Text(
-                                              user['nombre']?.toString() ?? 'Sin nombre',
-                                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                                            const Icon(
+                                              Icons.email_rounded,
+                                              size: 14,
+                                              color: AppTheme.textGray,
                                             ),
-                                            const SizedBox(height: 6),
-                                            Text(user['correo']?.toString() ?? 'Sin correo'),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Text(
+                                                userEmail,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w400,
+                                                  color: AppTheme.textGray,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
                                           ],
                                         ),
-                                      ),
-                                      Chip(
-                                        label: Text(active ? 'Activo' : 'Inactivo'),
-                                        backgroundColor: active ? Colors.green.shade100 : Colors.orange.shade100,
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 12),
-                                  Wrap(
-                                    alignment: WrapAlignment.spaceBetween,
-                                    runSpacing: 8,
-                                    spacing: 8,
-                                    children: [
-                                      ActionChip(
-                                        label: Text(active ? 'Desactivar' : 'Activar'),
-                                        avatar: Icon(active ? Icons.pause_circle_outline : Icons.play_circle_outline),
-                                        onPressed: () => _toggleUserActive(user['id_usuario'] as int, active),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: active ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      active ? 'Activo' : 'Inactivo',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: active ? Colors.green : Colors.orange,
                                       ),
-                                      ActionChip(
-                                        label: const Text('Eliminar'),
-                                        avatar: const Icon(Icons.delete_outline),
-                                        backgroundColor: Colors.red.shade50,
-                                        labelStyle: const TextStyle(color: Colors.red),
-                                        onPressed: () => _deleteUser(user['id_usuario'] as int),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 12),
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.admin_panel_settings_outlined, size: 18, color: Colors.grey),
-                                      const SizedBox(width: 8),
-                                      Text('Rol: ${user['rol'] ?? 'desconocido'}'),
-                                    ],
+                                    ),
                                   ),
                                 ],
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                ),
+                              const SizedBox(height: 12),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final isMobile = constraints.maxWidth < 400;
+                                  return isMobile
+                                      ? Column(
+                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          spacing: 8,
+                                          children: [
+                                            ModernButton(
+                                              label: active ? 'Desactivar' : 'Activar',
+                                              onPressed: () => _toggleUserActive(userId, active),
+                                              color: active ? Colors.orange : Colors.green,
+                                              width: double.infinity,
+                                            ),
+                                            ModernButton(
+                                              label: 'Eliminar',
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: const Text('Confirmar eliminación'),
+                                                    content: Text('¿Eliminar usuario $userName?'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('Cancelar'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(context);
+                                                          _deleteUser(userId);
+                                                        },
+                                                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                        child: const Text('Eliminar'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                              isOutlined: true,
+                                              color: Colors.red,
+                                              width: double.infinity,
+                                            ),
+                                          ],
+                                        )
+                                      : Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: [
+                                            ModernButton(
+                                              label: active ? 'Desactivar' : 'Activar',
+                                              onPressed: () => _toggleUserActive(userId, active),
+                                              color: active ? Colors.orange : Colors.green,
+                                              width: 140,
+                                            ),
+                                            ModernButton(
+                                              label: 'Eliminar',
+                                              onPressed: () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: const Text('Confirmar eliminación'),
+                                                    content: Text('¿Eliminar usuario $userName?'),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('Cancelar'),
+                                                      ),
+                                                      TextButton(
+                                                        onPressed: () {
+                                                          Navigator.pop(context);
+                                                          _deleteUser(userId);
+                                                        },
+                                                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                                                        child: const Text('Eliminar'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              },
+                                              isOutlined: true,
+                                              color: Colors.red,
+                                              width: 110,
+                                            ),
+                                          ],
+                                        );
+                                },
+                              ),
+                            ],
+                          ),
+                        ).animate().fadeIn(duration: (100 * (index + 1)).ms);
+                      },
+                    ),
+                  );
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

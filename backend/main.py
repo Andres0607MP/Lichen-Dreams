@@ -68,6 +68,12 @@ except ImportError as e:
     print(f"Warning: admin router not found - {e}")
 
 try:
+    from routes.profile import router as profile_router
+    app.include_router(profile_router, tags=["Profile"])
+except ImportError as e:
+    print(f"Warning: profile router not found - {e}")
+
+try:
     from routes.modelos import router as modelos_router
     app.include_router(modelos_router, prefix="/modelos", tags=["Modelos"])
 except ImportError as e:
@@ -148,6 +154,13 @@ def root():
     return {
         "message": "Lichen Dreams API funcionando",
         "db_host": DB_HOST
+    }
+
+@app.get("/api/config")
+def get_config():
+    """Devuelve variables de configuración para el frontend (ej: Google Maps API Key)"""
+    return {
+        "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY", ""),
     }
 
 @app.get("/token")

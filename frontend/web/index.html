@@ -41,7 +41,24 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCTs2bTYDgZtsOkmX6zmakqYnjaT-atFZ8&libraries=places" async defer></script>
+  <script>
+    // Load Google Maps API dynamically from backend config
+    (async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:8000/api/config');
+        const config = await response.json();
+        if (config.google_maps_api_key) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${config.google_maps_api_key}&libraries=places`;
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
+        }
+      } catch (error) {
+        console.warn('Could not load Google Maps API from backend:', error);
+      }
+    })();
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

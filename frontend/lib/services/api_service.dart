@@ -116,13 +116,13 @@ class ApiService {
 
   Future<List<dynamic>> getUsers() async {
     final response = await _client.get(
-      AppConfig.buildUri('/users'),
+      AppConfig.buildUri('/admin/users'),
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(_parseResponseMessage(
         response,
-        'Error ${response.statusCode} al consumir /users',
+        'Error ${response.statusCode} al consumir /admin/users',
       ));
     }
     return jsonDecode(response.body) as List<dynamic>;
@@ -130,7 +130,7 @@ class ApiService {
 
   Future<void> deleteUser(int id) async {
     final response = await _client.delete(
-      AppConfig.buildUri('/users/$id'),
+      AppConfig.buildUri('/admin/users/$id'),
       headers: await _headers(authorized: true),
     );
     if (response.statusCode != 204) {
@@ -152,10 +152,10 @@ class ApiService {
     if (email != null) payload['email'] = email;
     if (name != null) payload['name'] = name;
     if (phone != null) payload['phone'] = phone;
-    if (active != null) payload['activo'] = active;
+    if (active != null) payload['active'] = active;
 
     final response = await _client.put(
-      AppConfig.buildUri('/users/$id'),
+      AppConfig.buildUri('/admin/users/$id'),
       headers: await _headers(authorized: true),
       body: jsonEncode(payload),
     );
@@ -301,6 +301,37 @@ class ApiService {
   Future<bool> hasActiveSession() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
+  }
+
+  /// Obtener perfil del usuario autenticado
+  Future<Map<String, dynamic>> getProfile() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/profile'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al obtener perfil',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Actualizar perfil del usuario autenticado
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    final response = await _client.put(
+      AppConfig.buildUri('/profile'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(data),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al actualizar perfil',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   void dispose() {
