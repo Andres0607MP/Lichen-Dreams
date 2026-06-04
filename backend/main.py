@@ -1,15 +1,29 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
 from config.database import engine
+from config.db import SessionLocal
+from models.base import Base
+from models.core import Role, Usuario
 from auth.jwt_handler import create_access_token as create_token
+from auth.password_handler import hash_password
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 
 load_dotenv()
 
 app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para análisis de líquenes")
+
+# CORS: permitir peticiones desde el frontend en desarrollo (ajustar en producción)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Ensure uploads directory exists and serve it
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
@@ -94,12 +108,40 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 
 @app.on_event("startup")
 def startup():
+    # Create missing tables and seed default roles/admin user.
     try:
-        connection = engine.connect()
-        print("Conexion exitosa a MySQL")
-        connection.close()
+        Base.metadata.create_all(bind=engine)
+        db = SessionLocal()
+        admin_role = db.query(Role).filter(Role.nombre_rol == 'admin').first()
+        if not admin_role:
+            admin_role = Role(nombre_rol='admin', descripcion='Administrador', nivel_acceso=10)
+            db.add(admin_role)
+        user_role = db.query(Role).filter(Role.nombre_rol == 'user').first()
+        if not user_role:
+            user_role = Role(nombre_rol='user', descripcion='Usuario normal', nivel_acceso=1)
+            db.add(user_role)
+        db.commit()
+
+        admin_user = db.query(Usuario).filter(Usuario.correo == 'admin@gmail.com').first()
+        if not admin_user:
+            admin_user = Usuario(
+                nombre='Admin',
+                apellido='Admin',
+                correo='admin@gmail.com',
+                contrasena=hash_password('admin'),
+                telefono=None,
+                estado_cuenta='active',
+                id_rol=admin_role.id_rol
+            )
+            db.add(admin_user)
+            db.commit()
     except Exception as e:
-        print("Error de conexion:", e)
+        print('Error inicializando la base de datos:', e)
+    finally:
+        try:
+            db.close()
+        except Exception:
+            pass
 
 @app.get("/")
 def root():

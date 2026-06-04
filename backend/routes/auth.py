@@ -4,7 +4,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from config.db import get_db
-from models.core import Usuario, Sesion
+from models.core import Usuario, Sesion, Role
 from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
 from auth.auth_service import authenticate_user, get_current_user
@@ -30,6 +30,7 @@ class UserResponse(BaseModel):
     nombre: Optional[str]
     telefono: Optional[str]
     id_rol: Optional[int]
+    rol: Optional[str]
 
     class Config:
         orm_mode = True
@@ -58,7 +59,19 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
 
     access = create_access_token(subject=user.correo, sid=sid)
     refresh = create_refresh_token(subject=user.correo, sid=sid)
-    return {"access_token": access, "refresh_token": refresh, "token_type": "bearer", "user": user}
+    return {
+        "access_token": access,
+        "refresh_token": refresh,
+        "token_type": "bearer",
+        "user": {
+            "id_usuario": user.id_usuario,
+            "correo": user.correo,
+            "nombre": user.nombre,
+            "telefono": user.telefono,
+            "id_rol": user.id_rol,
+            "rol": user.rol.nombre_rol if user.rol else None,
+        },
+    }
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED, summary="Registrar nuevo usuario")
@@ -66,21 +79,44 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
     existing = db.query(Usuario).filter(Usuario.correo == request.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Usuario ya existe")
+    user_role = db.query(Role).filter(Role.nombre_rol == 'user').first()
+    if not user_role:
+        user_role = Role(nombre_rol='user', descripcion='Usuario normal', nivel_acceso=1)
+        db.add(user_role)
+        db.commit()
+        db.refresh(user_role)
+
     user = Usuario(
         nombre=request.name,
         correo=request.email,
         contrasena=hash_password(request.password),
-        telefono=request.phone
+        telefono=request.phone,
+        estado_cuenta='active',
+        id_rol=user_role.id_rol,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-    return user
+    return {
+        "id_usuario": user.id_usuario,
+        "correo": user.correo,
+        "nombre": user.nombre,
+        "telefono": user.telefono,
+        "id_rol": user.id_rol,
+        "rol": user_role.nombre_rol,
+    }
 
 
 @router.get("/me", response_model=UserResponse, summary="Obtener información del usuario actual")
 def me(current_user: Usuario = Depends(get_current_user)):
-    return current_user
+    return {
+        "id_usuario": current_user.id_usuario,
+        "correo": current_user.correo,
+        "nombre": current_user.nombre,
+        "telefono": current_user.telefono,
+        "id_rol": current_user.id_rol,
+        "rol": current_user.rol.nombre_rol if current_user.rol else None,
+    }
 
 
 @router.post("/logout", summary="Cerrar sesión")

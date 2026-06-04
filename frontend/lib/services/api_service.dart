@@ -1,9 +1,18 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
+
+class ApiException implements Exception {
+  final String message;
+  ApiException(this.message);
+
+  @override
+  String toString() => message;
+}
 
 class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
@@ -11,6 +20,21 @@ class ApiService {
   final http.Client _client;
   static const String _tokenKey = 'auth_token';
   static const String _refreshTokenKey = 'refresh_token';
+  static const String _userRoleKey = 'user_role';
+
+  String _parseResponseMessage(Response response, String fallback) {
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['detail']?.toString() ??
+            decoded['message']?.toString() ??
+            fallback;
+      }
+    } catch (_) {
+      return fallback;
+    }
+    return fallback;
+  }
 
   Future<String> testConnection() async {
     final candidates = [
@@ -22,9 +46,7 @@ class ApiService {
 
     for (final uri in candidates) {
       try {
-        final response = await _client
-            .get(uri)
-            .timeout(const Duration(seconds: 8));
+        final response = await _client.get(uri).timeout(const Duration(seconds: 8));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
           final decoded = jsonDecode(response.body);
@@ -35,18 +57,28 @@ class ApiService {
 
           return 'Backend conectado correctamente';
         }
+
+        throw ApiException(_parseResponseMessage(
+          response,
+          'El backend respondió con código ${response.statusCode}',
+        ));
+      } on ApiException {
+        rethrow;
       } catch (error) {
         lastError = error;
       }
     }
 
-    throw Exception('No fue posible conectar con el backend: $lastError');
+    throw ApiException('No fue posible conectar con el backend: $lastError');
   }
 
   Future<Map<String, dynamic>> getJson(String path) async {
     final response = await _client.get(AppConfig.buildUri(path));
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Error ${response.statusCode} al consumir $path');
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al consumir $path',
+      ));
     }
 
     final decoded = jsonDecode(response.body);
@@ -57,66 +89,162 @@ class ApiService {
     return <String, dynamic>{'data': decoded};
   }
 
+  Future<Map<String, String>> _headers({bool authorized = false}) async {
+    final headers = {'Content-Type': 'application/json'};
+    if (authorized) {
+      final token = await getToken();
+      if (token != null && token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+    }
+    return headers;
+  }
+
+  Future<Map<String, dynamic>> getProtectedJson(String path) async {
+    final response = await _client.get(
+      AppConfig.buildUri(path),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al consumir $path',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> getUsers() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/users'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al consumir /users',
+      ));
+    }
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<void> deleteUser(int id) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/users/$id'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode != 204) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al eliminar usuario',
+      ));
+    }
+  }
+
+  Future<Map<String, dynamic>> updateUser(
+    int id, {
+    String? email,
+    String? name,
+    String? phone,
+    bool? active,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (email != null) payload['email'] = email;
+    if (name != null) payload['name'] = name;
+    if (phone != null) payload['phone'] = phone;
+    if (active != null) payload['activo'] = active;
+
+    final response = await _client.put(
+      AppConfig.buildUri('/users/$id'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(payload),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al actualizar usuario',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   /// Login con email y contraseña
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await _client.post(
-        AppConfig.buildUri('/auth/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': email,
-          'password': password,
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await _client
+          .post(
+            AppConfig.buildUri('/auth/login'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'email': email,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        
-        // Guardar tokens
         if (data['access_token'] != null) {
           await _saveToken(data['access_token']);
         }
         if (data['refresh_token'] != null) {
           await _saveRefreshToken(data['refresh_token']);
         }
-        
+        if (data['user'] is Map<String, dynamic>) {
+          final role = (data['user'] as Map<String, dynamic>)['rol'];
+          if (role is String) {
+            await _saveUserRole(role);
+          }
+        }
         return data;
-      } else if (response.statusCode == 401) {
-        throw Exception('Email o contraseña incorrectos');
-      } else {
-        throw Exception('Error en autenticación: ${response.statusCode}');
       }
-    } catch (e) {
-      throw Exception('Error de conexión: $e');
+
+      if (response.statusCode == 401) {
+        throw ApiException('Email o contraseña incorrectos');
+      }
+
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error en autenticación: ${response.statusCode}',
+      ));
+    } on http.ClientException catch (error) {
+      throw ApiException('Error de conexión: ${error.message}');
+    } on Exception catch (error) {
+      if (error is ApiException) rethrow;
+      throw ApiException('Error de conexión: ${error.toString()}');
     }
   }
 
   /// Registro de nuevo usuario
   Future<Map<String, dynamic>> register(
-    String nombre,
-    String apellido,
+    String name,
     String email,
     String password,
   ) async {
     try {
-      final response = await _client.post(
-        AppConfig.buildUri('/auth/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'nombre': nombre,
-          'apellido': apellido,
-          'email': email,
-          'password': password,
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await _client
+          .post(
+            AppConfig.buildUri('/auth/register'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'name': name,
+              'email': email,
+              'password': password,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 201) {
         return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
-        throw Exception('Error en registro: ${response.statusCode}');
       }
-    } catch (e) {
-      throw Exception('Error al registrarse: $e');
+
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error en registro: ${response.statusCode}',
+      ));
+    } catch (error) {
+      if (error is ApiException) rethrow;
+      throw ApiException('Error al registrarse: ${error.toString()}');
     }
   }
 
@@ -132,10 +260,27 @@ class ApiService {
     return prefs.getString(_refreshTokenKey);
   }
 
+  Future<String?> getSavedRole() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_userRoleKey);
+  }
+
   /// Guardar token
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
+  }
+
+  Future<void> _saveUserRole(String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_userRoleKey, role);
+  }
+
+  Future<void> clearAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_userRoleKey);
   }
 
   /// Guardar refresh token
@@ -149,6 +294,7 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_refreshTokenKey);
+    await prefs.remove(_userRoleKey);
   }
 
   /// Verificar si hay sesión activa

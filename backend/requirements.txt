@@ -1,3 +1,4 @@
+alembic==1.13.3
 annotated-types==0.7.0
 anyio==4.13.0
 bcrypt==4.1.2
@@ -7,16 +8,20 @@ email-validator==2.1.0
 fastapi==0.136.3
 h11==0.16.0
 idna==3.16
+Mako==1.3.5
+MarkupSafe==2.1.5
 passlib==1.7.4
 pyasn1==0.6.3
 pydantic==2.13.4
 pydantic_core==2.46.4
 pymysql==1.1.0
+python-dateutil==2.8.2
 python-dotenv==1.2.2
 python-jose==3.5.0
 python-multipart==0.0.6
 rsa==4.9.1
 six==1.17.0
+SQLAlchemy==2.0.50
 starlette==1.1.0
 typing-extensions==4.15.0
 uvicorn==0.48.0
