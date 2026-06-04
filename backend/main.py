@@ -83,6 +83,12 @@ try:
 except ImportError as e:
     print(f"Warning: maps router not found - {e}")
 
+try:
+    from routes.test_route import router as test_router
+    app.include_router(test_router, tags=["Test"])
+except ImportError as e:
+    print(f"Warning: test router not found - {e}")
+
 DB_HOST = os.getenv("DB_HOST")
 JWT_SECRET = os.getenv("JWT_SECRET")
 
