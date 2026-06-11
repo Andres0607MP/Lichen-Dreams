@@ -158,6 +158,7 @@ class LiquenPedia(Base):
     contenido = Column(Text, nullable=False)
     autor = Column(String(100), nullable=False)
     categoria = Column(String(100), nullable=False)
+    imagen_articulo = Column(Text, nullable=True)
     estado_publicacion = Column(String(50), default='draft')  # draft, published, archived
     fecha_publicacion = Column(TIMESTAMP, server_default=func.now())
     fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

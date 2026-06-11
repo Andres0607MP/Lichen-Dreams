@@ -13,7 +13,6 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# Edita `.env` con tus credenciales locales (DB, JWT, etc.)
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
@@ -24,7 +23,6 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 copy .env.example .env
-# Edita `.env` con tus credenciales locales (DB, JWT, etc.)
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
 
