@@ -46,7 +46,7 @@ class UsuarioResponse(BaseModel):
 
 
 class UbicacionCreate(BaseModel):
-    """Validación para creación de ubicación"""
+   
     latitud: float = Field(..., ge=-90, le=90)
     longitud: float = Field(..., ge=-180, le=180)
     direccion: str = Field(..., min_length=5, max_length=255)
