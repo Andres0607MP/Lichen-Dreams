@@ -334,6 +334,116 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  
+  Future<List<Map<String, dynamic>>> getLiquenpediaArticles() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/liquenpedia'),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al obtener artículos',
+      ));
+    }
+    final data = jsonDecode(response.body);
+    if (data is List) {
+      return List<Map<String, dynamic>>.from(
+        data.map((item) => item as Map<String, dynamic>),
+      );
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  /// Obtener un artículo específico (público)
+  Future<Map<String, dynamic>> getLiquenpediaArticle(int id) async {
+    final response = await _client.get(
+      AppConfig.buildUri('/liquenpedia/$id'),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al obtener artículo',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Crear nuevo artículo (solo admin)
+  Future<Map<String, dynamic>> createLiquenpediaArticle({
+    required String titulo,
+    required String contenido,
+    required String autor,
+    required String categoria,
+    required String estadoPublicacion,
+    String? imagenArticulo,
+  }) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/liquenpedia'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode({
+        'titulo': titulo,
+        'contenido': contenido,
+        'autor': autor,
+        'categoria': categoria,
+        'estado_publicacion': estadoPublicacion,
+        'imagen_articulo': imagenArticulo,
+      }),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al crear artículo',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Actualizar artículo (solo admin)
+  Future<Map<String, dynamic>> updateLiquenpediaArticle(
+    int id, {
+    String? titulo,
+    String? contenido,
+    String? autor,
+    String? categoria,
+    String? estadoPublicacion,
+    String? imagenArticulo,
+  }) async {
+    final payload = <String, dynamic>{};
+    if (titulo != null) payload['titulo'] = titulo;
+    if (contenido != null) payload['contenido'] = contenido;
+    if (autor != null) payload['autor'] = autor;
+    if (categoria != null) payload['categoria'] = categoria;
+    if (estadoPublicacion != null) payload['estado_publicacion'] = estadoPublicacion;
+    if (imagenArticulo != null) payload['imagen_articulo'] = imagenArticulo;
+
+    final response = await _client.put(
+      AppConfig.buildUri('/liquenpedia/$id'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(payload),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al actualizar artículo',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Eliminar artículo (solo admin)
+  Future<void> deleteLiquenpediaArticle(int id) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/liquenpedia/$id'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al eliminar artículo',
+      ));
+    }
+  }
+
   void dispose() {
     _client.close();
   }
