@@ -55,7 +55,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Center(
-              child: Icon(Icons.eco_rounded, color: AppTheme.primaryGreen, size: 28),
+              child: Icon(
+                Icons.eco_rounded,
+                color: AppTheme.primaryGreen,
+                size: 28,
+              ),
             ),
           ),
         ),
@@ -86,13 +90,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               padding: const EdgeInsets.only(right: 8),
               child: Container(
                 decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.eco_outlined, color: Colors.orange),
+                  tooltip: 'LichenPedia',
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.liquenpedia),
+                ),
+              ),
+            ),
+          if (_userRole == 'admin')
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Container(
+                decoration: BoxDecoration(
                   color: Colors.red.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
-                  icon: const Icon(Icons.admin_panel_settings_rounded, color: Colors.red),
+                  icon: const Icon(
+                    Icons.admin_panel_settings_rounded,
+                    color: Colors.red,
+                  ),
                   tooltip: 'Panel de administración',
-                  onPressed: () => Navigator.pushNamed(context, AppRoutes.adminUsers),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, AppRoutes.adminUsers),
                 ),
               ),
             ),
@@ -104,7 +128,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
-                icon: const Icon(Icons.notifications_none_rounded, color: AppTheme.primaryGreen),
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: AppTheme.primaryGreen,
+                ),
                 onPressed: () {},
               ),
             ),
@@ -117,7 +144,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 borderRadius: BorderRadius.circular(12),
               ),
               child: IconButton(
-                icon: const Icon(Icons.logout_rounded, color: AppTheme.primaryGreen),
+                icon: const Icon(
+                  Icons.logout_rounded,
+                  color: AppTheme.primaryGreen,
+                ),
                 onPressed: () async {
                   await _apiService.clearAuth();
                   if (!mounted) return;
@@ -189,10 +219,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             icon: Icon(Icons.camera_alt_rounded),
             label: 'Análisis',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map_rounded),
-            label: 'Mapa',
-          ),
+          BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: 'Mapa'),
           BottomNavigationBarItem(
             icon: Icon(Icons.history_rounded),
             label: 'Historial',
@@ -208,10 +235,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildWelcomeSection() {
     return ModernCard(
-      gradient: [
-        AppTheme.primaryGreen,
-        AppTheme.darkGreen,
-      ],
+      gradient: [AppTheme.primaryGreen, AppTheme.darkGreen],
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +272,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return FutureBuilder<String>(
       future: _connectionFuture,
       builder: (context, snapshot) {
-        final isConnected = snapshot.connectionState == ConnectionState.done && snapshot.hasData;
+        final isConnected =
+            snapshot.connectionState == ConnectionState.done &&
+            snapshot.hasData;
         final statusColor = isConnected ? AppTheme.accentGreen : Colors.orange;
 
         return ModernCard(
@@ -262,7 +288,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: statusColor.withOpacity(0.2),
                 ),
                 child: Icon(
-                  isConnected ? Icons.cloud_done_rounded : Icons.cloud_off_rounded,
+                  isConnected
+                      ? Icons.cloud_done_rounded
+                      : Icons.cloud_off_rounded,
                   color: statusColor,
                   size: 24,
                 ),

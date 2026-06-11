@@ -21,5 +21,6 @@ class AppRouter {
     AppRoutes.historial: (_) => const ResultScreen(),
     AppRoutes.mapa: (_) => const MapScreen(),
     AppRoutes.perfil: (_) => const ProfileScreen(),
+    AppRoutes.liquenpedia: (_) => const LiquenpediaScreen(),
   };
 }
