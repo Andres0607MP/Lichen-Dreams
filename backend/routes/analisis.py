@@ -1,183 +1,239 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
+import os
+from pathlib import Path
+
+from config.db import get_db
+from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset
+from auth.auth_service import get_current_user
 
 router = APIRouter()
 
-class AnalysisResponse(BaseModel):
-    id: int
-    user_id: int
-    image_url: str
-    lichen_detected: bool
-    confidence: float
-    state: str
-    humidity: float
-    air_quality: str
-    recommendation: str
-    created_at: datetime
+# Configuración de upload
+UPLOAD_DIR = Path("backend/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_FORMATS = {"jpg", "jpeg", "png"}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
-class ProcessRequest(BaseModel):
-    image_url: str
 
-class HumidityResponse(BaseModel):
-    id: int
-    humidity_level: float
-    timestamp: datetime
-    location: str
+class AnalisisResponse(BaseModel):
+    id_analisis: int
+    id_usuario: int
+    id_modelo: Optional[int]
+    id_dataset: Optional[int]
+    resultado: Optional[str]
+    fecha: datetime
 
-class AirQualityResponse(BaseModel):
-    id: int
-    air_quality_index: float
-    pollutants: dict
-    timestamp: datetime
+    class Config:
+        orm_mode = True
 
-class RecommendationResponse(BaseModel):
-    id: int
-    recommendation: str
-    priority: str
-    actions: List[str]
 
-@router.post("/upload", summary="Cargar imagen para análisis")
-async def upload_image(file: UploadFile = File(...)):
+class ImagenResponse(BaseModel):
+    id_imagen: int
+    id_analisis: int
+    url: str
+    descripcion: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class AnalisisConImagenesResponse(AnalisisResponse):
+    imagenes: List[ImagenResponse]
+
+
+def verify_ownership_or_admin(analysis_id: int, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Verifica que el usuario sea propietario del análisis o administrador"""
+    analisis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+    
+    if not analisis:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Análisis no encontrado"
+        )
+    
+    is_owner = analisis.id_usuario == current_user.id_usuario
+    is_admin = current_user.rol and current_user.rol.nombre_rol == 'admin'
+    
+    if not (is_owner or is_admin):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No tienes permiso para acceder a este análisis"
+        )
+    
+    return analisis
+
+
+@router.post("/upload", response_model=dict, summary="Subir imagen para análisis")
+async def upload_image(
+    file: UploadFile = File(...),
+    current_user: Usuario = Depends(get_current_user)
+):
     """
-    Endpoint para subir una imagen de musgo/liquen
-    - RF01: Usuario cargar imágenes
+    Sube una imagen para análisis (validar formato/tamaño)
+    
+    - **file**: archivo de imagen (jpg, jpeg, png, máximo 50MB)
+    - Formatos válidos: jpg, jpeg, png
+    - Tamaño máximo: 50MB
     """
+    # Validar extensión
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nombre de archivo inválido"
+        )
+    
+    file_ext = file.filename.split('.')[-1].lower()
+    if file_ext not in ALLOWED_FORMATS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Formato no permitido. Formatos válidos: {', '.join(ALLOWED_FORMATS)}"
+        )
+    
+    # Leer contenido para validar tamaño
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Archivo demasiado grande. Máximo: {MAX_FILE_SIZE / (1024*1024):.0f}MB"
+        )
+    
+    # Guardar archivo
+    file_path = UPLOAD_DIR / f"{current_user.id_usuario}_{file.filename}"
+    with open(file_path, "wb") as f:
+        f.write(contents)
+    
     return {
-        "file_id": "file_123",
         "filename": file.filename,
-        "size": file.size,
-        "upload_time": datetime.now()
+        "size": len(contents),
+        "upload_time": datetime.now(),
+        "file_path": str(file_path)
     }
 
-@router.post("/detect-lichen", summary="Detectar si es liquen")
-async def detect_lichen(request: ProcessRequest):
-    """
-    Endpoint para detectar si la imagen corresponde a un liquen
-    - RF02: Sistema detectar organismo
-    """
-    return {
-        "image_url": request.image_url,
-        "is_lichen": True,
-        "confidence": 0.95,
-        "organism_type": "lichen"
-    }
 
-@router.post("/process", response_model=AnalysisResponse, summary="Procesar imagen con IA")
-def process_analysis(request: ProcessRequest):
+@router.post("/process", response_model=AnalisisResponse, summary="Procesar análisis con IA")
+def process_analysis(
+    id_modelo: Optional[int] = None,
+    id_dataset: Optional[int] = None,
+    resultado: Optional[str] = None,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """
-    Endpoint para analizar imagen con IA
-    - RF03: Sistema analizar líquenes
-    - RF10: Sistema procesar imagen con IA
+    Procesa un análisis con IA
+    
+    - **id_modelo**: ID del modelo IA a usar (opcional)
+    - **id_dataset**: ID del dataset a usar (opcional)
+    - **resultado**: Resultado del análisis (opcional)
     """
-    return {
-        "id": 1,
-        "user_id": 1,
-        "image_url": request.image_url,
-        "lichen_detected": True,
-        "confidence": 0.92,
-        "state": "healthy",
-        "humidity": 65.5,
-        "air_quality": "moderate",
-        "recommendation": "Buena calidad de aire en zona",
-        "created_at": datetime.now()
-    }
+    # Validar que modelo existe si se proporciona
+    if id_modelo:
+        modelo = db.query(ModeloIA).filter(ModeloIA.id_modelo == id_modelo).first()
+        if not modelo:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Modelo IA no encontrado"
+            )
+    
+    # Validar que dataset existe si se proporciona
+    if id_dataset:
+        dataset = db.query(Dataset).filter(Dataset.id_dataset == id_dataset).first()
+        if not dataset:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Dataset no encontrado"
+            )
+    
+    # Crear análisis
+    analisis = Analisis(
+        id_usuario=current_user.id_usuario,
+        id_modelo=id_modelo,
+        id_dataset=id_dataset,
+        resultado=resultado
+    )
+    
+    db.add(analisis)
+    db.commit()
+    db.refresh(analisis)
+    
+    return analisis
 
-@router.get("/{analysis_id}/status", summary="Obtener estado del análisis")
-def get_analysis_status(analysis_id: int):
-    """
-    Endpoint para obtener el estado de un análisis
-    """
-    return {
-        "id": analysis_id,
-        "status": "completed",
-        "progress": 100
-    }
 
-@router.get("/{analysis_id}/humidity", response_model=HumidityResponse, summary="Obtener datos de humedad")
-def get_humidity(analysis_id: int):
+@router.get("/{analysis_id}", response_model=AnalisisConImagenesResponse, summary="Obtener análisis por ID (propietario/admin)")
+def get_analysis(
+    analisis: Analisis = Depends(verify_ownership_or_admin),
+    db: Session = Depends(get_db)
+):
     """
-    Endpoint para obtener información de humedad estimada
-    - RF05: Sistema estimar humedad
+    Obtiene los detalles de un análisis (propietario o administrador)
+    
+    - **analysis_id**: ID del análisis
     """
-    return {
-        "id": analysis_id,
-        "humidity_level": 65.5,
-        "timestamp": datetime.now(),
-        "location": "Bosque tropical"
-    }
+    # Cargar imágenes relacionadas
+    imagenes = db.query(Imagen).filter(Imagen.id_analisis == analisis.id_analisis).all()
+    
+    response = AnalisisConImagenesResponse(
+        id_analisis=analisis.id_analisis,
+        id_usuario=analisis.id_usuario,
+        id_modelo=analisis.id_modelo,
+        id_dataset=analisis.id_dataset,
+        resultado=analisis.resultado,
+        fecha=analisis.fecha,
+        imagenes=imagenes
+    )
+    
+    return response
 
-@router.get("/{analysis_id}/air-quality", response_model=AirQualityResponse, summary="Obtener calidad del aire")
-def get_air_quality(analysis_id: int):
-    """
-    Endpoint para obtener información de calidad del aire
-    - RF011: Sistema estimar aire
-    """
-    return {
-        "id": analysis_id,
-        "air_quality_index": 45.2,
-        "pollutants": {
-            "PM2.5": 12.3,
-            "PM10": 25.5,
-            "NO2": 15.0
-        },
-        "timestamp": datetime.now()
-    }
 
-@router.get("/{analysis_id}/recommendation", response_model=RecommendationResponse, summary="Obtener recomendación ecológica")
-def get_recommendation(analysis_id: int):
+@router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis (propietario/admin)")
+def delete_analysis(
+    analisis: Analisis = Depends(verify_ownership_or_admin),
+    db: Session = Depends(get_db)
+):
     """
-    Endpoint para obtener recomendaciones ambientales
-    - RF012: Sistema generar recomendación ecológica
+    Elimina un análisis y sus imágenes asociadas (propietario o administrador)
+    
+    - **analysis_id**: ID del análisis a eliminar
     """
-    return {
-        "id": analysis_id,
-        "recommendation": "Aumentar cobertura vegetal en zona",
-        "priority": "high",
-        "actions": ["Plantar árboles nativos", "Reducir contaminación", "Proteger ecosistema"]
-    }
-
-@router.get("/results/{analysis_id}", response_model=AnalysisResponse, summary="Obtener resultados completos")
-def get_results(analysis_id: int):
-    """
-    Endpoint para obtener resultados completos del análisis
-    - RF09: Usuario consultar resultados
-    """
-    return {
-        "id": analysis_id,
-        "user_id": 1,
-        "image_url": "https://example.com/image.jpg",
-        "lichen_detected": True,
-        "confidence": 0.92,
-        "state": "healthy",
-        "humidity": 65.5,
-        "air_quality": "moderate",
-        "recommendation": "Buena calidad de aire en zona",
-        "created_at": datetime.now()
-    }
-
-@router.get("/{analysis_id}", response_model=AnalysisResponse, summary="Obtener análisis por ID")
-def get_analysis(analysis_id: int):
-    """
-    Endpoint para obtener un análisis específico
-    """
-    return {
-        "id": analysis_id,
-        "user_id": 1,
-        "image_url": "https://example.com/image.jpg",
-        "lichen_detected": True,
-        "confidence": 0.92,
-        "state": "healthy",
-        "humidity": 65.5,
-        "air_quality": "moderate",
-        "recommendation": "Buena calidad de aire en zona",
-        "created_at": datetime.now()
-    }
-
-@router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
-def delete_analysis(analysis_id: int):
-    """
-    Endpoint para eliminar un análisis
-    """
+    # Eliminar imágenes asociadas
+    imagenes = db.query(Imagen).filter(Imagen.id_analisis == analisis.id_analisis).all()
+    for imagen in imagenes:
+        db.delete(imagen)
+    
+    # Eliminar análisis
+    db.delete(analisis)
+    db.commit()
+    
     return None
+
+
+@router.post("/{analysis_id}/images", response_model=ImagenResponse, summary="Agregar imagen a análisis")
+def add_image_to_analysis(
+    analysis_id: int,
+    url: str,
+    descripcion: Optional[str] = None,
+    analisis: Analisis = Depends(verify_ownership_or_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Agrega una imagen a un análisis existente
+    
+    - **analysis_id**: ID del análisis
+    - **url**: URL de la imagen
+    - **descripcion**: Descripción de la imagen (opcional)
+    """
+    imagen = Imagen(
+        id_analisis=analysis_id,
+        url=url,
+        descripcion=descripcion
+    )
+    
+    db.add(imagen)
+    db.commit()
+    db.refresh(imagen)
+    
+    return imagen
