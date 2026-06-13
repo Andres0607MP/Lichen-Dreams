@@ -18,7 +18,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> with SingleTickerProvid
     setState(() => _processing = true);
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
-    Navigator.pushNamed(context, AppRoutes.historial); // temporary route placeholder
+    Navigator.pushNamed(context, AppRoutes.historial); // marcador de posición de ruta temporal
   }
 
   @override

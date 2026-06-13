@@ -129,7 +129,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header info
+            // Información del encabezado
             Padding(
               padding: const EdgeInsets.all(16),
               child: ModernCard(
@@ -181,7 +181,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
               ),
             ),
 
-            // Users list
+            // Lista de usuarios
             Expanded(
               child: FutureBuilder<List<dynamic>>(
                 future: _usersFuture,

@@ -25,37 +25,40 @@ class Role(Base):
 class Usuario(Base):
     __tablename__ = 'usuarios'
     id_usuario = Column(Integer, primary_key=True, autoincrement=True)
-    nombre = Column(String(100), nullable=False)
-    apellido = Column(String(100), nullable=False)
-    correo = Column(String(150), unique=True, nullable=False)
-    contrasena = Column(String(255), nullable=False)
+    nombre = Column(String(100))
+    apellido = Column(String(100))
+    tipo_documento = Column(String(20))
+    numero_documento = Column(String(50))
+    correo = Column(String(150), unique=True)
+    contrasena = Column(String(255))
     telefono = Column(String(20))
+    foto_perfil = Column(Text)
+    fecha_nacimiento = Column(DateTime)
     fecha_registro = Column(TIMESTAMP, server_default=func.now())
-    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    estado_activo = Column(Boolean, default=True)
-    id_rol = Column(Integer, ForeignKey('roles.id_rol'), nullable=False)
+    ultimo_acceso = Column(TIMESTAMP, nullable=True)
+    estado_cuenta = Column(String(50))
+    id_rol = Column(Integer, ForeignKey('roles.id_rol'))
     
-    # Relaciones
     rol = relationship('Role', backref='usuarios')
     sesiones = relationship('Sesion', backref='usuario', cascade='all, delete-orphan')
     analisis = relationship('Analisis', backref='usuario', cascade='all, delete-orphan')
     
     __table_args__ = (
         Index('idx_correo', 'correo'),
-        Index('idx_estado_activo', 'estado_activo'),
     )
 
 
 class Sesion(Base):
     __tablename__ = 'sesiones'
     id_sesion = Column(Integer, primary_key=True, autoincrement=True)
-    token_sesion = Column(Text, nullable=False)
+    token_sesion = Column(Text)
     dispositivo = Column(String(100))
+    sistema_operativo = Column(String(100))
     ip_usuario = Column(String(50))
     fecha_inicio = Column(TIMESTAMP, server_default=func.now())
-    fecha_vencimiento = Column(DateTime)
-    estado_sesion = Column(String(50), default='active')
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    fecha_expiracion = Column(TIMESTAMP, nullable=True)
+    estado_sesion = Column(String(50))
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
     
     __table_args__ = (
         Index('idx_token_sesion', 'token_sesion'),

@@ -21,7 +21,11 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str
     name: str
+    apellido: Optional[str] = None
     phone: Optional[str] = None
+    tipo_documento: Optional[str] = None
+    numero_documento: Optional[str] = None
+    fecha_nacimiento: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -33,7 +37,7 @@ class UserResponse(BaseModel):
     rol: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class TokenResponse(BaseModel):
@@ -88,9 +92,13 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
     user = Usuario(
         nombre=request.name,
+        apellido=request.apellido,
         correo=request.email,
         contrasena=hash_password(request.password),
         telefono=request.phone,
+        tipo_documento=request.tipo_documento,
+        numero_documento=request.numero_documento,
+        fecha_nacimiento=request.fecha_nacimiento,
         estado_cuenta='active',
         id_rol=user_role.id_rol,
     )

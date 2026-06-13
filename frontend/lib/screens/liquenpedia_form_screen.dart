@@ -24,8 +24,27 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   late TextEditingController _categoriaController;
   late TextEditingController _imagenController;
 
-  String _estadoPublicacion = 'publicado';
+  String _estadoPublicacion = 'borrador';
   bool _isLoading = false;
+
+  // Funciones de traducción de estado de publicación
+  String _translateToBackend(String estadoEs) {
+    const mapping = {
+      'publicado': 'published',
+      'borrador': 'draft',
+      'archivado': 'archived',
+    };
+    return mapping[estadoEs] ?? 'draft';
+  }
+
+  String _translateToFrontend(String estadoEn) {
+    const mapping = {
+      'published': 'publicado',
+      'draft': 'borrador',
+      'archived': 'archivado',
+    };
+    return mapping[estadoEn] ?? 'borrador';
+  }
 
   @override
   void initState() {
@@ -45,7 +64,10 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     _imagenController = TextEditingController(
       text: widget.articleToEdit?.imagenArticulo ?? '',
     );
-    _estadoPublicacion = widget.articleToEdit?.estadoPublicacion ?? 'publicado';
+    // Traducir el estado del backend al frontend (inglés → español)
+    _estadoPublicacion = _translateToFrontend(
+      widget.articleToEdit?.estadoPublicacion ?? 'draft',
+    );
   }
 
   @override
@@ -66,6 +88,9 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     setState(() => _isLoading = true);
 
     try {
+      // Traducir estado a inglés para enviar al backend
+      final estadoBackend = _translateToBackend(_estadoPublicacion);
+
       if (widget.articleToEdit == null) {
         // Crear nuevo
         await _apiService.createLiquenpediaArticle(
@@ -73,7 +98,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
           contenido: _contenidoController.text,
           autor: _autorController.text,
           categoria: _categoriaController.text,
-          estadoPublicacion: _estadoPublicacion,
+          estadoPublicacion: estadoBackend,
           imagenArticulo: _imagenController.text.isNotEmpty
               ? _imagenController.text
               : null,
@@ -92,7 +117,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
           contenido: _contenidoController.text,
           autor: _autorController.text,
           categoria: _categoriaController.text,
-          estadoPublicacion: _estadoPublicacion,
+          estadoPublicacion: estadoBackend,
           imagenArticulo: _imagenController.text.isNotEmpty
               ? _imagenController.text
               : null,
@@ -239,7 +264,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                   ),
                 ],
                 onChanged: (value) {
-                  setState(() => _estadoPublicacion = value ?? 'publicado');
+                  setState(() => _estadoPublicacion = value ?? 'borrador');
                 },
               ),
               const SizedBox(height: 24),

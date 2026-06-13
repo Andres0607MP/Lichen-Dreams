@@ -22,6 +22,16 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
   String _searchQuery = '';
   bool _isAdmin = false;
 
+  // Función para traducir estado de publicación
+  String _translateEstado(String estado) {
+    const mapping = {
+      'published': 'Publicado',
+      'draft': 'Borrador',
+      'archived': 'Archivado',
+    };
+    return mapping[estado] ?? estado;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -487,7 +497,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              article.estadoPublicacion,
+                              _translateEstado(article.estadoPublicacion),
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,

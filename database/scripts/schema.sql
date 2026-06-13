@@ -34,7 +34,7 @@ CREATE TABLE sesiones (
     id_sesion INT AUTO_INCREMENT PRIMARY KEY,
     token_sesion TEXT,
     dispositivo VARCHAR(100),
-    sistema_operativo VARCHAR(100),
+    sistema_operativo VARCHAR(100), 
     ip_usuario VARCHAR(50),
     fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     fecha_expiracion TIMESTAMP NULL DEFAULT NULL,

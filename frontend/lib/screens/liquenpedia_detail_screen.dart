@@ -17,6 +17,16 @@ class LiquenpediaDetailScreen extends StatelessWidget {
     required this.isAdmin,
   });
 
+  // Función para traducir estado de publicación
+  String _translateEstado(String estado) {
+    const mapping = {
+      'published': 'Publicado',
+      'draft': 'Borrador',
+      'archived': 'Archivado',
+    };
+    return mapping[estado] ?? estado;
+  }
+
   void _deleteArticle(BuildContext context) {
     showDialog(
       context: context,
@@ -247,7 +257,7 @@ class LiquenpediaDetailScreen extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              article.estadoPublicacion,
+                              _translateEstado(article.estadoPublicacion),
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,

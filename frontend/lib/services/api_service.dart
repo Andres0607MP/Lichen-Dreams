@@ -219,8 +219,13 @@ class ApiService {
   Future<Map<String, dynamic>> register(
     String name,
     String email,
-    String password,
-  ) async {
+    String password, {
+    String? apellido,
+    String? phone,
+    String? tipoDocumento,
+    String? numeroDocumento,
+    String? fechaNacimiento,
+  }) async {
     try {
       final response = await _client
           .post(
@@ -230,6 +235,11 @@ class ApiService {
               'name': name,
               'email': email,
               'password': password,
+              'apellido': apellido,
+              'phone': phone,
+              'tipo_documento': tipoDocumento,
+              'numero_documento': numeroDocumento,
+              'fecha_nacimiento': fechaNacimiento,
             }),
           )
           .timeout(const Duration(seconds: 10));
@@ -338,6 +348,7 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getLiquenpediaArticles() async {
     final response = await _client.get(
       AppConfig.buildUri('/liquenpedia'),
+      headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(_parseResponseMessage(
@@ -354,10 +365,11 @@ class ApiService {
     return <Map<String, dynamic>>[];
   }
 
-  /// Obtener un artículo específico (público)
+  /// Obtener un artículo específico (público, pero con permiso especial para admin)
   Future<Map<String, dynamic>> getLiquenpediaArticle(int id) async {
     final response = await _client.get(
       AppConfig.buildUri('/liquenpedia/$id'),
+      headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(_parseResponseMessage(

@@ -1,13 +1,34 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Query
-from sqlalchemy.orm import Session
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from config.db import get_db
 from models.core import LiquenPedia, Usuario
 from models.validations import ArticuloCreate, ArticuloUpdate
 from auth.auth_service import get_current_user
+from auth.jwt_handler import decode_token
 
 router = APIRouter()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+
+def get_current_user_optional(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    """Obtener usuario actual si está autenticado, sino None"""
+    if not token:
+        return None
+    try:
+        payload = decode_token(token)
+        if not payload:
+            return None
+        sub = payload.get("sub")
+        if not sub:
+            return None
+        user = db.query(Usuario).options(joinedload(Usuario.rol)).filter(Usuario.correo == sub).first()
+        return user
+    except:
+        return None
 
 
 @router.get("/", response_model=list[dict], summary="Listar artículos de LiquenPedia")
@@ -17,17 +38,19 @@ def list_articles(
     search: str = Query(None),
     categoria: str = Query(None),
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(get_current_user_optional)
 ):
     """Listar artículos con búsqueda y paginación.
     
+    - Usuarios no autenticados: solo artículos publicados
     - Usuarios normales: solo artículos publicados
     - Admins: todos los estados (draft, published, archived)
     """
     query = db.query(LiquenPedia)
     
     # Si no es admin, mostrar solo published
-    if current_user.rol.nombre_rol != 'admin':
+    is_admin = (current_user and current_user.rol and current_user.rol.nombre_rol == 'admin')
+    if not is_admin:
         query = query.filter(LiquenPedia.estado_publicacion == 'published')
     
     # Búsqueda por título, contenido, categoría
@@ -74,8 +97,13 @@ def create_article(
     current_user: Usuario = Depends(get_current_user)
 ):
     """Crear un nuevo artículo (admin only)."""
+    # Cargar usuario con rol eager-loaded
+    current_user = db.query(Usuario).options(joinedload(Usuario.rol)).filter(
+        Usuario.id_usuario == current_user.id_usuario
+    ).first()
+    
     # Validar admin
-    if current_user.rol.nombre_rol != 'admin':
+    if not current_user or not current_user.rol or current_user.rol.nombre_rol != 'admin':
         raise HTTPException(status_code=403, detail="Solo administradores pueden crear artículos")
     
     article = LiquenPedia(
@@ -107,7 +135,7 @@ def create_article(
 def get_article(
     article_id: int,
     db: Session = Depends(get_db),
-    current_user: Usuario = Depends(get_current_user)
+    current_user: Usuario = Depends(get_current_user_optional)
 ):
     """Obtener un artículo específico."""
     art = db.query(LiquenPedia).filter(LiquenPedia.id_articulo == article_id).first()
@@ -116,7 +144,8 @@ def get_article(
         raise HTTPException(status_code=404, detail="Artículo no encontrado")
     
     # Si no es admin y artículo no está publicado, denegar acceso
-    if current_user.rol.nombre_rol != 'admin' and art.estado_publicacion != 'published':
+    is_admin = (current_user and current_user.rol and current_user.rol.nombre_rol == 'admin')
+    if not is_admin and art.estado_publicacion != 'published':
         raise HTTPException(status_code=403, detail="No tienes permiso para ver este artículo")
     
     return {
@@ -140,8 +169,13 @@ def update_article(
     current_user: Usuario = Depends(get_current_user)
 ):
     """Actualizar un artículo (admin only)."""
+    # Cargar usuario con rol eager-loaded
+    current_user = db.query(Usuario).options(joinedload(Usuario.rol)).filter(
+        Usuario.id_usuario == current_user.id_usuario
+    ).first()
+    
     # Validar admin
-    if current_user.rol.nombre_rol != 'admin':
+    if not current_user or not current_user.rol or current_user.rol.nombre_rol != 'admin':
         raise HTTPException(status_code=403, detail="Solo administradores pueden actualizar artículos")
     
     art = db.query(LiquenPedia).filter(LiquenPedia.id_articulo == article_id).first()
@@ -177,8 +211,13 @@ def delete_article(
     current_user: Usuario = Depends(get_current_user)
 ):
     """Eliminar un artículo (admin only)."""
+    # Cargar usuario con rol eager-loaded
+    current_user = db.query(Usuario).options(joinedload(Usuario.rol)).filter(
+        Usuario.id_usuario == current_user.id_usuario
+    ).first()
+    
     # Validar admin
-    if current_user.rol.nombre_rol != 'admin':
+    if not current_user or not current_user.rol or current_user.rol.nombre_rol != 'admin':
         raise HTTPException(status_code=403, detail="Solo administradores pueden eliminar artículos")
     
     art = db.query(LiquenPedia).filter(LiquenPedia.id_articulo == article_id).first()

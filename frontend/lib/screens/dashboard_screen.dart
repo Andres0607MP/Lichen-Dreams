@@ -167,19 +167,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome section
+            // Sección de bienvenida
             _buildWelcomeSection(),
             const SizedBox(height: 24),
 
-            // Connection status
+            // Estado de conexión
             _buildConnectionStatus(),
             const SizedBox(height: 24),
 
-            // Stats section
+            // Sección de estadísticas
             _buildStatsSection(),
             const SizedBox(height: 24),
 
-            // Quick actions
+            // Acciones rápidas
             SectionHeader(
               title: 'Acciones rápidas',
               subtitle: 'Comienza tu análisis',
@@ -188,7 +188,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _buildQuickActions(),
             const SizedBox(height: 24),
 
-            // Featured features
+            // Características destacadas
             SectionHeader(
               title: 'Características',
               subtitle: 'Explora todas las funciones',
