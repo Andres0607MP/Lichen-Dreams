@@ -28,7 +28,7 @@ def seed():
                     nombre='Admin',
                     apellido='Admin',
                     correo='admin@gmail.com',
-                    contrasena=hash_password('admin'),
+                    contrasena=hash_password('admin123'),
                     telefono=None,
                     estado_cuenta='active',
                     id_rol=admin_role.id_rol
