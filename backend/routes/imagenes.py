@@ -22,7 +22,7 @@ class ImageResponse(BaseModel):
     descripcion: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 @router.post("/upload", response_model=ImageResponse, summary="Subir imagen")

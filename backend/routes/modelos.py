@@ -24,7 +24,7 @@ class ModelResponse(BaseModel):
     fecha_creacion: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 @router.get("", response_model=List[ModelResponse], summary="Listar modelos IA")
