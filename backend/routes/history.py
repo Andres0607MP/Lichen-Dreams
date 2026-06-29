@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 from datetime import datetime
 
@@ -10,12 +10,14 @@ class HistoryResponse(BaseModel):
     id: int
     id_usuario: int
     id_analisis: int
-    resultado: str
-    estado: str
-    humedad: float
-    calidad_del_aire: str
-    ubicacion: str
-    fecha_creacion: datetime
+    url_imagen: str = ""
+    resultado: str = ""
+    estado: str = ""
+    humedad: float = 0.0
+    calidad_del_aire: str = ""
+    recomendacion: str = ""
+    ubicacion: str = ""
+    fecha_creacion: datetime = Field(default_factory=datetime.now)
 
 
 class HistorySaveRequest(BaseModel):
@@ -33,10 +35,12 @@ def save_history(request: HistorySaveRequest):
         "id": 1,
         "id_usuario": 1,
         "id_analisis": request.analysis_id,
+        "url_imagen": "https://example.com/image.jpg",
         "resultado": "liquen saludable",
         "estado": "completado",
         "humedad": 65.5,
         "calidad_del_aire": "moderada",
+        "recomendacion": "Buena calidad de aire en la zona",
         "ubicacion": request.location,
         "fecha_creacion": datetime.now(),
     }
@@ -53,10 +57,12 @@ def get_history():
             "id": 1,
             "id_usuario": 1,
             "id_analisis": 1,
+            "url_imagen": "https://example.com/image.jpg",
             "resultado": "liquen saludable",
             "estado": "completado",
             "humedad": 65.5,
             "calidad_del_aire": "moderada",
+            "recomendacion": "Buena calidad de aire en la zona",
             "ubicacion": "Bogotá, Colombia",
             "fecha_creacion": datetime.now(),
         }
@@ -74,10 +80,12 @@ def get_user_history(user_id: int):
             "id": 1,
             "id_usuario": user_id,
             "id_analisis": 1,
+            "url_imagen": "https://example.com/image.jpg",
             "resultado": "liquen saludable",
             "estado": "completado",
             "humedad": 65.5,
             "calidad_del_aire": "moderada",
+            "recomendacion": "Buena calidad de aire en la zona",
             "ubicacion": "Bogotá, Colombia",
             "fecha_creacion": datetime.now(),
         }

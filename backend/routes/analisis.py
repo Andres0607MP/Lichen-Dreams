@@ -1,53 +1,47 @@
 from fastapi import APIRouter, status, UploadFile, File
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List
 from datetime import datetime
 
 router = APIRouter()
 
 
-class AnalysisResponse(BaseModel):
+class AnalysisBaseResponse(BaseModel):
     id: int
-    id_usuario: int
-    url_imagen: str
-    resultado: str
-    estado: str
-    humedad: float
-    calidad_del_aire: str
-    recomendacion: str
-    fecha_creacion: datetime
+    id_usuario: int = 1
+    url_imagen: str = ""
+    resultado: str = ""
+    estado: str = ""
+    humedad: float = 0.0
+    calidad_del_aire: str = ""
+    recomendacion: str = ""
+    fecha_creacion: datetime = Field(default_factory=datetime.now)
+
+
+class AnalysisResponse(AnalysisBaseResponse):
+    pass
 
 
 class ProcessRequest(BaseModel):
     image_url: str
 
 
-class AnalysisStatusResponse(BaseModel):
-    id: int
-    estado: str
-    progreso: int
+class AnalysisStatusResponse(AnalysisBaseResponse):
+    progreso: int = 0
 
 
-class HumidityResponse(BaseModel):
-    id: int
-    humedad: float
-    fecha_creacion: datetime
-    ubicacion: str
+class HumidityResponse(AnalysisBaseResponse):
+    ubicacion: str = ""
 
 
-class AirQualityResponse(BaseModel):
-    id: int
-    calidad_del_aire: str
-    indice_calidad: float
-    contaminantes: dict
-    fecha_creacion: datetime
+class AirQualityResponse(AnalysisBaseResponse):
+    indice_calidad: float = 0.0
+    contaminantes: dict = Field(default_factory=dict)
 
 
-class RecommendationResponse(BaseModel):
-    id: int
-    recomendacion: str
-    prioridad: str
-    acciones: List[str]
+class RecommendationResponse(AnalysisBaseResponse):
+    prioridad: str = ""
+    acciones: List[str] = Field(default_factory=list)
 
 
 @router.post("/upload", summary="Cargar imagen para análisis")
@@ -105,7 +99,14 @@ def get_analysis_status(analysis_id: int):
     """
     return {
         "id": analysis_id,
+        "id_usuario": 1,
+        "url_imagen": "https://example.com/image.jpg",
+        "resultado": "liquen saludable",
         "estado": "completado",
+        "humedad": 65.5,
+        "calidad_del_aire": "moderada",
+        "recomendacion": "Buena calidad de aire en la zona",
+        "fecha_creacion": datetime.now(),
         "progreso": 100,
     }
 
@@ -118,7 +119,13 @@ def get_humidity(analysis_id: int):
     """
     return {
         "id": analysis_id,
+        "id_usuario": 1,
+        "url_imagen": "https://example.com/image.jpg",
+        "resultado": "liquen saludable",
+        "estado": "completado",
         "humedad": 65.5,
+        "calidad_del_aire": "moderada",
+        "recomendacion": "Buena calidad de aire en la zona",
         "fecha_creacion": datetime.now(),
         "ubicacion": "Bosque tropical",
     }
@@ -132,14 +139,20 @@ def get_air_quality(analysis_id: int):
     """
     return {
         "id": analysis_id,
+        "id_usuario": 1,
+        "url_imagen": "https://example.com/image.jpg",
+        "resultado": "liquen saludable",
+        "estado": "completado",
+        "humedad": 65.5,
         "calidad_del_aire": "moderada",
+        "recomendacion": "Buena calidad de aire en la zona",
+        "fecha_creacion": datetime.now(),
         "indice_calidad": 45.2,
         "contaminantes": {
             "PM2.5": 12.3,
             "PM10": 25.5,
             "NO2": 15.0,
         },
-        "fecha_creacion": datetime.now(),
     }
 
 
@@ -151,7 +164,14 @@ def get_recommendation(analysis_id: int):
     """
     return {
         "id": analysis_id,
+        "id_usuario": 1,
+        "url_imagen": "https://example.com/image.jpg",
+        "resultado": "liquen saludable",
+        "estado": "completado",
+        "humedad": 65.5,
+        "calidad_del_aire": "moderada",
         "recomendacion": "Aumentar cobertura vegetal en zona",
+        "fecha_creacion": datetime.now(),
         "prioridad": "alta",
         "acciones": ["Plantar árboles nativos", "Reducir contaminación", "Proteger ecosistema"],
     }
