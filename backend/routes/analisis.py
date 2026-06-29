@@ -1,50 +1,50 @@
-    from fastapi import APIRouter, status, UploadFile, File
-    from pydantic import BaseModel, Field
-    from typing import List
-    from datetime import datetime
+from fastapi import APIRouter, status, UploadFile, File
+from pydantic import BaseModel, Field
+from typing import List
+from datetime import datetime
 
-    from services.analysis_service import AnalysisService, MockAnalysisProvider
+from services.analysis_service import AnalysisService, MockAnalysisProvider
 
-    router = APIRouter()
-    analysis_service = AnalysisService(provider=MockAnalysisProvider())
-
-
-    class AnalysisBaseResponse(BaseModel):
-        id: int
-        id_usuario: int = 1
-        url_imagen: str = ""
-        resultado: str = ""
-        estado: str = ""
-        humedad: float = 0.0
-        calidad_del_aire: str = ""
-        recomendacion: str = ""
-        fecha_creacion: datetime = Field(default_factory=datetime.now)
+router = APIRouter()
+analysis_service = AnalysisService(provider=MockAnalysisProvider())
 
 
-    class AnalysisResponse(AnalysisBaseResponse):
-        pass
+class AnalysisBaseResponse(BaseModel):
+    id: int
+    id_usuario: int = 1
+    url_imagen: str = ""
+    resultado: str = ""
+    estado: str = ""
+    humedad: float = 0.0
+    calidad_del_aire: str = ""
+    recomendacion: str = ""
+    fecha_creacion: datetime = Field(default_factory=datetime.now)
 
 
-    class ProcessRequest(BaseModel):
-        image_url: str
+class AnalysisResponse(AnalysisBaseResponse):
+    pass
 
 
-    class AnalysisStatusResponse(AnalysisBaseResponse):
-        progreso: int = 0
+class ProcessRequest(BaseModel):
+    image_url: str
 
 
-    class HumidityResponse(AnalysisBaseResponse):
-        ubicacion: str = ""
+class AnalysisStatusResponse(AnalysisBaseResponse):
+    progreso: int = 0
 
 
-    class AirQualityResponse(AnalysisBaseResponse):
-        indice_calidad: float = 0.0
-        contaminantes: dict = Field(default_factory=dict)
+class HumidityResponse(AnalysisBaseResponse):
+    ubicacion: str = ""
 
 
-    class RecommendationResponse(AnalysisBaseResponse):
-        prioridad: str = ""
-        acciones: List[str] = Field(default_factory=list)
+class AirQualityResponse(AnalysisBaseResponse):
+    indice_calidad: float = 0.0
+    contaminantes: dict = Field(default_factory=dict)
+
+    
+class RecommendationResponse(AnalysisBaseResponse):
+    prioridad: str = ""
+    acciones: List[str] = Field(default_factory=list)
 
 
     @router.post("/upload", summary="Cargar imagen para análisis")
