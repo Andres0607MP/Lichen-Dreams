@@ -1,27 +1,27 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List
 from datetime import datetime
 
 router = APIRouter()
 
+
 class HistoryResponse(BaseModel):
     id: int
-    user_id: int
-    analysis_id: int
-    lichen_detected: bool
-    state: str
-    humidity: float
-    air_quality: str
-    location: str
-    created_at: datetime
+    id_usuario: int
+    id_analisis: int
+    resultado: str
+    estado: str
+    humedad: float
+    calidad_del_aire: str
+    ubicacion: str
+    fecha_creacion: datetime
+
 
 class HistorySaveRequest(BaseModel):
     analysis_id: int
     location: str
 
-class HistoryDeleteRequest(BaseModel):
-    analysis_id: int
 
 @router.post("/save", response_model=HistoryResponse, status_code=status.HTTP_201_CREATED, summary="Guardar análisis en historial")
 def save_history(request: HistorySaveRequest):
@@ -31,15 +31,16 @@ def save_history(request: HistorySaveRequest):
     """
     return {
         "id": 1,
-        "user_id": 1,
-        "analysis_id": request.analysis_id,
-        "lichen_detected": True,
-        "state": "healthy",
-        "humidity": 65.5,
-        "air_quality": "moderate",
-        "location": request.location,
-        "created_at": datetime.now()
+        "id_usuario": 1,
+        "id_analisis": request.analysis_id,
+        "resultado": "liquen saludable",
+        "estado": "completado",
+        "humedad": 65.5,
+        "calidad_del_aire": "moderada",
+        "ubicacion": request.location,
+        "fecha_creacion": datetime.now(),
     }
+
 
 @router.get("", response_model=List[HistoryResponse], summary="Obtener historial del usuario")
 def get_history():
@@ -50,16 +51,17 @@ def get_history():
     return [
         {
             "id": 1,
-            "user_id": 1,
-            "analysis_id": 1,
-            "lichen_detected": True,
-            "state": "healthy",
-            "humidity": 65.5,
-            "air_quality": "moderate",
-            "location": "Bogotá, Colombia",
-            "created_at": datetime.now()
+            "id_usuario": 1,
+            "id_analisis": 1,
+            "resultado": "liquen saludable",
+            "estado": "completado",
+            "humedad": 65.5,
+            "calidad_del_aire": "moderada",
+            "ubicacion": "Bogotá, Colombia",
+            "fecha_creacion": datetime.now(),
         }
     ]
+
 
 @router.get("/user/{user_id}", response_model=List[HistoryResponse], summary="Obtener historial de usuario específico")
 def get_user_history(user_id: int):
@@ -70,16 +72,17 @@ def get_user_history(user_id: int):
     return [
         {
             "id": 1,
-            "user_id": user_id,
-            "analysis_id": 1,
-            "lichen_detected": True,
-            "state": "healthy",
-            "humidity": 65.5,
-            "air_quality": "moderate",
-            "location": "Bogotá, Colombia",
-            "created_at": datetime.now()
+            "id_usuario": user_id,
+            "id_analisis": 1,
+            "resultado": "liquen saludable",
+            "estado": "completado",
+            "humedad": 65.5,
+            "calidad_del_aire": "moderada",
+            "ubicacion": "Bogotá, Colombia",
+            "fecha_creacion": datetime.now(),
         }
     ]
+
 
 @router.delete("/{history_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar historial")
 def delete_history(history_id: int):
