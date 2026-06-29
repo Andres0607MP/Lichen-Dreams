@@ -56,7 +56,122 @@ Routers registrados (prefijos)
   - DELETE `/admin/reports/{report_id}` — Eliminar informe (admin). (RF16)
   - GET `/admin/reports/{report_id}/download` — Descargar informe.
 
+## Contrato API v1 (análisis e historial)
+
+El contrato oficial para frontend y backend se define con los siguientes nombres de campos, en español, sin crear rutas paralelas ni modificar la estructura de la base de datos.
+
+### Respuesta de análisis
+
+- POST `/analysis/process`
+- GET `/analysis/results/{analysis_id}`
+- GET `/analysis/{analysis_id}`
+
+```json
+{
+  "id": 1,
+  "id_usuario": 1,
+  "url_imagen": "https://example.com/image.jpg",
+  "resultado": "liquen saludable",
+  "estado": "completado",
+  "humedad": 65.5,
+  "calidad_del_aire": "moderada",
+  "recomendacion": "Buena calidad de aire en la zona",
+  "fecha_creacion": "2026-06-29T12:00:00"
+}
+```
+
+Las respuestas de estado, humedad, calidad del aire y recomendación ahora incluyen también los campos base de la UI para evitar respuestas parciales.
+
+### Estado del análisis
+
+- GET `/analysis/{analysis_id}/status`
+
+```json
+{
+  "id": 1,
+  "estado": "completado",
+  "progreso": 100
+}
+```
+
+### Humedad
+
+- GET `/analysis/{analysis_id}/humidity`
+
+```json
+{
+  "id": 1,
+  "humedad": 65.5,
+  "fecha_creacion": "2026-06-29T12:00:00",
+  "ubicacion": "Bosque tropical"
+}
+```
+
+### Calidad del aire
+
+- GET `/analysis/{analysis_id}/air-quality`
+
+```json
+{
+  "id": 1,
+  "calidad_del_aire": "moderada",
+  "indice_calidad": 45.2,
+  "contaminantes": {
+    "PM2.5": 12.3,
+    "PM10": 25.5,
+    "NO2": 15.0
+  },
+  "fecha_creacion": "2026-06-29T12:00:00"
+}
+```
+
+### Recomendación
+
+- GET `/analysis/{analysis_id}/recommendation`
+
+```json
+{
+  "id": 1,
+  "recomendacion": "Aumentar cobertura vegetal en zona",
+  "prioridad": "alta",
+  "acciones": [
+    "Plantar árboles nativos",
+    "Reducir contaminación",
+    "Proteger ecosistema"
+  ]
+}
+```
+
+### Historial
+
+- POST `/history/save`
+- GET `/history`
+- GET `/history/user/{user_id}`
+
+```json
+{
+  "id": 1,
+  "id_usuario": 1,
+  "id_analisis": 1,
+  "url_imagen": "https://example.com/image.jpg",
+  "resultado": "liquen saludable",
+  "estado": "completado",
+  "humedad": 65.5,
+  "calidad_del_aire": "moderada",
+  "recomendacion": "Buena calidad de aire en la zona",
+  "ubicacion": "Bogotá, Colombia",
+  "fecha_creacion": "2026-06-29T12:00:00"
+}
+```
+
 Notas y siguientes pasos
 
-- Las rutas devuelven datos simulados (mocks). Para integrarlas con la base de datos y la IA se deben implementar los controladores reales en `backend/routes/*` y las dependencias de `backend/config`.
+- Las rutas existentes se mantienen intactas. El contrato v1 define únicamente los nombres de campo y el formato de respuesta esperados por frontend y backend.
+- No se crean rutas paralelas como `/analysis2`, `/analysis_v2`, `/history_v2`, `/analysis-copy` ni `/history-copy`. Cualquier expansión futura de la API debe mantener el prefijo oficial `/analysis` o `/history` sin sufijos redundantes.
+
+Decisión arquitectónica
+
+- Rutas consolidadas: `/analysis/*` y `/history/*` permanecen como la única vía oficial para estos flujos.
+- Rutas eliminadas: no se encontraron endpoints duplicados ni versiones paralelas activas en el backend actual; la protección implementada evita que aparezcan en el futuro.
+- Integración IA/mock: la lógica mock actual se encapsuló en [backend/services/analysis_service.py](backend/services/analysis_service.py) para dejar el contrato REST estable y permitir reemplazar el proveedor en el futuro por IA real o base de datos sin cambiar los endpoints ni los nombres de campo.
 
