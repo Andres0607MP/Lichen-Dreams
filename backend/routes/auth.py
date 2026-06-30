@@ -13,7 +13,9 @@ router = APIRouter()
 
 
 class LoginRequest(BaseModel):
-    email: str
+    # Swagger OAuth2 usa el campo "username" por estándar,
+    # pero aquí se enviará el correo del usuario.
+    username: str
     password: str
 
 
@@ -49,7 +51,9 @@ class TokenResponse(BaseModel):
 
 @router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = authenticate_user(db, request.email, request.password)
+    # request.username contendrá el correo ingresado
+    # para mantener compatibilidad con Swagger OAuth2
+    user = authenticate_user(db, request.username, request.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
     import uuid

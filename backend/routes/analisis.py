@@ -1,7 +1,12 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
+from sqlalchemy.orm import Session
+from config.db import get_db
+from models.core import Analisis
+from auth.auth_service import get_current_user
+from models.core import Usuario
 
 router = APIRouter()
 
@@ -19,6 +24,8 @@ class AnalysisResponse(BaseModel):
 
 class ProcessRequest(BaseModel):
     image_url: str
+    id_modelo: int
+    id_dataset: Optional[int] = None
 
 class HumidityResponse(BaseModel):
     id: int
@@ -64,43 +71,76 @@ async def detect_lichen(request: ProcessRequest):
         "organism_type": "lichen"
     }
 
-@router.post("/process", response_model=AnalysisResponse, summary="Procesar imagen con IA")
-def process_analysis(request: ProcessRequest):
+
+@router.post("/process")
+def process_analysis(
+    request: ProcessRequest,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
     """
     Endpoint para analizar imagen con IA
     - RF03: Sistema analizar líquenes
     - RF10: Sistema procesar imagen con IA
     """
+
+    nuevo_analisis = Analisis(
+
+       
+        id_usuario=current_user.id_usuario,
+
+        id_modelo=request.id_modelo,
+
+        id_dataset=request.id_dataset,
+
+        resultado="Análisis procesado",
+
+        estado="completed",
+
+        metadata_resultado={
+            "image_url": request.image_url,
+            "lichen_detected": True,
+            "confidence": 0.92,
+            "humidity": 65.5,
+            "air_quality": "moderate",
+            "recommendation": "Buena calidad de aire en zona"
+        }
+    )
+
+    db.add(nuevo_analisis)
+
+    db.commit()
+
+    db.refresh(nuevo_analisis)
     return {
-        "id": 1,
-        "user_id": 1,
+        "id": nuevo_analisis.id_analisis,
+        "user_id": nuevo_analisis.id_usuario,
         "image_url": request.image_url,
         "lichen_detected": True,
         "confidence": 0.92,
-        "state": "healthy",
+        "state": nuevo_analisis.estado,
         "humidity": 65.5,
         "air_quality": "moderate",
         "recommendation": "Buena calidad de aire en zona",
-        "created_at": datetime.now()
+        "created_at": nuevo_analisis.fecha_creacion
     }
+
 
 @router.get("/{analysis_id}/status", summary="Obtener estado del análisis")
 def get_analysis_status(analysis_id: int):
-    """
-    Endpoint para obtener el estado de un análisis
-    """
     return {
         "id": analysis_id,
         "status": "completed",
         "progress": 100
     }
 
-@router.get("/{analysis_id}/humidity", response_model=HumidityResponse, summary="Obtener datos de humedad")
+
+@router.get(
+    "/{analysis_id}/humidity",
+    response_model=HumidityResponse,
+    summary="Obtener datos de humedad"
+)
 def get_humidity(analysis_id: int):
-    """
-    Endpoint para obtener información de humedad estimada
-    - RF05: Sistema estimar humedad
-    """
     return {
         "id": analysis_id,
         "humidity_level": 65.5,
@@ -108,12 +148,13 @@ def get_humidity(analysis_id: int):
         "location": "Bosque tropical"
     }
 
-@router.get("/{analysis_id}/air-quality", response_model=AirQualityResponse, summary="Obtener calidad del aire")
+
+@router.get(
+    "/{analysis_id}/air-quality",
+    response_model=AirQualityResponse,
+    summary="Obtener calidad del aire"
+)
 def get_air_quality(analysis_id: int):
-    """
-    Endpoint para obtener información de calidad del aire
-    - RF011: Sistema estimar aire
-    """
     return {
         "id": analysis_id,
         "air_quality_index": 45.2,
@@ -125,25 +166,31 @@ def get_air_quality(analysis_id: int):
         "timestamp": datetime.now()
     }
 
-@router.get("/{analysis_id}/recommendation", response_model=RecommendationResponse, summary="Obtener recomendación ecológica")
+
+@router.get(
+    "/{analysis_id}/recommendation",
+    response_model=RecommendationResponse,
+    summary="Obtener recomendación ecológica"
+)
 def get_recommendation(analysis_id: int):
-    """
-    Endpoint para obtener recomendaciones ambientales
-    - RF012: Sistema generar recomendación ecológica
-    """
     return {
         "id": analysis_id,
         "recommendation": "Aumentar cobertura vegetal en zona",
         "priority": "high",
-        "actions": ["Plantar árboles nativos", "Reducir contaminación", "Proteger ecosistema"]
+        "actions": [
+            "Plantar árboles nativos",
+            "Reducir contaminación",
+            "Proteger ecosistema"
+        ]
     }
 
-@router.get("/results/{analysis_id}", response_model=AnalysisResponse, summary="Obtener resultados completos")
+
+@router.get(
+    "/results/{analysis_id}",
+    response_model=AnalysisResponse,
+    summary="Obtener resultados completos"
+)
 def get_results(analysis_id: int):
-    """
-    Endpoint para obtener resultados completos del análisis
-    - RF09: Usuario consultar resultados
-    """
     return {
         "id": analysis_id,
         "user_id": 1,
@@ -157,11 +204,12 @@ def get_results(analysis_id: int):
         "created_at": datetime.now()
     }
 
-@router.get("/{analysis_id}", response_model=AnalysisResponse, summary="Obtener análisis por ID")
+@router.get(
+    "/{analysis_id}",
+    response_model=AnalysisResponse,
+    summary="Obtener análisis por ID"
+)
 def get_analysis(analysis_id: int):
-    """
-    Endpoint para obtener un análisis específico
-    """
     return {
         "id": analysis_id,
         "user_id": 1,
@@ -175,9 +223,12 @@ def get_analysis(analysis_id: int):
         "created_at": datetime.now()
     }
 
-@router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
+
+@router.delete(
+    "/{analysis_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Eliminar análisis"
+)
 def delete_analysis(analysis_id: int):
-    """
-    Endpoint para eliminar un análisis
-    """
+
     return None

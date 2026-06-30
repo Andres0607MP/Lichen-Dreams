@@ -12,6 +12,7 @@ from auth.password_handler import hash_password
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 
+
 load_dotenv()
 
 app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para análisis de líquenes")
