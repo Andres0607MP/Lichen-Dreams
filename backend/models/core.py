@@ -95,3 +95,24 @@ class LiquenPedia(Base):
     autor = Column(String(100))
     categoria = Column(String(100))
     fecha_publicacion = Column(TIMESTAMP, server_default=func.now())
+
+
+class Reporte(Base):
+    __tablename__ = 'reportes'
+    id_reporte = Column(Integer, primary_key=True, autoincrement=True)
+    titulo = Column(String(100))
+    descripcion = Column(Text)
+    tipo_reporte = Column(String(50))
+    fecha_generacion = Column(TIMESTAMP, server_default=func.now())
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    usuario = relationship('Usuario')
+
+
+class HistorialActividad(Base):
+    __tablename__ = 'historial_actividad'
+    id_historial = Column(Integer, primary_key=True, autoincrement=True)
+    accion = Column(String(100))
+    descripcion = Column(Text)
+    fecha = Column(TIMESTAMP, server_default=func.now())
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    usuario = relationship('Usuario')

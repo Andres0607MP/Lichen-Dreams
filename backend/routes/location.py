@@ -30,7 +30,7 @@ class LocationResponse(BaseModel):
     fecha_registro: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 @router.post("/save", response_model=LocationResponse, summary="Guardar ubicación")

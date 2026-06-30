@@ -31,7 +31,7 @@ class DatasetResponse(BaseModel):
     fecha_creacion: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 def verify_admin(current_user: Usuario = Depends(get_current_user)):
@@ -154,11 +154,4 @@ def delete_dataset(
     db.delete(ds)
     db.commit()
     return None
-def associate_dataset_model(dataset_id: int, model_id: int, db: Session = Depends(get_db)):
-    # Aquí solo devolvemos una respuesta mock; implementar tabla intermedia si es necesario
-    return {
-        "dataset_id": dataset_id,
-        "model_id": model_id,
-        "associated": True,
-        "fecha_asociacion": datetime.now()
-    }
+

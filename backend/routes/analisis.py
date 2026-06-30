@@ -29,7 +29,7 @@ class AnalisisResponse(BaseModel):
     fecha: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class ImagenResponse(BaseModel):
@@ -39,7 +39,7 @@ class ImagenResponse(BaseModel):
     descripcion: Optional[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class AnalisisConImagenesResponse(AnalisisResponse):

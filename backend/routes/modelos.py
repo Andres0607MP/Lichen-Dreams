@@ -31,7 +31,7 @@ class ModelResponse(BaseModel):
     fecha_creacion: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 def verify_admin(current_user: Usuario = Depends(get_current_user)):
