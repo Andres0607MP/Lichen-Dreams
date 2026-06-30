@@ -3,11 +3,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
-from services.analysis_service import AnalysisService, MockAnalysisProvider
+from services.analysis_service import AnalysisService
+from services.ia_provider import MockIAProvider
 
 
 def test_analysis_service_provides_contract_fields_without_database():
-    service = AnalysisService(provider=MockAnalysisProvider())
+    service = AnalysisService(provider=MockIAProvider())
 
     result = service.process_analysis(image_url="https://example.com/image.jpg")
 

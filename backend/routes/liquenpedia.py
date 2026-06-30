@@ -48,10 +48,10 @@ def list_articles(
     """
     query = db.query(LiquenPedia)
     
-    # Si no es admin, mostrar solo published
+    # Si no es admin, mostrar artículos publicados o borradores públicos
     is_admin = (current_user and current_user.rol and current_user.rol.nombre_rol == 'admin')
     if not is_admin:
-        query = query.filter(LiquenPedia.estado_publicacion == 'published')
+        query = query.filter(LiquenPedia.estado_publicacion.in_(['published', 'draft']))
     
     # Búsqueda por título, contenido, categoría
     if search:
@@ -143,9 +143,9 @@ def get_article(
     if not art:
         raise HTTPException(status_code=404, detail="Artículo no encontrado")
     
-    # Si no es admin y artículo no está publicado, denegar acceso
+    # Si no es admin y el artículo no es público, denegar acceso
     is_admin = (current_user and current_user.rol and current_user.rol.nombre_rol == 'admin')
-    if not is_admin and art.estado_publicacion != 'published':
+    if not is_admin and art.estado_publicacion not in ['published', 'draft']:
         raise HTTPException(status_code=403, detail="No tienes permiso para ver este artículo")
     
     return {

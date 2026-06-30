@@ -1,13 +1,29 @@
-from fastapi import APIRouter, status, UploadFile, File
+from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
 from pydantic import BaseModel, Field
-from typing import List
+from sqlalchemy.orm import Session
+from typing import List, Optional
 from datetime import datetime
 
-
-from services.analysis_service import AnalysisService, MockAnalysisProvider
+from auth.auth_service import get_current_user
+from config.db import get_db
+from models.core import Usuario
+from services.analysis_service import AnalysisService
 
 router = APIRouter()
-analysis_service = AnalysisService(provider=MockAnalysisProvider())
+analysis_service = AnalysisService()
+
+
+def optional_current_user(
+    authorization: Optional[str] = Header(default=None),
+    db: Session = Depends(get_db),
+):
+    if not authorization:
+        return None
+    token = authorization.replace("Bearer ", "", 1) if authorization.startswith("Bearer ") else authorization
+    try:
+        return get_current_user(token=token, db=db)
+    except HTTPException:
+        return None
 
 
 class AnalysisBaseResponse(BaseModel):
@@ -77,110 +93,100 @@ async def detect_lichen(request: ProcessRequest):
 
 
 @router.post("/process", response_model=AnalysisResponse, summary="Procesar imagen con IA")
-def process_analysis(request: ProcessRequest):
+def process_analysis(
+    request: ProcessRequest,
+    current_user: Optional[Usuario] = Depends(optional_current_user),
+    db: Session = Depends(get_db),
+):
     """
     Endpoint para analizar imagen con IA
     - RF03: Sistema analizar líquenes
     - RF10: Sistema procesar imagen con IA
     """
-    return analysis_service.process_analysis(image_url=request.image_url)
+    current_user_id = current_user.id_usuario if current_user else 1
+    return analysis_service.process(
+        image_url=request.image_url,
+        current_user_id=current_user_id,
+        db=db,
+    )
 
 
 @router.get("/{analysis_id}/status", response_model=AnalysisStatusResponse, summary="Obtener estado del análisis")
-def get_analysis_status(analysis_id: int):
+def get_analysis_status(analysis_id: int, db: Session = Depends(get_db)):
     """
     Endpoint para obtener el estado de un análisis
     """
-    payload = analysis_service.get_status(analysis_id=analysis_id)
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Buena calidad de aire en la zona")
-    payload.setdefault("fecha_creacion", datetime.now())
+    payload = analysis_service.get_status(analysis_id=analysis_id, db=db)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return payload
 
 
 @router.get("/{analysis_id}/humidity", response_model=HumidityResponse, summary="Obtener datos de humedad")
-def get_humidity(analysis_id: int):
+def get_humidity(analysis_id: int, db: Session = Depends(get_db)):
     """
     Endpoint para obtener información de humedad estimada
     - RF05: Sistema estimar humedad
     """
-    payload = analysis_service.get_humidity(analysis_id=analysis_id)
-    payload["ubicacion"] = "Bosque tropical"
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("estado", "completado")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Buena calidad de aire en la zona")
-    payload.setdefault("fecha_creacion", datetime.now())
+    payload = analysis_service.get_humidity(analysis_id=analysis_id, db=db)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return payload
 
 
 @router.get("/{analysis_id}/air-quality", response_model=AirQualityResponse, summary="Obtener calidad del aire")
-def get_air_quality(analysis_id: int):
+def get_air_quality(analysis_id: int, db: Session = Depends(get_db)):
     """
     Endpoint para obtener información de calidad del aire
     - RF011: Sistema estimar aire
     """
-    payload = analysis_service.get_air_quality(analysis_id=analysis_id)
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("estado", "completado")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Buena calidad de aire en la zona")
-    payload.setdefault("fecha_creacion", datetime.now())
+    payload = analysis_service.get_air_quality(analysis_id=analysis_id, db=db)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return payload
 
 
 @router.get("/{analysis_id}/recommendation", response_model=RecommendationResponse, summary="Obtener recomendación ecológica")
-def get_recommendation(analysis_id: int):
+def get_recommendation(analysis_id: int, db: Session = Depends(get_db)):
     """
     Endpoint para obtener recomendaciones ambientales
     - RF012: Sistema generar recomendación ecológica
     """
-    payload = analysis_service.get_recommendation(analysis_id=analysis_id)
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("estado", "completado")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Aumentar cobertura vegetal en zona")
-    payload.setdefault("fecha_creacion", datetime.now())
+    payload = analysis_service.get_recommendation(analysis_id=analysis_id, db=db)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return payload
 
 
 @router.get("/results/{analysis_id}", response_model=AnalysisResponse, summary="Obtener resultados completos")
-def get_results(analysis_id: int):
+def get_results(analysis_id: int, db: Session = Depends(get_db)):
     """
     Endpoint para obtener resultados completos del análisis
     - RF09: Usuario consultar resultados
     """
-    payload = analysis_service.process_analysis(image_url="https://example.com/image.jpg")
-    payload["id"] = analysis_id
+    payload = analysis_service.get_analysis_payload(analysis_id=analysis_id, db=db)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return payload
 
 
 @router.get("/{analysis_id}", response_model=AnalysisResponse, summary="Obtener análisis por ID")
-def get_analysis(analysis_id: int):
+def get_analysis(analysis_id: int, db: Session = Depends(get_db)):
     """
     Endpoint para obtener un análisis específico
     """
-    payload = analysis_service.process_analysis(image_url="https://example.com/image.jpg")
-    payload["id"] = analysis_id
+    payload = analysis_service.get_analysis_payload(analysis_id=analysis_id, db=db)
+    if not payload:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return payload
 
 
 @router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
-def delete_analysis(analysis_id: int):
+def delete_analysis(analysis_id: int, db: Session = Depends(get_db)):
     """
     Endpoint para eliminar un análisis
     """
+    deleted = analysis_service.delete_analysis(analysis_id=analysis_id, db=db)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return None

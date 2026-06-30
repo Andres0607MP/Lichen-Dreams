@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Form, Body
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from sqlalchemy.orm import Session
@@ -47,8 +47,24 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
 @router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
-def login(request: LoginRequest, db: Session = Depends(get_db)):
+def login(
+    request: Optional[LoginRequest] = Body(default=None),
+    email: Optional[str] = Form(default=None),
+    password: Optional[str] = Form(default=None),
+    username: Optional[str] = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    if request is None:
+        email_value = email or username
+        if email_value is None or password is None:
+            raise HTTPException(status_code=422, detail="Email y contraseña son requeridos")
+        request = LoginRequest(email=email_value, password=password)
+
     user = authenticate_user(db, request.email, request.password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
@@ -133,10 +149,18 @@ def logout():
 
 
 @router.post('/refresh', summary='Refresh access token')
-def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
+def refresh_token(
+    request: Optional[RefreshTokenRequest] = Body(default=None),
+    refresh_token: Optional[str] = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    token = request.refresh_token if request else refresh_token
+    if not token:
+        raise HTTPException(status_code=422, detail='Refresh token requerido')
+
     payload = None
     try:
-        payload = decode_token(refresh_token)
+        payload = decode_token(token)
     except Exception:
         raise HTTPException(status_code=401, detail='Token inválido')
     if not payload:
@@ -154,8 +178,16 @@ def refresh_token(refresh_token: str, db: Session = Depends(get_db)):
 
 
 @router.post('/logout_refresh', summary='Logout and revoke refresh token')
-def logout_refresh(refresh_token: str, db: Session = Depends(get_db)):
-    payload = decode_token(refresh_token)
+def logout_refresh(
+    request: Optional[RefreshTokenRequest] = Body(default=None),
+    refresh_token: Optional[str] = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    token = request.refresh_token if request else refresh_token
+    if not token:
+        raise HTTPException(status_code=422, detail='Refresh token requerido')
+
+    payload = decode_token(token)
     if not payload:
         raise HTTPException(status_code=401, detail='Token inválido')
     sid = payload.get('sid')

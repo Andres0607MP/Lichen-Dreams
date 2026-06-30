@@ -6,10 +6,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.main import app
-from backend.config.db import get_db
-from backend.models.base import Base
-from backend.models.core import Usuario, Role, Analisis, LiquenPedia, Dataset as DatasetModel, ModeloIA
+from main import app
+from config.db import get_db
+from models.base import Base
+from models.core import Usuario, Role, Analisis, LiquenPedia, Dataset as DatasetModel, ModeloIA
 
 
 # Configuración de BD de prueba
@@ -50,7 +50,7 @@ def test_admin_user(db):
         nombre="Admin",
         apellido="Test",
         correo="admin@test.com",
-        contraseña="hashed_password",
+        contrasena="hashed_password",
         id_rol=role.id_rol,
         estado_cuenta="activo"
     )
@@ -71,7 +71,7 @@ def test_regular_user(db):
         nombre="User",
         apellido="Test",
         correo="user@test.com",
-        contraseña="hashed_password",
+        contrasena="hashed_password",
         id_rol=role.id_rol,
         estado_cuenta="activo"
     )
@@ -176,6 +176,7 @@ class TestLiquenpediaEndpoints:
             article = LiquenPedia(
                 titulo=f"Artículo {i}",
                 contenido=f"Contenido {i}",
+                autor="Test Author",
                 categoria="Test"
             )
             db.add(article)
@@ -187,7 +188,7 @@ class TestLiquenpediaEndpoints:
     
     def test_list_articles_search_titulo(self, client, db):
         """Test: Buscar artículos por título"""
-        article = LiquenPedia(titulo="Liquen Verde", contenido="Test")
+        article = LiquenPedia(titulo="Liquen Verde", contenido="Test", autor="Test Author", categoria="Test")
         db.add(article)
         db.commit()
         
@@ -197,7 +198,7 @@ class TestLiquenpediaEndpoints:
     
     def test_list_articles_search_categoria(self, client, db):
         """Test: Filtrar artículos por categoría"""
-        article = LiquenPedia(titulo="Test", contenido="Test", categoria="Ecología")
+        article = LiquenPedia(titulo="Test", contenido="Test", autor="Test Author", categoria="Ecología")
         db.add(article)
         db.commit()
         
@@ -249,7 +250,7 @@ class TestDatasetEndpoints:
     
     def test_list_datasets_public(self, client, db):
         """Test: Listar datasets es público"""
-        ds = DatasetModel(nombre_dataset="Test Dataset", tipo_datos="CSV")
+        ds = DatasetModel(nombre_dataset="Test Dataset", tipo_datos="CSV", ruta_archivo="/tmp/test.csv")
         db.add(ds)
         db.commit()
         
@@ -258,7 +259,7 @@ class TestDatasetEndpoints:
     
     def test_get_dataset_public(self, client, db):
         """Test: Obtener dataset es público"""
-        ds = DatasetModel(nombre_dataset="Test Dataset", tipo_datos="CSV")
+        ds = DatasetModel(nombre_dataset="Test Dataset", tipo_datos="CSV", ruta_archivo="/tmp/test.csv")
         db.add(ds)
         db.commit()
         
