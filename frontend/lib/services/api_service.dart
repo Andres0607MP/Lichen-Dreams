@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -375,6 +376,87 @@ class ApiService {
       throw ApiException(_parseResponseMessage(
         response,
         'Error ${response.statusCode} al obtener artículo',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Obtener historial de análisis del usuario autenticado
+  Future<List<Map<String, dynamic>>> getAnalysisHistory() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/analisis/historial'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al obtener historial',
+      ));
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is List) {
+      return List<Map<String, dynamic>>.from(
+        decoded.map((item) => item as Map<String, dynamic>),
+      );
+    }
+    if (decoded is Map<String, dynamic> && decoded['data'] is List) {
+      return List<Map<String, dynamic>>.from(
+        (decoded['data'] as List).map((item) => item as Map<String, dynamic>),
+      );
+    }
+    throw ApiException('Respuesta inesperada del historial de análisis');
+  }
+
+  /// Obtener estadísticas principales para el dashboard
+  Future<Map<String, dynamic>> getDashboardStats() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/dashboard/stats'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al obtener estadísticas del dashboard',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Enviar imagen para análisis por backend
+  Future<Map<String, dynamic>> submitAnalysis(File imageFile) async {
+    final uri = AppConfig.buildUri('/analisis');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll(await _headers(authorized: true));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'imagen',
+        imageFile.path,
+        filename: imageFile.path.split(Platform.pathSeparator).last,
+      ),
+    );
+
+    final streamedResponse = await _client.send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al enviar imagen para análisis',
+      ));
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Obtener detalles de un análisis específico
+  Future<Map<String, dynamic>> getAnalysisResult(int id) async {
+    final response = await _client.get(
+      AppConfig.buildUri('/analisis/$id'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(_parseResponseMessage(
+        response,
+        'Error ${response.statusCode} al obtener resultado',
       ));
     }
     return jsonDecode(response.body) as Map<String, dynamic>;

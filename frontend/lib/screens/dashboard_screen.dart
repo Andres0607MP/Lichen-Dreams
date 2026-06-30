@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../widgets/app_theme.dart';
+import '../models/dashboard_stats.dart';
 import '../widgets/modern_widgets.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
@@ -17,6 +18,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
   late Future<String> _connectionFuture;
+  late Future<DashboardStats> _statsFuture;
   String? _userRole;
   int _selectedIndex = 0;
 
@@ -24,6 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _connectionFuture = _apiService.testConnection();
+    _statsFuture = _apiService.getDashboardStats().then((json) => DashboardStats.fromJson(json));
     _loadUserRole();
   }
 
@@ -260,7 +263,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 16),
           ModernButton(
             label: 'Realizar análisis',
-            onPressed: () => Navigator.pushNamed(context, '/analisis'),
+            onPressed: () => Navigator.pushNamed(context, AppRoutes.analisis),
             width: double.infinity,
           ),
         ],
@@ -338,56 +341,88 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildStatsSection() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: StatsCard(
-                title: 'Análisis',
-                value: '0',
-                icon: Icons.analytics_rounded,
-                color: AppTheme.primaryGreen,
-                backgroundColor: AppTheme.primaryGreen,
-              ),
+    return FutureBuilder<DashboardStats>(
+      future: _statsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return ModernCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('No fue posible cargar las estadísticas.'),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _statsFuture = _apiService
+                          .getDashboardStats()
+                          .then((json) => DashboardStats.fromJson(json));
+                    });
+                  },
+                  child: const Text('Reintentar'),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StatsCard(
-                title: 'Zonas',
-                value: '0',
-                icon: Icons.location_on_rounded,
-                color: AppTheme.accentGreen,
-                backgroundColor: AppTheme.accentGreen,
-              ),
+          );
+        }
+
+        final stats = snapshot.data!;
+        return Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: StatsCard(
+                    title: 'Análisis',
+                    value: stats.analysisCount.toString(),
+                    icon: Icons.analytics_rounded,
+                    color: AppTheme.primaryGreen,
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatsCard(
+                    title: 'Zonas',
+                    value: stats.zoneCount.toString(),
+                    icon: Icons.location_on_rounded,
+                    color: AppTheme.accentGreen,
+                    backgroundColor: AppTheme.accentGreen,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: StatsCard(
+                    title: 'Aire',
+                    value: stats.airQuality,
+                    icon: Icons.air_rounded,
+                    color: Colors.amber,
+                    backgroundColor: Colors.amber,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: StatsCard(
+                    title: 'Racha',
+                    value: stats.streakDays,
+                    icon: Icons.local_fire_department_rounded,
+                    color: Colors.orange,
+                    backgroundColor: Colors.orange,
+                  ),
+                ),
+              ],
             ),
           ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: StatsCard(
-                title: 'Aire',
-                value: '---',
-                icon: Icons.air_rounded,
-                color: Colors.amber,
-                backgroundColor: Colors.amber,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StatsCard(
-                title: 'Racha',
-                value: '0 días',
-                icon: Icons.local_fire_department_rounded,
-                color: Colors.orange,
-                backgroundColor: Colors.orange,
-              ),
-            ),
-          ],
-        ),
-      ],
+        );
+      },
     );
   }
 
@@ -400,7 +435,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             description: 'Toma una foto',
             icon: Icons.camera_alt_rounded,
             color: AppTheme.primaryGreen,
-            onTap: () => Navigator.pushNamed(context, '/analisis'),
+            onTap: () => Navigator.pushNamed(context, AppRoutes.analisis),
           ),
         ),
         const SizedBox(width: 12),
@@ -410,7 +445,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             description: 'Ver análisis',
             icon: Icons.history_rounded,
             color: AppTheme.accentGreen,
-            onTap: () => Navigator.pushNamed(context, '/historial'),
+            onTap: () => Navigator.pushNamed(context, AppRoutes.historial),
           ),
         ),
       ],
@@ -425,7 +460,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           description: 'Identifica especies de líquenes automáticamente',
           icon: Icons.smart_toy_rounded,
           color: AppTheme.primaryGreen,
-          onTap: () => Navigator.pushNamed(context, '/analisis'),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.analisis),
         ),
         const SizedBox(height: 12),
         FeatureCard(
@@ -433,7 +468,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           description: 'Visualiza todas las zonas analizadas',
           icon: Icons.map_rounded,
           color: Colors.teal,
-          onTap: () => Navigator.pushNamed(context, '/mapa'),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.mapa),
         ),
         const SizedBox(height: 12),
         FeatureCard(
@@ -441,7 +476,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           description: 'Aprende sobre líquenes y el ambiente',
           icon: Icons.school_rounded,
           color: Colors.purple,
-          onTap: () => Navigator.pushNamed(context, '/liquenpedia'),
+          onTap: () => Navigator.pushNamed(context, AppRoutes.liquenpedia),
         ),
       ],
     );
@@ -450,16 +485,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _navigateToSection(int index) {
     switch (index) {
       case 1:
-        Navigator.pushNamed(context, '/analisis');
+        Navigator.pushNamed(context, AppRoutes.analisis);
         break;
       case 2:
-        Navigator.pushNamed(context, '/mapa');
+        Navigator.pushNamed(context, AppRoutes.mapa);
         break;
       case 3:
-        Navigator.pushNamed(context, '/historial');
+        Navigator.pushNamed(context, AppRoutes.historial);
         break;
       case 4:
-        Navigator.pushNamed(context, '/perfil');
+        Navigator.pushNamed(context, AppRoutes.perfil);
         break;
     }
   }
