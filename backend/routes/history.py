@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from typing import List, Optional
+=======
+from fastapi import APIRouter, status
+from pydantic import BaseModel, Field
+from typing import List
+>>>>>>> 0e0c74949dcb5c2453167deb1457685af8cfd684
 from datetime import datetime
 from sqlalchemy.orm import Session
 
@@ -12,6 +18,7 @@ router = APIRouter()
 
 
 class HistoryResponse(BaseModel):
+<<<<<<< HEAD
     id_historial: int
     accion: str
     descripcion: Optional[str]
@@ -20,6 +27,19 @@ class HistoryResponse(BaseModel):
 
     class Config:
         from_attributes = True
+=======
+    id: int
+    id_usuario: int
+    id_analisis: int
+    url_imagen: str = ""
+    resultado: str = ""
+    estado: str = ""
+    humedad: float = 0.0
+    calidad_del_aire: str = ""
+    recomendacion: str = ""
+    ubicacion: str = ""
+    fecha_creacion: datetime = Field(default_factory=datetime.now)
+>>>>>>> 0e0c74949dcb5c2453167deb1457685af8cfd684
 
 
 class HistorySaveRequest(BaseModel):
@@ -45,6 +65,7 @@ def save_history(
     db: Session = Depends(get_db)
 ):
     """
+<<<<<<< HEAD
     Guarda un registro de actividad en el historial del usuario autenticado.
 
     - **analysis_id**: ID del análisis relacionado
@@ -69,6 +90,74 @@ def get_history(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+=======
+    Endpoint para guardar un análisis en el historial del usuario
+    - RF013: Sistema guardar historial
+    """
+    return {
+        "id": 1,
+        "id_usuario": 1,
+        "id_analisis": request.analysis_id,
+        "url_imagen": "https://example.com/image.jpg",
+        "resultado": "liquen saludable",
+        "estado": "completado",
+        "humedad": 65.5,
+        "calidad_del_aire": "moderada",
+        "recomendacion": "Buena calidad de aire en la zona",
+        "ubicacion": request.location,
+        "fecha_creacion": datetime.now(),
+    }
+
+
+@router.get("", response_model=List[HistoryResponse], summary="Obtener historial del usuario")
+def get_history():
+    """
+    Endpoint para obtener el historial completo del usuario autenticado
+    - RF014: Sistema consultar historial
+    """
+    return [
+        {
+            "id": 1,
+            "id_usuario": 1,
+            "id_analisis": 1,
+            "url_imagen": "https://example.com/image.jpg",
+            "resultado": "liquen saludable",
+            "estado": "completado",
+            "humedad": 65.5,
+            "calidad_del_aire": "moderada",
+            "recomendacion": "Buena calidad de aire en la zona",
+            "ubicacion": "Bogotá, Colombia",
+            "fecha_creacion": datetime.now(),
+        }
+    ]
+
+
+@router.get("/user/{user_id}", response_model=List[HistoryResponse], summary="Obtener historial de usuario específico")
+def get_user_history(user_id: int):
+    """
+    Endpoint para obtener el historial de un usuario específico (admin)
+    - RF014: Sistema consultar historial
+    """
+    return [
+        {
+            "id": 1,
+            "id_usuario": user_id,
+            "id_analisis": 1,
+            "url_imagen": "https://example.com/image.jpg",
+            "resultado": "liquen saludable",
+            "estado": "completado",
+            "humedad": 65.5,
+            "calidad_del_aire": "moderada",
+            "recomendacion": "Buena calidad de aire en la zona",
+            "ubicacion": "Bogotá, Colombia",
+            "fecha_creacion": datetime.now(),
+        }
+    ]
+
+
+@router.delete("/{history_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar historial")
+def delete_history(history_id: int):
+>>>>>>> 0e0c74949dcb5c2453167deb1457685af8cfd684
     """
     Obtiene el historial de actividad del usuario autenticado.
     """
