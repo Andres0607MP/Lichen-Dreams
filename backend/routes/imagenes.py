@@ -38,14 +38,7 @@ async def upload_image(file: UploadFile = File(...), id_analisis: Optional[int] 
 
     url_path = f"/uploads/{unique_name}"
 
-    imagen = ImagenModel(
-        id_analisis=id_analisis,
-        nombre=filename,
-        url=url_path,
-        ruta_original=dest_path,
-        ruta_procesada=None,
-        descripcion=None,
-    )
+    imagen = ImagenModel(id_analisis=id_analisis, url=url_path, descripcion=None)
     db.add(imagen)
     db.commit()
     db.refresh(imagen)

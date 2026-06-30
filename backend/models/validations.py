@@ -39,7 +39,7 @@ class UsuarioResponse(BaseModel):
     correo: str
     telefono: Optional[str] = None
     fecha_registro: datetime
-    estado_cuenta: str
+    estado_activo: bool
     
     class Config:
         from_attributes = True
@@ -72,24 +72,17 @@ class UbicacionResponse(BaseModel):
 
 class AnalisisCreate(BaseModel):
     
-    image_url: Optional[str] = Field(None, min_length=1)
-    id_modelo: Optional[int] = Field(None, gt=0)
+    id_modelo: int = Field(..., gt=0)
     id_dataset: Optional[int] = Field(None, gt=0)
     metadata_adicional: Optional[dict] = None
-
-    @classmethod
-    def validate(cls, values):
-        if not values.get("image_url") and values.get("id_modelo") is None:
-            raise ValueError("Debe especificar image_url o id_modelo")
-        return values
 
 
 class AnalisisResponse(BaseModel):
    
     id_analisis: int
     id_usuario: int
-    id_modelo: Optional[int] = None
-    resultado: Optional[str] = None
+    id_modelo: int
+    resultado: Optional[dict] = None
     estado: str
     fecha_creacion: datetime
     

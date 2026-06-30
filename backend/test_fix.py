@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Script de diagnóstico temporal; no ejecuta pytest ni interfiere con la suite."""
+"""Test script to verify the fix"""
 import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
@@ -9,8 +9,12 @@ from models.core import Usuario
 
 try:
     db = SessionLocal()
-    db.query(Usuario).limit(1).all()
-    print("Diagnóstico OK")
+    # Try to query usuarios - this should work now
+    users = db.query(Usuario).limit(1).all()
+    print("✓ Query successful!")
+    print(f"✓ Database connection working")
+    print(f"✓ No more 'Unknown column' errors")
     db.close()
 except Exception as e:
-    print(f"Diagnóstico falló: {e}")
+    print(f"✗ Error: {e}")
+    sys.exit(1)

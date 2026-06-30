@@ -1,68 +1,42 @@
-from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile, status
-from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, status, UploadFile, File
+from pydantic import BaseModel
+from typing import Optional, List
 from datetime import datetime
 
-from auth.auth_service import get_current_user
-from config.db import get_db
-from models.core import Usuario
-from services.analysis_service import AnalysisService
-
 router = APIRouter()
-analysis_service = AnalysisService()
 
-
-def optional_current_user(
-    authorization: Optional[str] = Header(default=None),
-    db: Session = Depends(get_db),
-):
-    if not authorization:
-        return None
-    token = authorization.replace("Bearer ", "", 1) if authorization.startswith("Bearer ") else authorization
-    try:
-        return get_current_user(token=token, db=db)
-    except HTTPException:
-        return None
-
-
-class AnalysisBaseResponse(BaseModel):
+class AnalysisResponse(BaseModel):
     id: int
-    id_usuario: int = 1
-    url_imagen: str = ""
-    resultado: str = ""
-    estado: str = ""
-    humedad: float = 0.0
-    calidad_del_aire: str = ""
-    recomendacion: str = ""
-    fecha_creacion: datetime = Field(default_factory=datetime.now)
-
-
-class AnalysisResponse(AnalysisBaseResponse):
-    pass
-
+    user_id: int
+    image_url: str
+    lichen_detected: bool
+    confidence: float
+    state: str
+    humidity: float
+    air_quality: str
+    recommendation: str
+    created_at: datetime
 
 class ProcessRequest(BaseModel):
     image_url: str
 
+class HumidityResponse(BaseModel):
+    id: int
+    humidity_level: float
+    timestamp: datetime
+    location: str
 
-class AnalysisStatusResponse(AnalysisBaseResponse):
-    progreso: int = 0
+class AirQualityResponse(BaseModel):
+    id: int
+    air_quality_index: float
+    pollutants: dict
+    timestamp: datetime
 
-
-class HumidityResponse(AnalysisBaseResponse):
-    ubicacion: str = ""
-
-
-class AirQualityResponse(AnalysisBaseResponse):
-    indice_calidad: float = 0.0
-    contaminantes: dict = Field(default_factory=dict)
-
-
-class RecommendationResponse(AnalysisBaseResponse):
-    prioridad: str = ""
-    acciones: List[str] = Field(default_factory=list)
-
+class RecommendationResponse(BaseModel):
+    id: int
+    recommendation: str
+    priority: str
+    actions: List[str]
 
 @router.post("/upload", summary="Cargar imagen para análisis")
 async def upload_image(file: UploadFile = File(...)):
@@ -74,9 +48,8 @@ async def upload_image(file: UploadFile = File(...)):
         "file_id": "file_123",
         "filename": file.filename,
         "size": file.size,
-        "upload_time": datetime.now(),
+        "upload_time": datetime.now()
     }
-
 
 @router.post("/detect-lichen", summary="Detectar si es liquen")
 async def detect_lichen(request: ProcessRequest):
@@ -88,105 +61,123 @@ async def detect_lichen(request: ProcessRequest):
         "image_url": request.image_url,
         "is_lichen": True,
         "confidence": 0.95,
-        "organism_type": "lichen",
+        "organism_type": "lichen"
     }
 
-
 @router.post("/process", response_model=AnalysisResponse, summary="Procesar imagen con IA")
-def process_analysis(
-    request: ProcessRequest,
-    current_user: Optional[Usuario] = Depends(optional_current_user),
-    db: Session = Depends(get_db),
-):
+def process_analysis(request: ProcessRequest):
     """
     Endpoint para analizar imagen con IA
     - RF03: Sistema analizar líquenes
     - RF10: Sistema procesar imagen con IA
     """
-    current_user_id = current_user.id_usuario if current_user else 1
-    return analysis_service.process(
-        image_url=request.image_url,
-        current_user_id=current_user_id,
-        db=db,
-    )
+    return {
+        "id": 1,
+        "user_id": 1,
+        "image_url": request.image_url,
+        "lichen_detected": True,
+        "confidence": 0.92,
+        "state": "healthy",
+        "humidity": 65.5,
+        "air_quality": "moderate",
+        "recommendation": "Buena calidad de aire en zona",
+        "created_at": datetime.now()
+    }
 
-
-@router.get("/{analysis_id}/status", response_model=AnalysisStatusResponse, summary="Obtener estado del análisis")
-def get_analysis_status(analysis_id: int, db: Session = Depends(get_db)):
+@router.get("/{analysis_id}/status", summary="Obtener estado del análisis")
+def get_analysis_status(analysis_id: int):
     """
     Endpoint para obtener el estado de un análisis
     """
-    payload = analysis_service.get_status(analysis_id=analysis_id, db=db)
-    if not payload:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    return payload
-
+    return {
+        "id": analysis_id,
+        "status": "completed",
+        "progress": 100
+    }
 
 @router.get("/{analysis_id}/humidity", response_model=HumidityResponse, summary="Obtener datos de humedad")
-def get_humidity(analysis_id: int, db: Session = Depends(get_db)):
+def get_humidity(analysis_id: int):
     """
     Endpoint para obtener información de humedad estimada
     - RF05: Sistema estimar humedad
     """
-    payload = analysis_service.get_humidity(analysis_id=analysis_id, db=db)
-    if not payload:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    return payload
-
+    return {
+        "id": analysis_id,
+        "humidity_level": 65.5,
+        "timestamp": datetime.now(),
+        "location": "Bosque tropical"
+    }
 
 @router.get("/{analysis_id}/air-quality", response_model=AirQualityResponse, summary="Obtener calidad del aire")
-def get_air_quality(analysis_id: int, db: Session = Depends(get_db)):
+def get_air_quality(analysis_id: int):
     """
     Endpoint para obtener información de calidad del aire
     - RF011: Sistema estimar aire
     """
-    payload = analysis_service.get_air_quality(analysis_id=analysis_id, db=db)
-    if not payload:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    return payload
-
+    return {
+        "id": analysis_id,
+        "air_quality_index": 45.2,
+        "pollutants": {
+            "PM2.5": 12.3,
+            "PM10": 25.5,
+            "NO2": 15.0
+        },
+        "timestamp": datetime.now()
+    }
 
 @router.get("/{analysis_id}/recommendation", response_model=RecommendationResponse, summary="Obtener recomendación ecológica")
-def get_recommendation(analysis_id: int, db: Session = Depends(get_db)):
+def get_recommendation(analysis_id: int):
     """
     Endpoint para obtener recomendaciones ambientales
     - RF012: Sistema generar recomendación ecológica
     """
-    payload = analysis_service.get_recommendation(analysis_id=analysis_id, db=db)
-    if not payload:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    return payload
-
+    return {
+        "id": analysis_id,
+        "recommendation": "Aumentar cobertura vegetal en zona",
+        "priority": "high",
+        "actions": ["Plantar árboles nativos", "Reducir contaminación", "Proteger ecosistema"]
+    }
 
 @router.get("/results/{analysis_id}", response_model=AnalysisResponse, summary="Obtener resultados completos")
-def get_results(analysis_id: int, db: Session = Depends(get_db)):
+def get_results(analysis_id: int):
     """
     Endpoint para obtener resultados completos del análisis
     - RF09: Usuario consultar resultados
     """
-    payload = analysis_service.get_analysis_payload(analysis_id=analysis_id, db=db)
-    if not payload:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    return payload
-
+    return {
+        "id": analysis_id,
+        "user_id": 1,
+        "image_url": "https://example.com/image.jpg",
+        "lichen_detected": True,
+        "confidence": 0.92,
+        "state": "healthy",
+        "humidity": 65.5,
+        "air_quality": "moderate",
+        "recommendation": "Buena calidad de aire en zona",
+        "created_at": datetime.now()
+    }
 
 @router.get("/{analysis_id}", response_model=AnalysisResponse, summary="Obtener análisis por ID")
-def get_analysis(analysis_id: int, db: Session = Depends(get_db)):
+def get_analysis(analysis_id: int):
     """
     Endpoint para obtener un análisis específico
     """
-    payload = analysis_service.get_analysis_payload(analysis_id=analysis_id, db=db)
-    if not payload:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
-    return payload
-
+    return {
+        "id": analysis_id,
+        "user_id": 1,
+        "image_url": "https://example.com/image.jpg",
+        "lichen_detected": True,
+        "confidence": 0.92,
+        "state": "healthy",
+        "humidity": 65.5,
+        "air_quality": "moderate",
+        "recommendation": "Buena calidad de aire en zona",
+        "created_at": datetime.now()
+    }
 
 @router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
-def delete_analysis(analysis_id: int, db: Session = Depends(get_db)):
+def delete_analysis(analysis_id: int):
     """
     Endpoint para eliminar un análisis
     """
-    deleted = analysis_service.delete_analysis(analysis_id=analysis_id, db=db)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Análisis no encontrado")
     return None

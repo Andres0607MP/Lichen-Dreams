@@ -36,8 +36,7 @@ class Usuario(Base):
     fecha_nacimiento = Column(DateTime)
     fecha_registro = Column(TIMESTAMP, server_default=func.now())
     ultimo_acceso = Column(TIMESTAMP, nullable=True)
-    estado_cuenta = Column(String(50), default='activo')
-    fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    estado_cuenta = Column(String(50))
     id_rol = Column(Integer, ForeignKey('roles.id_rol'))
     
     rol = relationship('Role', backref='usuarios')
@@ -47,14 +46,6 @@ class Usuario(Base):
     __table_args__ = (
         Index('idx_correo', 'correo'),
     )
-
-    @property
-    def estado_activo(self):
-        return self.estado_cuenta == 'activo'
-
-    @estado_activo.setter
-    def estado_activo(self, value):
-        self.estado_cuenta = 'activo' if value else 'inactivo'
 
 
 class Sesion(Base):
@@ -111,13 +102,10 @@ class Analisis(Base):
     __tablename__ = 'analisis'
     id_analisis = Column(Integer, primary_key=True, autoincrement=True)
     id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
-    id_modelo = Column(Integer, ForeignKey('modelos_ia.id_modelo'), nullable=True)
+    id_modelo = Column(Integer, ForeignKey('modelos_ia.id_modelo'), nullable=False)
     id_dataset = Column(Integer, ForeignKey('datasets.id_dataset'))
     resultado = Column(Text)
     estado = Column(String(50), default='pending')  # pending, processing, completed, failed
-    humedad = Column(Float, nullable=True)
-    calidad_del_aire = Column(String(100), nullable=True)
-    recomendacion = Column(Text, nullable=True)
     metadata_resultado = Column(JSON)  # Para almacenar datos adicionales
     fecha_creacion = Column(TIMESTAMP, server_default=func.now())
     fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -137,7 +125,6 @@ class Imagen(Base):
     id_imagen = Column(Integer, primary_key=True, autoincrement=True)
     id_analisis = Column(Integer, ForeignKey('analisis.id_analisis'), nullable=False)
     url = Column(Text)
-    nombre = Column(String(255), nullable=True)
     ruta_original = Column(Text)  # Ruta del archivo original
     ruta_procesada = Column(Text)  # Ruta del archivo procesado
     descripcion = Column(Text)
