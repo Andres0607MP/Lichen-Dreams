@@ -1,7 +1,9 @@
-from fastapi import APIRouter, HTTPException, status, UploadFile, File
-from pydantic import BaseModel
-from typing import Optional, List
-from datetime import datetime
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Depends
+from sqlalchemy.orm import Session
+
+from config.db import get_db
+from auth.auth_service import get_current_user
+from models.core import Usuario, Analisis
 
 router = APIRouter()
 
