@@ -116,7 +116,7 @@ def list_articles(
     return result
 
 
-@router.post("/", response_model=dict, status_code=status.HTTP_201_CREATED, summary="Crear artículo")
+@router.post("", response_model=dict, status_code=status.HTTP_201_CREATED, summary="Crear artículo")
 def create_article(
     payload: ArticuloCreate,
     db: Session = Depends(get_db),
