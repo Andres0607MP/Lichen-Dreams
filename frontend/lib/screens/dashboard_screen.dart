@@ -408,16 +408,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     backgroundColor: Colors.amber,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: StatsCard(
-                    title: 'Racha',
-                    value: stats.streakDays,
-                    icon: Icons.local_fire_department_rounded,
-                    color: Colors.orange,
-                    backgroundColor: Colors.orange,
-                  ),
-                ),
               ],
             ),
           ],

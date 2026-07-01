@@ -1,11 +1,13 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
+import base64
+from pathlib import Path
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from config.db import SessionLocal
-from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset
+from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad
 
 
 class AnalysisService:
@@ -69,10 +71,28 @@ class AnalysisService:
         humidity = float(analysis.humedad_relativa or 0.0)
         status_value = self._normalize_status(analysis.estado_validacion)
         recommendation = analysis.observaciones or analysis.resultado_ia or ""
+        image_base64 = None
+        try:
+            if image and (image.ruta_imagen or image.url):
+                # Expect ruta_imagen like '/uploads/<filename>' or url similarly
+                ruta = image.ruta_imagen or image.url
+                if ruta.startswith('/'):
+                    filename = Path(ruta).name
+                    uploads_dir = Path(__file__).resolve().parent.parent / 'uploads'
+                    file_path = uploads_dir / filename
+                    if file_path.exists():
+                        image_base64 = base64.b64encode(file_path.read_bytes()).decode('ascii')
+        except Exception:
+            image_base64 = None
         return {
             "id": analysis.id_analisis,
             "id_usuario": analysis.id_usuario,
+            # Provide multiple common keys for frontend compatibility
             "url_imagen": url_imagen,
+            "imagen_url": url_imagen,
+            "image_url": url_imagen,
+            "imagen_base64": image_base64,
+            "image_base64": image_base64,
             "resultado": analysis.resultado_ia or "",
             "estado": status_value,
             "status": status_value,
@@ -125,6 +145,19 @@ class AnalysisService:
             db.add(image)
             db.commit()
             db.refresh(image)
+
+            # Optionally persist a history record so analyses show up in user history
+            try:
+                historial = HistorialActividad(
+                    accion_realizada='analisis_guardado',
+                    descripcion_accion=f'analysis_id={analysis.id_analisis}; location=',
+                    id_usuario=analysis.id_usuario,
+                )
+                db.add(historial)
+                db.commit()
+            except Exception:
+                # non-fatal: history is optional
+                db.rollback()
 
             analysis = db.query(Analisis).options(joinedload(Analisis.imagenes)).filter(Analisis.id_analisis == analysis.id_analisis).first()
 

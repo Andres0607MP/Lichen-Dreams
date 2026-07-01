@@ -41,7 +41,10 @@ class ArticleResponse(BaseModel):
     contenido: str
     autor: Optional[str]
     categoria: Optional[str]
+    imagen_articulo: Optional[str] = None
+    estado_publicacion: Optional[str] = None
     fecha_publicacion: datetime
+    fecha_actualizacion: Optional[datetime] = None
 
     class Config:
         from_attributes = True
@@ -138,7 +141,7 @@ def create_article(
         autor=payload.autor,
         categoria=payload.categoria,
         imagen_articulo=payload.imagen_articulo,
-        estado_publicacion='draft'  # Por defecto empieza en draft
+        estado_publicacion=payload.estado_publicacion or 'draft'
     )
     db.add(article)
     db.commit()

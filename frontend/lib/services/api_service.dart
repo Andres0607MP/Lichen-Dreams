@@ -412,19 +412,31 @@ class ApiService {
 
     final decoded = jsonDecode(response.body);
     if (decoded is List) {
-      return List<Map<String, dynamic>>.from(
+      final list = List<Map<String, dynamic>>.from(
         decoded.map((item) => item as Map<String, dynamic>),
       );
+      for (final item in list) {
+        _normalizeImageUrl(item);
+      }
+      return list;
     }
     if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-      return List<Map<String, dynamic>>.from(
+      final list = List<Map<String, dynamic>>.from(
         (decoded['data'] as List).map((item) => item as Map<String, dynamic>),
       );
+      for (final item in list) {
+        _normalizeImageUrl(item);
+      }
+      return list;
     }
     if (decoded is Map<String, dynamic> && decoded['history'] is List) {
-      return List<Map<String, dynamic>>.from(
+      final list = List<Map<String, dynamic>>.from(
         (decoded['history'] as List).map((item) => item as Map<String, dynamic>),
       );
+      for (final item in list) {
+        _normalizeImageUrl(item);
+      }
+      return list;
     }
     throw ApiException('Respuesta inesperada del historial de análisis');
   }
@@ -494,8 +506,49 @@ class ApiService {
         'Error ${response.statusCode} al obtener resultado',
       ));
     }
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    _normalizeImageUrl(decoded);
+    return decoded;
   }
+
+  void _normalizeImageUrl(Map<String, dynamic> json) {
+    final candidates = ['imagen_url', 'image_url', 'url_imagen', 'url'];
+    final base = AppConfig.baseUrl;
+    for (final key in candidates) {
+      if (json.containsKey(key) && json[key] is String) {
+        var val = (json[key] as String).trim();
+        if (val.isEmpty) continue;
+
+        // Relative path -> prefix with base URL
+        if (val.startsWith('/')) {
+          if (base.isNotEmpty) {
+            final prefix = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+            json[key] = '$prefix$val';
+          }
+          continue;
+        }
+
+        // Absolute URL: if it points to localhost/127.0.0.1 or emulator loopback,
+        // rewrite using AppConfig.baseUrl so device can reach the server.
+        Uri? parsed;
+        try {
+          parsed = Uri.parse(val);
+        } catch (_) {
+          parsed = null;
+        }
+        if (parsed != null && base.isNotEmpty) {
+          final host = parsed.host.toLowerCase();
+          if (host == '127.0.0.1' || host == 'localhost' || host == '10.0.2.2') {
+            final basePrefix = base.endsWith('/') ? base.substring(0, base.length - 1) : base;
+            final newPath = parsed.path.startsWith('/') ? parsed.path : '/${parsed.path}';
+            final newUrl = '$basePrefix$newPath${parsed.hasQuery ? '?${parsed.query}' : ''}';
+            json[key] = newUrl;
+          }
+        }
+      }
+    }
+  }
+
 
   /// Obtener el estado actual del análisis
   Future<Map<String, dynamic>> getAnalysisStatus(int id) async {

@@ -25,7 +25,7 @@ Base.metadata.create_all(bind=engine)
 # CORS: permitir peticiones desde el frontend en desarrollo (ajustar en producción)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -102,6 +102,12 @@ try:
     app.include_router(liquenpedia_router, prefix="/liquenpedia", tags=["LiquenPedia"])
 except ImportError as e:
     print(f"Warning: liquenpedia router not found - {e}")
+
+try:
+    from routes.dashboard import router as dashboard_router
+    app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
+except ImportError as e:
+    print(f"Warning: dashboard router not found - {e}")
 
 try:
     from routes.maps_route import router as maps_router

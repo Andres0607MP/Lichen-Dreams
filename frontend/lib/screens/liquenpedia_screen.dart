@@ -28,6 +28,9 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
       'published': 'Publicado',
       'draft': 'Borrador',
       'archived': 'Archivado',
+      'publicado': 'Publicado',
+      'borrador': 'Borrador',
+      'archivado': 'Archivado',
     };
     return mapping[estado] ?? estado;
   }
@@ -56,9 +59,10 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
     setState(() {
       _loadArticles();
     });
+    await _articlesFuture;
   }
 
-  void _deleteArticle(int id, String title) {
+  Future<void> _deleteArticle(int id, String title) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -77,7 +81,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Artículo eliminado')),
                 );
-                _refreshArticles();
+                await _refreshArticles();
               } catch (e) {
                 ScaffoldMessenger.of(
                   context,
@@ -148,7 +152,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                       ),
                     );
                     if (result == true) {
-                      _refreshArticles();
+                      await _refreshArticles();
                     }
                   },
                 ),
@@ -395,7 +399,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
             ),
           );
           if (result == true) {
-            _refreshArticles();
+            await _refreshArticles();
           }
         },
         child: Column(
@@ -543,7 +547,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                               ),
                             );
                             if (result == true) {
-                              _refreshArticles();
+                              await _refreshArticles();
                             }
                           },
                         ),
@@ -560,8 +564,8 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                             color: Colors.red,
                             size: 20,
                           ),
-                          onPressed: () =>
-                              _deleteArticle(article.id ?? 0, article.titulo),
+                          onPressed: () async =>
+                              await _deleteArticle(article.id ?? 0, article.titulo),
                         ),
                       ),
                     ],

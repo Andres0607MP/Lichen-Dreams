@@ -120,7 +120,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        setState(() => _profileFuture = ApiService().getProfile());
+        setState(() {
+          _profileFuture = ApiService().getProfile();
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -174,7 +176,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2F7D32),
                     ),
-                    onPressed: () => setState(() => _profileFuture = ApiService().getProfile()),
+                    onPressed: () {
+                      setState(() {
+                        _profileFuture = ApiService().getProfile();
+                      });
+                    },
                     child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
                   ),
                 ],

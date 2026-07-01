@@ -33,7 +33,7 @@ class ProfileResponse(BaseModel):
     numero_documento: Optional[str] = None
     fecha_nacimiento: Optional[str] = None
     foto_perfil: Optional[str] = None
-    fecha_registro: str
+    fecha_registro: Optional[str] = None
 
     class Config:
         from_attributes = True
