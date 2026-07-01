@@ -16,11 +16,17 @@ UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 ALLOWED_FORMATS = {"jpg", "jpeg", "png"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
+# Configuración de upload
+UPLOAD_DIR = Path("backend/uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+ALLOWED_FORMATS = {"jpg", "jpeg", "png"}
+MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+
 
 class AnalysisBaseResponse(BaseModel):
     id: int
     id_usuario: int = 1
-    url_imagen: str = ""
+    url_imagen: str = ""    
     resultado: str = ""
     estado: str = ""
     status: str = ""
