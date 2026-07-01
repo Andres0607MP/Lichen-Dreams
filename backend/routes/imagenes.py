@@ -17,7 +17,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 class ImageResponse(BaseModel):
     id_imagen: int
-    id_analisis: Optional[int]
+    id_analisis: Optional[int]  
     url: str
     descripcion: Optional[str]
 
