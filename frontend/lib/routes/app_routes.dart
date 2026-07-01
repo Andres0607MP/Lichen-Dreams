@@ -4,7 +4,7 @@ import '../screens/dashboard_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/analysis_screen.dart';
-import '../screens/result_screen.dart';
+import '../screens/history_screen.dart';
 import '../screens/map_screen.dart';
 import '../screens/liquenpedia_screen.dart';
 import '../screens/profile_screen.dart';
@@ -18,7 +18,7 @@ class AppRouter {
     AppRoutes.dashboard: (_) => const DashboardScreen(),
     AppRoutes.adminUsers: (_) => const AdminUsersScreen(),
     AppRoutes.analisis: (_) => const AnalysisScreen(),
-    AppRoutes.historial: (_) => const ResultScreen(),
+    AppRoutes.historial: (_) => const HistoryScreen(),
     AppRoutes.mapa: (_) => const MapScreen(),
     AppRoutes.perfil: (_) => const ProfileScreen(),
     AppRoutes.liquenpedia: (_) => const LiquenpediaScreen(),
