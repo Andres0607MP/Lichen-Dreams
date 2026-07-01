@@ -75,17 +75,3 @@ def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
     db.delete(ds)
     db.commit()
     return None
-
-<<<<<<< HEAD
-=======
-
-@router.post("/{dataset_id}/associate", summary="Asociar dataset con un modelo")
-def associate_dataset_model(dataset_id: int, model_id: int, db: Session = Depends(get_db)):
-    # Aquí solo devolvemos una respuesta mock; implementar tabla intermedia si es necesario
-    return {
-        "dataset_id": dataset_id,
-        "model_id": model_id,
-        "associated": True,
-        "fecha_asociacion": datetime.now()
-    }
->>>>>>> 0e0c74949dcb5c2453167deb1457685af8cfd684

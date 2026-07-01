@@ -1,11 +1,14 @@
-from fastapi import APIRouter, status, UploadFile, File
-from pydantic import BaseModel, Field
-from typing import List
+from pathlib import Path
 from datetime import datetime
+from typing import List
+
+from fastapi import APIRouter, File, UploadFile, status
+from pydantic import BaseModel, Field
 
 from services.analysis_service import AnalysisService, MockAnalysisProvider
 
 router = APIRouter()
+analysis_service = AnalysisService(provider=MockAnalysisProvider())
 
 # Configuración de upload
 UPLOAD_DIR = Path("backend/uploads")
@@ -14,52 +17,42 @@ ALLOWED_FORMATS = {"jpg", "jpeg", "png"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
-class AnalisisResponse(BaseModel):
-    id_analisis: int
-    id_usuario: int
-    id_modelo: Optional[int]
-    id_dataset: Optional[int]
-    resultado: Optional[str]
-    fecha: datetime
-
-    class Config:
-        orm_mode = True
-
-
-class ImagenResponse(BaseModel):
-    id_imagen: int
-    id_analisis: int
-    url: str
-    descripcion: Optional[str]
-
-    class Config:
-        orm_mode = True
+class AnalysisBaseResponse(BaseModel):
+    id: int
+    id_usuario: int = 1
+    url_imagen: str = ""    
+    resultado: str = ""
+    estado: str = ""
+    humedad: float = 0.0
+    calidad_del_aire: str = ""
+    recomendacion: str = ""
+    fecha_creacion: datetime = Field(default_factory=datetime.now)
 
 
-class AnalisisConImagenesResponse(AnalisisResponse):
-    imagenes: List[ImagenResponse]
+class AnalysisResponse(AnalysisBaseResponse):
+    pass
 
 
-def verify_ownership_or_admin(analysis_id: int, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Verifica que el usuario sea propietario del análisis o administrador"""
-    analisis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
-    
-    if not analisis:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Análisis no encontrado"
-        )
-    
-    is_owner = analisis.id_usuario == current_user.id_usuario
-    is_admin = current_user.rol and current_user.rol.nombre_rol == 'admin'
-    
-    if not (is_owner or is_admin):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="No tienes permiso para acceder a este análisis"
-        )
-    
-    return analisis
+class ProcessRequest(BaseModel):
+    image_url: str
+
+
+class AnalysisStatusResponse(AnalysisBaseResponse):
+    progreso: int = 0
+
+
+class HumidityResponse(AnalysisBaseResponse):
+    ubicacion: str = ""
+
+
+class AirQualityResponse(AnalysisBaseResponse):
+    indice_calidad: float = 0.0
+    contaminantes: dict = Field(default_factory=dict)
+
+
+class RecommendationResponse(AnalysisBaseResponse):
+    prioridad: str = ""
+    acciones: List[str] = Field(default_factory=list)
 
 
 @router.post("/upload", summary="Cargar imagen para análisis")
@@ -105,15 +98,7 @@ def get_analysis_status(analysis_id: int):
     """
     Endpoint para obtener el estado de un análisis
     """
-    payload = analysis_service.get_status(analysis_id=analysis_id)
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Buena calidad de aire en la zona")
-    payload.setdefault("fecha_creacion", datetime.now())
-    return payload
+    return analysis_service.get_status(analysis_id=analysis_id)
 
 
 @router.get("/{analysis_id}/humidity", response_model=HumidityResponse, summary="Obtener datos de humedad")
@@ -124,14 +109,6 @@ def get_humidity(analysis_id: int):
     """
     payload = analysis_service.get_humidity(analysis_id=analysis_id)
     payload["ubicacion"] = "Bosque tropical"
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("estado", "completado")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Buena calidad de aire en la zona")
-    payload.setdefault("fecha_creacion", datetime.now())
     return payload
 
 
@@ -141,16 +118,7 @@ def get_air_quality(analysis_id: int):
     Endpoint para obtener información de calidad del aire
     - RF011: Sistema estimar aire
     """
-    payload = analysis_service.get_air_quality(analysis_id=analysis_id)
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("estado", "completado")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Buena calidad de aire en la zona")
-    payload.setdefault("fecha_creacion", datetime.now())
-    return payload
+    return analysis_service.get_air_quality(analysis_id=analysis_id)
 
 
 @router.get("/{analysis_id}/recommendation", response_model=RecommendationResponse, summary="Obtener recomendación ecológica")
@@ -159,16 +127,7 @@ def get_recommendation(analysis_id: int):
     Endpoint para obtener recomendaciones ambientales
     - RF012: Sistema generar recomendación ecológica
     """
-    payload = analysis_service.get_recommendation(analysis_id=analysis_id)
-    payload.setdefault("id_usuario", 1)
-    payload.setdefault("url_imagen", "https://example.com/image.jpg")
-    payload.setdefault("resultado", "liquen saludable")
-    payload.setdefault("estado", "completado")
-    payload.setdefault("humedad", 65.5)
-    payload.setdefault("calidad_del_aire", "moderada")
-    payload.setdefault("recomendacion", "Aumentar cobertura vegetal en zona")
-    payload.setdefault("fecha_creacion", datetime.now())
-    return payload
+    return analysis_service.get_recommendation(analysis_id=analysis_id)
 
 
 @router.get("/results/{analysis_id}", response_model=AnalysisResponse, summary="Obtener resultados completos")

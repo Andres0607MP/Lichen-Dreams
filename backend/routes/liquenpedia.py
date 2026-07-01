@@ -1,5 +1,9 @@
+from datetime import datetime
+from typing import List, Optional
+
 from fastapi import APIRouter, HTTPException, status, Depends, Query
 from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
@@ -31,7 +35,6 @@ def get_current_user_optional(token: str = Depends(oauth2_scheme), db: Session =
         return None
 
 
-<<<<<<< HEAD
 class ArticleResponse(BaseModel):
     id_articulo: int
     titulo: str
@@ -45,7 +48,7 @@ class ArticleResponse(BaseModel):
 
 
 def verify_admin(current_user: Usuario = Depends(get_current_user)):
-    """Verifica que el usuario sea administrador"""
+    """Verifica que el usuario sea administrador."""
     if current_user.rol is None or current_user.rol.nombre_rol != 'admin':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -55,9 +58,6 @@ def verify_admin(current_user: Usuario = Depends(get_current_user)):
 
 
 @router.get("", response_model=List[ArticleResponse], summary="Listar artículos (público)")
-=======
-@router.get("/", response_model=list[dict], summary="Listar artículos de LiquenPedia")
->>>>>>> 0e0c74949dcb5c2453167deb1457685af8cfd684
 def list_articles(
     skip: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),

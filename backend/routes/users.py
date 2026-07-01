@@ -14,17 +14,11 @@ class UserResponse(BaseModel):
     correo: str
     nombre: Optional[str]
     telefono: Optional[str]
-<<<<<<< HEAD
     estado_cuenta: str
     id_rol: Optional[int]
 
     class Config:
         from_attributes = True
-
-=======
-    rol: Optional[str]
-    activo: bool
->>>>>>> 0e0c74949dcb5c2453167deb1457685af8cfd684
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
