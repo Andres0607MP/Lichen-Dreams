@@ -20,16 +20,18 @@ class AnalysisRecord {
   factory AnalysisRecord.fromJson(Map<String, dynamic> json) {
     final status = json['estado']?.toString() ??
         json['status']?.toString() ??
-        json['resultado']?.toString() ??
         json['state']?.toString() ??
+        json['resultado']?.toString() ??
         'Desconocido';
     final title = json['titulo']?.toString() ??
         json['nombre']?.toString() ??
+        json['resultado']?.toString() ??
         status;
     final summary = json['resumen']?.toString() ??
         json['summary']?.toString() ??
         json['detalle']?.toString() ??
         json['description']?.toString() ??
+        json['recommendation']?.toString() ??
         '';
     final imageUrl = json['imagen_url']?.toString() ??
         json['image_url']?.toString() ??

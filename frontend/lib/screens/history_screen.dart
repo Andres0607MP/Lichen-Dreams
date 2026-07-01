@@ -34,6 +34,44 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
   }
 
+  Future<void> _deleteRecord(int? id) async {
+    if (id == null || id <= 0) {
+      return;
+    }
+
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Eliminar análisis'),
+          content: const Text('¿Deseas eliminar este análisis del historial?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Eliminar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete == true) {
+      try {
+        await _apiService.deleteHistory(id);
+        _retry();
+      } catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo eliminar el historial: $error')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _apiService.dispose();
@@ -154,6 +192,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               Chip(label: Text(record.status)),
                               const SizedBox(width: 10),
                               Text(record.displayDate),
+                              const Spacer(),
+                              IconButton(
+                                onPressed: () => _deleteRecord(record.id),
+                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                tooltip: 'Eliminar del historial',
+                              ),
                             ],
                           ),
                         ],
