@@ -144,6 +144,8 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
         _passwordError = 'La contraseña es obligatoria';
       } else if (_passwordController.text.length < 6) {
         _passwordError = 'Mínimo 6 caracteres';
+      } else if (!RegExp(r'[^a-zA-Z0-9]').hasMatch(_passwordController.text)) {
+        _passwordError = 'Debe incluir al menos un carácter especial';
       } else {
         _passwordError = null;
       }
@@ -637,12 +639,15 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                     color: Colors.red.shade500,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    errorText,
-                    style: TextStyle(
-                      color: Colors.red.shade500,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      errorText,
+                      softWrap: true,
+                      style: TextStyle(
+                        color: Colors.red.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -725,12 +730,15 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                     color: Colors.red.shade500,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    errorText,
-                    style: TextStyle(
-                      color: Colors.red.shade500,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      errorText,
+                      softWrap: true,
+                      style: TextStyle(
+                        color: Colors.red.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],
@@ -846,12 +854,15 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                     color: Colors.red.shade500,
                   ),
                   const SizedBox(width: 6),
-                  Text(
-                    errorText,
-                    style: TextStyle(
-                      color: Colors.red.shade500,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: Text(
+                      errorText,
+                      softWrap: true,
+                      style: TextStyle(
+                        color: Colors.red.shade500,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
                 ],

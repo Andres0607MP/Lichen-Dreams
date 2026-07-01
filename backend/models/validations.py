@@ -20,6 +20,8 @@ class UsuarioCreate(BaseModel):
             raise ValueError('Contraseña debe tener al menos una mayúscula')
         if not any(c.isdigit() for c in v):
             raise ValueError('Contraseña debe tener al menos un número')
+        if not any(not c.isalnum() for c in v):
+            raise ValueError('Contraseña debe tener al menos un carácter especial')
         return v
 
 

@@ -39,9 +39,9 @@ def test_create_and_get_dataset():
 
 def test_register_login_and_me():
     email = f"test{int(time.time())}@example.com"
-    reg = client.post("/auth/register", json={"email": email, "password": "secret", "name": "Tester"})
+    reg = client.post("/auth/register", json={"email": email, "password": "secret@", "name": "Tester"})
     assert reg.status_code == 201
-    login = client.post("/auth/login", json={"email": email, "password": "secret"})
+    login = client.post("/auth/login", json={"email": email, "password": "secret@"})
     assert login.status_code == 200
     token = login.json().get("access_token")
     assert token

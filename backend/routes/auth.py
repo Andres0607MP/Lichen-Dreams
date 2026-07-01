@@ -1,6 +1,6 @@
-from datetime import date
+from datetime import date, datetime
 from fastapi import APIRouter, HTTPException, status, Depends, Form
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from sqlalchemy.orm import Session
 from config.db import get_db
@@ -10,6 +10,14 @@ from auth.jwt_handler import create_access_token, create_refresh_token, decode_t
 from auth.auth_service import authenticate_user, get_current_user
 
 router = APIRouter()
+
+
+def _as_date(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value.date()
+    return value
 
 
 class LoginRequest(BaseModel):
@@ -28,6 +36,15 @@ class RegisterRequest(BaseModel):
     numero_documento: Optional[str] = None
     fecha_nacimiento: Optional[date] = None
     foto_perfil: Optional[str] = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        if len(value) < 6:
+            raise ValueError("La contraseña debe tener al menos 6 caracteres")
+        if not any(not ch.isalnum() for ch in value):
+            raise ValueError("La contraseña debe incluir al menos un carácter especial")
+        return value
 
 
 class UserResponse(BaseModel):
@@ -127,7 +144,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         "telefono": user.telefono,
         "tipo_documento": user.tipo_documento,
         "numero_documento": user.numero_documento,
-        "fecha_nacimiento": user.fecha_nacimiento.date() if user.fecha_nacimiento else None,
+        "fecha_nacimiento": _as_date(user.fecha_nacimiento),
         "foto_perfil": user.foto_perfil,
         "estado_cuenta": user.estado_cuenta,
         "id_rol": user.id_rol,
@@ -145,7 +162,7 @@ def me(current_user: Usuario = Depends(get_current_user)):
         "telefono": current_user.telefono,
         "tipo_documento": current_user.tipo_documento,
         "numero_documento": current_user.numero_documento,
-        "fecha_nacimiento": current_user.fecha_nacimiento.date() if current_user.fecha_nacimiento else None,
+        "fecha_nacimiento": _as_date(current_user.fecha_nacimiento),
         "foto_perfil": current_user.foto_perfil,
         "estado_cuenta": current_user.estado_cuenta,
         "id_rol": current_user.id_rol,

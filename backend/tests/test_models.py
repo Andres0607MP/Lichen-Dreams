@@ -194,6 +194,15 @@ def test_usuario_create_validation_password_requirements():
             telefono="+1234567895",
         )
 
+    with pytest.raises(ValidationError):
+        UsuarioCreate(
+            nombre="Val",
+            apellido="Test",
+            correo="valtest3@example.com",
+            contrasena="NoSpecial1",
+            telefono="+1234567896",
+        )
+
 
 def test_ubicacion_create_validation_limits():
     with pytest.raises(ValidationError):
