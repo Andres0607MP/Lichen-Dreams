@@ -1,8 +1,8 @@
+from datetime import date
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from sqlalchemy.orm import Session
-
 from config.db import get_db
 from models.core import Usuario, Sesion, Role
 from auth.password_handler import hash_password, verify_password
@@ -13,7 +13,8 @@ router = APIRouter()
 
 
 class LoginRequest(BaseModel):
-    email: str
+    email: Optional[str] = None
+    username: Optional[str] = None
     password: str
 
 
@@ -25,14 +26,21 @@ class RegisterRequest(BaseModel):
     phone: Optional[str] = None
     tipo_documento: Optional[str] = None
     numero_documento: Optional[str] = None
-    fecha_nacimiento: Optional[str] = None
+    fecha_nacimiento: Optional[date] = None
+    foto_perfil: Optional[str] = None
 
 
 class UserResponse(BaseModel):
     id_usuario: int
     correo: str
     nombre: Optional[str]
-    telefono: Optional[str]
+    apellido: Optional[str] = None
+    telefono: Optional[str] = None
+    tipo_documento: Optional[str] = None
+    numero_documento: Optional[str] = None
+    fecha_nacimiento: Optional[date] = None
+    foto_perfil: Optional[str] = None
+    estado_cuenta: Optional[str] = None
     id_rol: Optional[int]
     rol: Optional[str]
 
@@ -49,7 +57,12 @@ class TokenResponse(BaseModel):
 
 @router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = authenticate_user(db, request.email, request.password)
+    email = request.email or request.username
+    password = request.password
+    if not email or not password:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="email y password son requeridos")
+
+    user = authenticate_user(db, email, password)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales inválidas")
     import uuid
@@ -99,6 +112,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         tipo_documento=request.tipo_documento,
         numero_documento=request.numero_documento,
         fecha_nacimiento=request.fecha_nacimiento,
+        foto_perfil=request.foto_perfil,
         estado_cuenta='active',
         id_rol=user_role.id_rol,
     )
@@ -109,7 +123,13 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         "id_usuario": user.id_usuario,
         "correo": user.correo,
         "nombre": user.nombre,
+        "apellido": user.apellido,
         "telefono": user.telefono,
+        "tipo_documento": user.tipo_documento,
+        "numero_documento": user.numero_documento,
+        "fecha_nacimiento": user.fecha_nacimiento.date() if user.fecha_nacimiento else None,
+        "foto_perfil": user.foto_perfil,
+        "estado_cuenta": user.estado_cuenta,
         "id_rol": user.id_rol,
         "rol": user_role.nombre_rol,
     }
@@ -121,7 +141,13 @@ def me(current_user: Usuario = Depends(get_current_user)):
         "id_usuario": current_user.id_usuario,
         "correo": current_user.correo,
         "nombre": current_user.nombre,
+        "apellido": current_user.apellido,
         "telefono": current_user.telefono,
+        "tipo_documento": current_user.tipo_documento,
+        "numero_documento": current_user.numero_documento,
+        "fecha_nacimiento": current_user.fecha_nacimiento.date() if current_user.fecha_nacimiento else None,
+        "foto_perfil": current_user.foto_perfil,
+        "estado_cuenta": current_user.estado_cuenta,
         "id_rol": current_user.id_rol,
         "rol": current_user.rol.nombre_rol if current_user.rol else None,
     }

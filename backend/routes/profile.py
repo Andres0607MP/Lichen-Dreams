@@ -1,3 +1,4 @@
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -15,6 +16,10 @@ class ProfileUpdate(BaseModel):
     apellido: Optional[str] = None
     correo: Optional[EmailStr] = None
     telefono: Optional[str] = None
+    tipo_documento: Optional[str] = None
+    numero_documento: Optional[str] = None
+    fecha_nacimiento: Optional[date] = None
+    foto_perfil: Optional[str] = None
 
 
 class ProfileResponse(BaseModel):
@@ -24,6 +29,10 @@ class ProfileResponse(BaseModel):
     apellido: Optional[str]
     correo: str
     telefono: Optional[str]
+    tipo_documento: Optional[str] = None
+    numero_documento: Optional[str] = None
+    fecha_nacimiento: Optional[str] = None
+    foto_perfil: Optional[str] = None
     fecha_registro: str
 
     class Config:
@@ -37,6 +46,10 @@ class ProfileResponse(BaseModel):
             apellido=usuario.apellido,
             correo=usuario.correo,
             telefono=usuario.telefono,
+            tipo_documento=usuario.tipo_documento,
+            numero_documento=usuario.numero_documento,
+            fecha_nacimiento=usuario.fecha_nacimiento.date().isoformat() if usuario.fecha_nacimiento else None,
+            foto_perfil=usuario.foto_perfil,
             fecha_registro=usuario.fecha_registro.isoformat() if usuario.fecha_registro else None
         )
 
@@ -78,6 +91,14 @@ def update_profile(
             current_user.correo = profile_update.correo
         if profile_update.telefono is not None:
             current_user.telefono = profile_update.telefono
+        if profile_update.tipo_documento is not None:
+            current_user.tipo_documento = profile_update.tipo_documento
+        if profile_update.numero_documento is not None:
+            current_user.numero_documento = profile_update.numero_documento
+        if profile_update.fecha_nacimiento is not None:
+            current_user.fecha_nacimiento = profile_update.fecha_nacimiento
+        if profile_update.foto_perfil is not None:
+            current_user.foto_perfil = profile_update.foto_perfil
 
         db.commit()
         db.refresh(current_user)

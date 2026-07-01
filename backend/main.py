@@ -1,12 +1,17 @@
+from routes.users import router as user_router
+from routes.modelos import router as modelos_router
+from routes.datasets import router as datasets_router
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
+from routes.auth import router as auth_router
+from routes.liquenpedia import router as liquen_router
 from config.database import engine
 from config.db import SessionLocal
 from models.base import Base
-from models.core import Role, Usuario
+from models.core import Role, Usuario, Analisis, ModeloIA, Dataset
 from auth.jwt_handler import create_access_token as create_token
 from auth.password_handler import hash_password
 from passlib.context import CryptContext
@@ -15,6 +20,7 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para análisis de líquenes")
+Base.metadata.create_all(bind=engine)
 
 # CORS: permitir peticiones desde el frontend en desarrollo (ajustar en producción)
 app.add_middleware(
@@ -33,13 +39,13 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 # Importar y registrar routers
 try:
     from routes.auth import router as auth_router
-    app.include_router(auth_router, prefix="/auth", tags=["Auth"])
+    app.include_router(auth_router, prefix="/auth")
 except ImportError as e:
     print(f"Warning: auth router not found - {e}")
 
 try:
     from routes.users import router as users_router
-    app.include_router(users_router, prefix="/users", tags=["Users"])
+    app.include_router(user_router, prefix="/api/users", tags=["users"])
 except ImportError as e:
     print(f"Warning: users router not found - {e}")
 
@@ -75,13 +81,13 @@ except ImportError as e:
 
 try:
     from routes.modelos import router as modelos_router
-    app.include_router(modelos_router, prefix="/modelos", tags=["Modelos"])
+    app.include_router(modelos_router, prefix="/modelos", tags=["modelos"])
 except ImportError as e:
     print(f"Warning: modelos router not found - {e}")
 
 try:
     from routes.datasets import router as datasets_router
-    app.include_router(datasets_router, prefix="/datasets", tags=["Datasets"])
+    app.include_router(datasets_router, prefix="/datasets", tags=["datasets"])
 except ImportError as e:
     print(f"Warning: datasets router not found - {e}")
 
@@ -115,6 +121,7 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 @app.on_event("startup")
 def startup():
     # Create missing tables and seed default roles/admin user.
+    db = None
     try:
         Base.metadata.create_all(bind=engine)
         db = SessionLocal()
@@ -134,20 +141,51 @@ def startup():
                 nombre='Admin',
                 apellido='Admin',
                 correo='admin@gmail.com',
-                contrasena=hash_password('admin'),
+                contrasena=hash_password('admin123'),
                 telefono=None,
                 estado_cuenta='active',
                 id_rol=admin_role.id_rol
             )
             db.add(admin_user)
+        else:
+            admin_user.contrasena = hash_password('admin123')
+
+        modelo = db.query(ModeloIA).filter(ModeloIA.id_modelo == 1).first()
+        if not modelo:
+            modelo = ModeloIA(nombre_modelo='modelo_demo', version='1.0', descripcion='Demo')
+            db.add(modelo)
+
+        dataset = db.query(Dataset).filter(Dataset.id_dataset == 1).first()
+        if not dataset:
+            dataset = Dataset(nombre_dataset='dataset_demo', ruta_archivo='/data/demo', tipo_datos='imagenes')
+            db.add(dataset)
+
+        db.commit()
+
+        if not db.query(Analisis).filter(Analisis.id_analisis == 1).first():
+            seed_analysis = Analisis(
+                id_analisis=1,
+                id_usuario=admin_user.id_usuario,
+                id_modelo=modelo.id_modelo,
+                id_dataset=dataset.id_dataset,
+                resultado_ia='liquen saludable',
+                porcentaje_confianza=0.93,
+                nivel_contaminacion='baja',
+                calidad_aire='moderada',
+                estado_liquen='completado',
+                tiempo_procesamiento=1.2,
+                observaciones='Buena calidad de aire en la zona',
+                estado_validacion='completed',
+                temperatura_ambiente=22.0,
+                humedad_relativa=65.5,
+            )
+            db.add(seed_analysis)
             db.commit()
     except Exception as e:
         print('Error inicializando la base de datos:', e)
     finally:
-        try:
+        if db:
             db.close()
-        except Exception:
-            pass
 
 @app.get("/")
 def root():
