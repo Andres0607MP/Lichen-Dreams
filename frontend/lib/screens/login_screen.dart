@@ -10,7 +10,8 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends State<LoginScreen>
+    with TickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
@@ -20,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
   late AnimationController _fadeController;
   late Animation<double> _slideAnimation;
   late Animation<double> _fadeAnimation;
-  
+
   // Variables de validación en tiempo real
   String? _emailError;
   String? _passwordError;
@@ -39,9 +40,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     _slideAnimation = Tween<double>(begin: 50, end: 0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeIn),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
     _animationController.forward();
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) _fadeController.forward();
@@ -90,7 +92,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       // Validar email
       if (_emailController.text.isEmpty) {
         _emailError = 'El correo es obligatorio';
-      } else if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(_emailController.text)) {
+      } else if (!RegExp(
+        r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+      ).hasMatch(_emailController.text)) {
         _emailError = 'Correo inválido';
       } else {
         _emailError = null;
@@ -121,27 +125,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
       body: Stack(
         children: [
           // Fondo blanco sólido
-          Container(
-            color: Colors.white,
-          ),
-          
+          Container(color: Colors.white),
+
           // Orbes decorativos verdes
-          Positioned(
-            top: -80,
-            left: -60,
-            child: _orb(300),
-          ),
-          Positioned(
-            bottom: -100,
-            right: -80,
-            child: _orb(250),
-          ),
-          Positioned(
-            top: 150,
-            right: -50,
-            child: _orb(180),
-          ),
-          
+          Positioned(top: -80, left: -60, child: _orb(300)),
+          Positioned(bottom: -100, right: -80, child: _orb(250)),
+          Positioned(top: 150, right: -50, child: _orb(180)),
+
           // Contenido principal
           SafeArea(
             child: Center(
@@ -150,13 +140,16 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: const Offset(0, 0.1),
-                      end: Offset.zero,
-                    ).animate(CurvedAnimation(
-                      parent: _animationController,
-                      curve: Curves.easeOut,
-                    )),
+                    position:
+                        Tween<Offset>(
+                          begin: const Offset(0, 0.1),
+                          end: Offset.zero,
+                        ).animate(
+                          CurvedAnimation(
+                            parent: _animationController,
+                            curve: Curves.easeOut,
+                          ),
+                        ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -187,10 +180,13 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                     ),
                                   ],
                                 ),
-                                child: const Icon(
-                                  Icons.eco_rounded,
-                                  size: 55,
-                                  color: Color(0xFF2F7D32),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    'assets/logo/logo.png',
+                                    width: 55,
+                                    height: 55,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
                               ),
                             );
@@ -298,7 +294,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                   child: Text(
                                     '¿Olvidaste tu contraseña?',
                                     style: TextStyle(
-                                      color: const Color(0xFF2F7D32).withOpacity(0.7),
+                                      color: const Color(
+                                        0xFF2F7D32,
+                                      ).withOpacity(0.7),
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -321,7 +319,9 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                                     ),
                                   ),
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                    ),
                                     child: Text(
                                       '¿Nuevo aquí?',
                                       style: TextStyle(
@@ -344,9 +344,15 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                               // Botón de registro
                               OutlinedButton.icon(
                                 onPressed: () {
-                                  Navigator.pushNamed(context, AppRoutes.register);
+                                  Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.register,
+                                  );
                                 },
-                                icon: const Icon(Icons.person_add_rounded, size: 20),
+                                icon: const Icon(
+                                  Icons.person_add_rounded,
+                                  size: 20,
+                                ),
                                 label: const Text('Crear una cuenta'),
                                 style: OutlinedButton.styleFrom(
                                   side: const BorderSide(
@@ -454,21 +460,27 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: errorText != null ? Colors.red.shade300 : const Color(0xFFE1E9DD),
+                  color: errorText != null
+                      ? Colors.red.shade300
+                      : const Color(0xFFE1E9DD),
                   width: 1.5,
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: errorText != null ? Colors.red.shade300 : const Color(0xFFE1E9DD),
+                  color: errorText != null
+                      ? Colors.red.shade300
+                      : const Color(0xFFE1E9DD),
                   width: 1.5,
                 ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
                 borderSide: BorderSide(
-                  color: errorText != null ? Colors.red.shade400 : const Color(0xFF2F7D32),
+                  color: errorText != null
+                      ? Colors.red.shade400
+                      : const Color(0xFF2F7D32),
                   width: 2.5,
                 ),
               ),
@@ -582,7 +594,11 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
                       ),
                     )
                   else
-                    const Icon(Icons.login_rounded, color: Colors.white, size: 22),
+                    const Icon(
+                      Icons.login_rounded,
+                      color: Colors.white,
+                      size: 22,
+                    ),
                   const SizedBox(width: 12),
                   Text(
                     _loading ? 'Conectando...' : 'Iniciar sesión',
@@ -604,4 +620,3 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
     );
   }
 }
-

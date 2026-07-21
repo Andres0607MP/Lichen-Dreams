@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
 import '../widgets/app_theme.dart';
@@ -17,12 +20,14 @@ class LiquenpediaFormScreen extends StatefulWidget {
 class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _imagePicker = ImagePicker();
 
   late TextEditingController _tituloController;
   late TextEditingController _contenidoController;
   late TextEditingController _autorController;
   late TextEditingController _categoriaController;
   late TextEditingController _imagenController;
+  File? _pickedImage;
 
   String _estadoPublicacion = 'borrador';
   bool _isLoading = false;
@@ -78,6 +83,48 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     _categoriaController.dispose();
     _imagenController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final pickedFile = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+      );
+      if (pickedFile == null) return;
+
+      setState(() {
+        _pickedImage = File(pickedFile.path);
+        _isLoading = true;
+      });
+
+      final uploadedUrl = await _apiService.uploadImage(_pickedImage!);
+      if (!mounted) return;
+
+      setState(() {
+        _imagenController.text = uploadedUrl;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Imagen subida correctamente'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al subir imagen: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _guardarArticulo() async {
@@ -277,16 +324,22 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
               TextFormField(
                 controller: _imagenController,
                 decoration: InputDecoration(
-                  labelText: 'URL de imagen',
+                  labelText: 'URL de imagen o subir desde el dispositivo',
                   hintText: 'https://ejemplo.com/imagen.jpg',
                   prefixIcon: const Icon(Icons.image_rounded),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.photo_library_rounded),
+                    tooltip: 'Seleccionar imagen desde el dispositivo',
+                    onPressed: _isLoading ? null : _pickAndUploadImage,
+                  ),
                   helperText: 'Imagen que represente el líquen (opcional)',
                 ),
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     if (!value.startsWith('http://') &&
-                        !value.startsWith('https://')) {
-                      return 'La URL debe comenzar con http:// o https://';
+                        !value.startsWith('https://') &&
+                        !value.startsWith('/uploads/')) {
+                      return 'La URL debe comenzar con http://, https:// o ser una imagen subida';
                     }
                   }
                   return null;

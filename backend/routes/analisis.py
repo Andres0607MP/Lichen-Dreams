@@ -73,11 +73,26 @@ async def upload_image(file: UploadFile = File(...)):
     Endpoint para subir una imagen de musgo/liquen
     - RF01: Usuario cargar imágenes
     """
+    extension = (file.filename or '').split('.')[-1].lower()
+    if extension not in ALLOWED_FORMATS:
+        raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="La imagen está vacía")
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="Imagen demasiado grande")
+
+    unique_name = f"{uuid.uuid4().hex}.{extension}"
+    destination = UPLOAD_DIR / unique_name
+    destination.write_bytes(content)
+
     return {
-        "file_id": "file_123",
+        "file_id": unique_name,
         "filename": file.filename,
-        "size": file.size,
+        "size": len(content),
         "upload_time": datetime.now(),
+        "url": f"/uploads/{unique_name}",
     }
 
 
@@ -87,6 +102,9 @@ async def detect_lichen(request: ProcessRequest):
     Endpoint para detectar si la imagen corresponde a un liquen
     - RF02: Sistema detectar organismo
     """
+    if not request.image_url:
+        raise HTTPException(status_code=422, detail="Debes enviar image_url")
+
     return {
         "image_url": request.image_url,
         "is_lichen": True,

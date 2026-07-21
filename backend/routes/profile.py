@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -40,6 +40,21 @@ class ProfileResponse(BaseModel):
 
     @staticmethod
     def from_usuario(usuario: Usuario):
+        fecha_nacimiento = None
+        fecha_registro = None
+
+        if usuario.fecha_nacimiento is not None:
+            try:
+                fecha_nacimiento = usuario.fecha_nacimiento.date().isoformat()
+            except Exception:
+                fecha_nacimiento = usuario.fecha_nacimiento.isoformat()
+
+        if usuario.fecha_registro is not None:
+            try:
+                fecha_registro = usuario.fecha_registro.isoformat()
+            except Exception:
+                fecha_registro = datetime.fromtimestamp(usuario.fecha_registro.timestamp()).isoformat()
+
         return ProfileResponse(
             id=usuario.id_usuario,
             nombre=usuario.nombre,
@@ -48,9 +63,9 @@ class ProfileResponse(BaseModel):
             telefono=usuario.telefono,
             tipo_documento=usuario.tipo_documento,
             numero_documento=usuario.numero_documento,
-            fecha_nacimiento=usuario.fecha_nacimiento.date().isoformat() if usuario.fecha_nacimiento else None,
+            fecha_nacimiento=fecha_nacimiento,
             foto_perfil=usuario.foto_perfil,
-            fecha_registro=usuario.fecha_registro.isoformat() if usuario.fecha_registro else None
+            fecha_registro=fecha_registro,
         )
 
 

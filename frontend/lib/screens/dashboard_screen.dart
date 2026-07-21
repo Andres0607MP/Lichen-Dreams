@@ -26,8 +26,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _connectionFuture = _apiService.testConnection();
-    _statsFuture = _apiService.getDashboardStats().then((json) => DashboardStats.fromJson(json));
+    _loadStats();
     _loadUserRole();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() {
+      _statsFuture = _apiService.getDashboardStats().then(
+        (json) => DashboardStats.fromJson(json),
+      );
+    });
   }
 
   Future<void> _loadUserRole() async {
@@ -57,11 +65,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: AppTheme.primaryGreen.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Center(
-              child: Icon(
-                Icons.eco_rounded,
-                color: AppTheme.primaryGreen,
-                size: 28,
+            child: Center(
+              child: Image.asset(
+                'assets/logo/logo.png',
+                width: 28,
+                height: 58,
+                fit: BoxFit.contain,
               ),
             ),
           ),
@@ -357,11 +366,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() {
-                      _statsFuture = _apiService
-                          .getDashboardStats()
-                          .then((json) => DashboardStats.fromJson(json));
-                    });
+                    _loadStats();
                   },
                   child: const Text('Reintentar'),
                 ),
@@ -475,16 +480,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _navigateToSection(int index) {
     switch (index) {
       case 1:
-        Navigator.pushNamed(context, AppRoutes.analisis);
+        Navigator.pushNamed(
+          context,
+          AppRoutes.analisis,
+        ).then((_) => _loadStats());
         break;
       case 2:
-        Navigator.pushNamed(context, AppRoutes.mapa);
+        Navigator.pushNamed(context, AppRoutes.mapa).then((_) => _loadStats());
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.historial);
+        Navigator.pushNamed(
+          context,
+          AppRoutes.historial,
+        ).then((_) => _loadStats());
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.perfil);
+        Navigator.pushNamed(
+          context,
+          AppRoutes.perfil,
+        ).then((_) => _loadStats());
         break;
     }
   }

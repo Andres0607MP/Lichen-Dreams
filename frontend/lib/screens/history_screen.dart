@@ -62,6 +62,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (shouldDelete == true) {
       try {
         await _apiService.deleteHistory(id);
+        if (!mounted) return;
         _retry();
       } catch (error) {
         if (!mounted) return;
@@ -81,16 +82,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Historial de análisis'),
-      ),
+      appBar: AppBar(title: const Text('Historial de análisis')),
       body: FutureBuilder<List<AnalysisRecord>>(
         future: _historyFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (snapshot.hasError) {
@@ -100,7 +97,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 72, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 72,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 16),
                     Text(
                       'Error al cargar el historial:\n${snapshot.error}',
@@ -108,7 +109,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 16),
-                    PrimaryButton(onPressed: _retry, child: const Text('Reintentar')),
+                    PrimaryButton(
+                      onPressed: _retry,
+                      child: const Text('Reintentar'),
+                    ),
                   ],
                 ),
               ),
@@ -123,7 +127,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  const Icon(Icons.history_edu_rounded, size: 82, color: Colors.green),
+                  const Icon(
+                    Icons.history_edu_rounded,
+                    size: 82,
+                    color: Colors.green,
+                  ),
                   const SizedBox(height: 16),
                   const Text(
                     'Aún no hay análisis guardados.',
@@ -137,7 +145,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   const SizedBox(height: 24),
                   PrimaryButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.analisis),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.analisis),
                     child: const Text('Realizar análisis'),
                   ),
                 ],
@@ -164,7 +173,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ),
                   child: Card(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -175,15 +186,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               Expanded(
                                 child: Text(
                                   record.title,
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
-                              const Icon(Icons.chevron_right_rounded, color: Colors.grey),
+                              const Icon(
+                                Icons.chevron_right_rounded,
+                                color: Colors.grey,
+                              ),
                             ],
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            record.summary.isNotEmpty ? record.summary : record.status,
+                            record.summary.isNotEmpty
+                                ? record.summary
+                                : record.status,
                             style: const TextStyle(color: Colors.black87),
                           ),
                           const SizedBox(height: 12),
@@ -195,7 +214,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               const Spacer(),
                               IconButton(
                                 onPressed: () => _deleteRecord(record.id),
-                                icon: const Icon(Icons.delete_outline, color: Colors.red),
+                                icon: const Icon(
+                                  Icons.delete_outline,
+                                  color: Colors.red,
+                                ),
                                 tooltip: 'Eliminar del historial',
                               ),
                             ],
