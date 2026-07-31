@@ -16,3 +16,10 @@ build/
 # Logs
 *.logbackend/test.db
 *.db
+
+# Kilo
+.kilo/
+
+# RepoMix
+.repomixignore
+repomix-output.xml

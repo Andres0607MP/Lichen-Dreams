@@ -1,7 +1,15 @@
+import 'dart:ui';
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
+import '../widgets/app_theme.dart';
+import '../widgets/page_transitions.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,37 +25,56 @@ class _LoginScreenState extends State<LoginScreen>
   bool _obscurePassword = true;
   final ApiService _api = ApiService();
   bool _loading = false;
-  late AnimationController _animationController;
-  late AnimationController _fadeController;
-  late Animation<double> _slideAnimation;
-  late Animation<double> _fadeAnimation;
 
-  // Variables de validación en tiempo real
   String? _emailError;
   String? _passwordError;
+
+  late AnimationController _fadeController;
+  late AnimationController _slideController;
+  late AnimationController _bgController;
+  late Animation<double> _bgScale;
+  late AnimationController _cardController;
+  late Animation<double> _cardScale;
+  late AnimationController _vectorController;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
+    _fadeController = AnimationController(
       duration: const Duration(milliseconds: 900),
       vsync: this,
     );
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+    _slideController = AnimationController(
+      duration: const Duration(milliseconds: 1100),
       vsync: this,
     );
-    _slideAnimation = Tween<double>(begin: 50, end: 0).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
-    );
-    _fadeAnimation = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeIn));
-    _animationController.forward();
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) _fadeController.forward();
+    _fadeController.forward();
+    Future.delayed(const Duration(milliseconds: 120), () {
+      if (mounted) _slideController.forward();
     });
+
+    _bgController = AnimationController(
+      duration: const Duration(milliseconds: 10000),
+      vsync: this,
+    );
+    _bgScale = Tween<double>(begin: 1.0, end: 1.40).animate(
+      CurvedAnimation(parent: _bgController, curve: Curves.easeInOutCubic),
+    );
+    _bgController.repeat(reverse: true);
+
+    _cardController = AnimationController(
+      duration: const Duration(milliseconds: 1300),
+      vsync: this,
+    );
+    _cardScale = Tween<double>(begin: 0.96, end: 1.0).animate(
+      CurvedAnimation(parent: _cardController, curve: Curves.easeOutBack),
+    );
+    _cardController.forward();
+
+    _vectorController = AnimationController(
+      duration: const Duration(seconds: 15),
+      vsync: this,
+    )..repeat();
   }
 
   @override
@@ -55,8 +82,11 @@ class _LoginScreenState extends State<LoginScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _api.dispose();
-    _animationController.dispose();
     _fadeController.dispose();
+    _slideController.dispose();
+    _bgController.dispose();
+    _cardController.dispose();
+    _vectorController.dispose();
     super.dispose();
   }
 
@@ -66,7 +96,7 @@ class _LoginScreenState extends State<LoginScreen>
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white),
+            const Icon(LucideIcons.triangleAlert, color: Colors.white),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -84,12 +114,8 @@ class _LoginScreenState extends State<LoginScreen>
     Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
   }
 
-  // ============= VALIDACIÓN CRUZADA GLOBAL EN TIEMPO REAL =============
-
-  /// Valida TODOS los campos cuando cualquiera cambia
   void _validateAllFields() {
     setState(() {
-      // Validar email
       if (_emailController.text.isEmpty) {
         _emailError = 'El correo es obligatorio';
       } else if (!RegExp(
@@ -100,7 +126,6 @@ class _LoginScreenState extends State<LoginScreen>
         _emailError = null;
       }
 
-      // Validar contraseña
       if (_passwordController.text.isEmpty) {
         _passwordError = 'La contraseña es obligatoria';
       } else if (_passwordController.text.length < 6) {
@@ -111,7 +136,6 @@ class _LoginScreenState extends State<LoginScreen>
     });
   }
 
-  /// Verificar si el formulario es válido
   bool get _isFormValid {
     return _emailController.text.isNotEmpty &&
         _passwordController.text.isNotEmpty &&
@@ -124,267 +148,219 @@ class _LoginScreenState extends State<LoginScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // Fondo blanco sólido
-          Container(color: Colors.white),
-
-          // Orbes decorativos verdes
-          Positioned(top: -80, left: -60, child: _orb(300)),
-          Positioned(bottom: -100, right: -80, child: _orb(250)),
-          Positioned(top: 150, right: -50, child: _orb(180)),
-
-          // Contenido principal
+          Positioned.fill(
+            child: ScaleTransition(
+              scale: _bgScale,
+              child: Image.asset(
+                'assets/background/liquen_003.png',
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          Container(color: AppTheme.darkGreen.withValues(alpha: 0.50)),
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: SlideTransition(
-                    position:
-                        Tween<Offset>(
-                          begin: const Offset(0, 0.1),
-                          end: Offset.zero,
-                        ).animate(
-                          CurvedAnimation(
-                            parent: _animationController,
-                            curve: Curves.easeOut,
-                          ),
-                        ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Logo animado
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: 1),
-                          duration: const Duration(milliseconds: 1200),
-                          curve: Curves.elasticOut,
-                          builder: (context, value, child) {
-                            return Transform.scale(
-                              scale: value,
-                              child: Container(
-                                width: 90,
-                                height: 90,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      Colors.white.withOpacity(0.4),
-                                      Colors.white.withOpacity(0.1),
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.white.withOpacity(0.2),
-                                      blurRadius: 25,
-                                      spreadRadius: 5,
-                                    ),
-                                  ],
-                                ),
-                                child: ClipOval(
-                                  child: Image.asset(
-                                    'assets/logo/logo.png',
-                                    width: 55,
-                                    height: 55,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 40),
-
-                        // Título con espaciado de letra animado
-                        TweenAnimationBuilder<double>(
-                          tween: Tween(begin: -10, end: 1.5),
-                          duration: const Duration(milliseconds: 1000),
-                          curve: Curves.easeOut,
-                          builder: (context, value, child) {
-                            return Text(
-                              'Lichen Dreams',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.w900,
-                                color: const Color(0xFF2F7D32),
-                                letterSpacing: value,
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.1),
-                                    offset: const Offset(0, 4),
-                                    blurRadius: 10,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Subtítulo
-                        Text(
-                          'Lee el aire, entiende tu entorno',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey.shade700,
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 56),
-
-                        // Tarjeta de formulario
-                        Container(
-                          padding: const EdgeInsets.all(32),
+                child: ScaleTransition(
+                  scale: _cardScale,
+                  child: FadeTransition(
+                    opacity: _fadeController,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.08),
+                        end: Offset.zero,
+                      ).animate(_slideController),
+                      child: BackdropFilter(
+                        filter: ImageFilter.blur(sigmaX: 1, sigmaY: 1),
+                        child: Container(
+                          padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(24),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 30,
-                                offset: const Offset(0, 15),
-                                spreadRadius: 2,
-                              ),
-                            ],
+                            color: const Color.fromARGB(
+                              255,
+                              255,
+                              255,
+                              255,
+                            ).withValues(alpha: 0.72),
+                            borderRadius: AppTheme.cardRadius,
+                            border: Border.all(
+                              color: const Color.fromARGB(
+                                255,
+                                69,
+                                150,
+                                96,
+                              ).withValues(alpha: 0.4),
+                              width: 1,
+                            ),
+                            boxShadow: const [AppTheme.baseShadow],
                           ),
-                          child: Column(
+                          child: Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              // Campo de correo
-                              _buildAnimatedTextField(
-                                index: 0,
-                                controller: _emailController,
-                                label: 'Correo electrónico',
-                                icon: Icons.email_rounded,
-                                keyboardType: TextInputType.emailAddress,
-                                onChanged: (_) => _validateAllFields(),
-                                errorText: _emailError,
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Campo de contraseña
-                              _buildAnimatedTextField(
-                                index: 1,
-                                controller: _passwordController,
-                                label: 'Contraseña',
-                                icon: Icons.lock_rounded,
-                                obscureText: _obscurePassword,
-                                onChanged: (_) => _validateAllFields(),
-                                errorText: _passwordError,
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword
-                                        ? Icons.visibility_off_rounded
-                                        : Icons.visibility_rounded,
-                                    color: const Color(0xFF2F7D32),
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _obscurePassword = !_obscurePassword;
-                                    });
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Enlace de contraseña olvidada
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () {},
-                                  child: Text(
-                                    '¿Olvidaste tu contraseña?',
-                                    style: TextStyle(
-                                      color: const Color(
-                                        0xFF2F7D32,
-                                      ).withOpacity(0.7),
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 28),
-
-                              // Botón de inicio de sesión
-                              _buildAnimatedLoginButton(),
-                              const SizedBox(height: 20),
-
-                              // Divisor
-                              Row(
+                              _LichensVectors(controller: _vectorController),
+                              Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Expanded(
-                                    child: Container(
-                                      height: 1,
-                                      color: Colors.grey.shade300,
+                                  _AnimatedLogo(),
+                                  const SizedBox(height: 20),
+                                  _AnimatedTitle(),
+                                  const SizedBox(height: 24),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 200),
+                                    child: _buildTextField(
+                                      controller: _emailController,
+                                      label: 'Correo electrónico',
+                                      icon: LucideIcons.mail,
+                                      keyboardType: TextInputType.emailAddress,
+                                      onChanged: (_) => _validateAllFields(),
+                                      errorText: _emailError,
                                     ),
                                   ),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                    ),
-                                    child: Text(
-                                      '¿Nuevo aquí?',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
+                                  const SizedBox(height: 16),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 280),
+                                    child: _buildTextField(
+                                      controller: _passwordController,
+                                      label: 'Contraseña',
+                                      icon: LucideIcons.lock,
+                                      obscureText: _obscurePassword,
+                                      onChanged: (_) => _validateAllFields(),
+                                      errorText: _passwordError,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? LucideIcons.eyeOff
+                                              : LucideIcons.eye,
+                                          color: AppTheme.primaryGreen,
+                                        ),
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscurePassword =
+                                                !_obscurePassword;
+                                          });
+                                        },
                                       ),
                                     ),
                                   ),
-                                  Expanded(
-                                    child: Container(
-                                      height: 1,
-                                      color: Colors.grey.shade300,
+                                  const SizedBox(height: 10),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 360),
+                                    child: Align(
+                                      alignment: Alignment.centerRight,
+                                      child: TextButton(
+                                        onPressed: () {},
+                                        child: Text(
+                                          '¿Olvidaste tu contraseña?',
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppTheme.primaryGreen
+                                                .withValues(alpha: 0.8),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 440),
+                                    child: _LoginButton(
+                                      loading: _loading,
+                                      enabled: _isFormValid,
+                                      onPressed: () async {
+                                        final email = _emailController.text
+                                            .trim();
+                                        final password =
+                                            _passwordController.text;
+
+                                        setState(() => _loading = true);
+                                        try {
+                                          await _api.login(email, password);
+                                          _goToDashboard();
+                                        } catch (error) {
+                                          final message = error is ApiException
+                                              ? error.message
+                                              : 'Error: ${error.toString()}';
+                                          _showErrorMessage(message);
+                                        } finally {
+                                          if (mounted)
+                                            setState(() => _loading = false);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 520),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            height: 1,
+                                            color: AppTheme.borderColor,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                          ),
+                                          child: Text(
+                                            '¿Nuevo aquí?',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: AppTheme.textGray,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Container(
+                                            height: 1,
+                                            color: AppTheme.borderColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 600),
+                                    child: OutlinedButton.icon(
+                                      onPressed: () {
+                                        Navigator.push(
+                                        context,
+                                        LichenDreamsPageRoute(page: const RegisterScreen()),
+                                      );
+                                      },
+                                      icon: const Icon(
+                                        LucideIcons.userPlus,
+                                        size: 20,
+                                      ),
+                                      label: const Text('Crear una cuenta'),
+                                      style: OutlinedButton.styleFrom(
+                                        backgroundColor: AppTheme.primaryGreen
+                                            .withValues(alpha: 0.32),
+                                        side: BorderSide(
+                                          color: AppTheme.primaryGreen,
+                                          width: 2,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: AppTheme.defaultRadius,
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 14,
+                                          horizontal: 24,
+                                        ),
+                                        foregroundColor: AppTheme.primaryGreen,
+                                      ),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 20),
-
-                              // Botón de registro
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.register,
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.person_add_rounded,
-                                  size: 20,
-                                ),
-                                label: const Text('Crear una cuenta'),
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(
-                                    color: Color(0xFF2F7D32),
-                                    width: 2,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 24,
-                                  ),
-                                  foregroundColor: const Color(0xFF2F7D32),
-                                ),
-                              ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 32),
-
-                        // Pie de página
-                        Text(
-                          '🌿 Protegiendo la biodiversidad 🌿',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),
@@ -396,33 +372,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  /// Widget privado que genera orbes decorativos verdes con gradient radial
-  Widget _orb(double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            const Color(0xFF2F7D32).withOpacity(0.15),
-            const Color(0xFF2F7D32).withOpacity(0.05),
-          ],
-          stops: const [0.0, 1.0],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF2F7D32).withOpacity(0.1),
-            blurRadius: 40,
-            spreadRadius: 10,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnimatedTextField({
-    required int index,
+  Widget _buildTextField({
     required TextEditingController controller,
     required String label,
     required IconData icon,
@@ -432,189 +382,639 @@ class _LoginScreenState extends State<LoginScreen>
     ValueChanged<String>? onChanged,
     String? errorText,
   }) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 600 + (index * 150)),
-      curve: Curves.easeOut,
-      builder: (context, value, child) {
-        return Opacity(
-          opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)),
-            child: child,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          obscureText: obscureText,
+          onChanged: onChanged,
+
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppTheme.textDark,
           ),
-        );
-      },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            obscureText: obscureText,
-            onChanged: onChanged,
-            decoration: InputDecoration(
-              labelText: label,
-              prefixIcon: Icon(icon, color: const Color(0xFF2F7D32)),
-              suffixIcon: suffixIcon,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(
-                  color: errorText != null
-                      ? Colors.red.shade300
-                      : const Color(0xFFE1E9DD),
-                  width: 1.5,
-                ),
+
+          decoration: InputDecoration(
+            labelText: label,
+
+            // Animación del label flotante más limpia
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+
+            floatingLabelStyle: GoogleFonts.poppins(
+              color: AppTheme.primaryGreen,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+
+            labelStyle: GoogleFonts.poppins(
+              color: AppTheme.textGray,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+
+            prefixIcon: Icon(icon, color: AppTheme.primaryGreen),
+
+            suffixIcon: suffixIcon,
+
+            border: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(
+                color: errorText != null
+                    ? Colors.red.shade300
+                    : AppTheme.borderColor,
+                width: 1.5,
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(
-                  color: errorText != null
-                      ? Colors.red.shade300
-                      : const Color(0xFFE1E9DD),
-                  width: 1.5,
-                ),
+            ),
+
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(
+                color: errorText != null
+                    ? Colors.red.shade300
+                    : AppTheme.borderColor,
+                width: 1.5,
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-                borderSide: BorderSide(
-                  color: errorText != null
-                      ? Colors.red.shade400
-                      : const Color(0xFF2F7D32),
-                  width: 2.5,
-                ),
+            ),
+
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(
+                color: errorText != null
+                    ? Colors.red.shade400
+                    : AppTheme.primaryGreen,
+                width: 2,
               ),
-              labelStyle: TextStyle(
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 18,
-                horizontal: 18,
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
+            ),
+
+            errorBorder: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+            ),
+
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(color: Colors.red.shade400, width: 2),
+            ),
+
+            filled: true,
+
+            // Menos opaco que AppTheme.surfaceColor
+            fillColor: Colors.white.withValues(alpha: 0.75),
+
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 16,
             ),
           ),
-          if (errorText != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, left: 16),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 16,
-                    color: Colors.red.shade500,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
+        ),
+
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 16),
+            child: Row(
+              children: [
+                Icon(
+                  LucideIcons.triangleAlert,
+                  size: 16,
+                  color: Colors.red.shade500,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
                     errorText,
-                    style: TextStyle(
+                    softWrap: true,
+                    style: GoogleFonts.poppins(
                       color: Colors.red.shade500,
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-        ],
+          ),
+      ],
+    );
+  }
+}
+
+class _LichensVectors extends StatelessWidget {
+  final AnimationController controller;
+  const _LichensVectors({Key? key, required this.controller}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: AnimatedBuilder(
+        animation: controller,
+        builder: (context, child) {
+          final progress = controller.value;
+          return CustomPaint(painter: _LichenVectorPainter(progress));
+        },
       ),
     );
   }
+}
 
-  Widget _buildAnimatedLoginButton() {
+class _LichenVectorPainter extends CustomPainter {
+  final double progress;
+  _LichenVectorPainter(this.progress);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final breathe = 1.0 + 0.03 * math.sin(progress * math.pi * 2);
+
+    // Foliose: talos grandes en esquinas
+    _drawFoliose(
+      canvas,
+      Offset(size.width * 0.10, size.height * 0.18),
+      72 * breathe,
+      54 * breathe,
+      0.0,
+    );
+    _drawFoliose(
+      canvas,
+      Offset(size.width * 0.90, size.height * 0.82),
+      58 * breathe,
+      44 * breathe,
+      2.2,
+    );
+    _drawFoliose(
+      canvas,
+      Offset(size.width * 0.08, size.height * 0.78),
+      34 * breathe,
+      26 * breathe,
+      4.8,
+    );
+    _drawFoliose(
+      canvas,
+      Offset(size.width * 0.92, size.height * 0.22),
+      30 * breathe,
+      22 * breathe,
+      1.4,
+    );
+    _drawFoliose(
+      canvas,
+      Offset(size.width * 0.78, size.height * 0.12),
+      18 * breathe,
+      13 * breathe,
+      5.7,
+    );
+    _drawFoliose(
+      canvas,
+      Offset(size.width * 0.22, size.height * 0.88),
+      22 * breathe,
+      16 * breathe,
+      3.1,
+    );
+
+    // Crustose: parches planos pequeños
+    _drawCrustose(
+      canvas,
+      Offset(size.width * 0.92, size.height * 0.10),
+      28 * breathe,
+      20 * breathe,
+      3.6,
+    );
+    _drawCrustose(
+      canvas,
+      Offset(size.width * 0.06, size.height * 0.14),
+      16 * breathe,
+      12 * breathe,
+      5.4,
+    );
+    _drawCrustose(
+      canvas,
+      Offset(size.width * 0.88, size.height * 0.90),
+      12 * breathe,
+      9 * breathe,
+      0.9,
+    );
+    _drawCrustose(
+      canvas,
+      Offset(size.width * 0.14, size.height * 0.90),
+      10 * breathe,
+      8 * breathe,
+      4.2,
+    );
+    _drawCrustose(
+      canvas,
+      Offset(size.width * 0.95, size.height * 0.38),
+      14 * breathe,
+      10 * breathe,
+      1.8,
+    );
+
+    // Fruticose: ramas finas
+    _drawFruticose(
+      canvas,
+      Offset(size.width * 0.12, size.height * 0.20),
+      Offset(size.width * 0.06, size.height * 0.08),
+      0.7,
+    );
+    _drawFruticose(
+      canvas,
+      Offset(size.width * 0.88, size.height * 0.80),
+      Offset(size.width * 0.94, size.height * 0.90),
+      2.6,
+    );
+    _drawFruticose(
+      canvas,
+      Offset(size.width * 0.08, size.height * 0.74),
+      Offset(size.width * 0.02, size.height * 0.82),
+      4.3,
+    );
+    _drawFruticose(
+      canvas,
+      Offset(size.width * 0.92, size.height * 0.18),
+      Offset(size.width * 0.97, size.height * 0.12),
+      5.9,
+    );
+    _drawFruticose(
+      canvas,
+      Offset(size.width * 0.18, size.height * 0.10),
+      Offset(size.width * 0.14, size.height * 0.04),
+      3.4,
+    );
+    _drawFruticose(
+      canvas,
+      Offset(size.width * 0.82, size.height * 0.92),
+      Offset(size.width * 0.86, size.height * 0.96),
+      6.7,
+    );
+
+    // Textura microscópica y puntos
+    _drawMicroTexture(canvas, size);
+    _drawApothecia(canvas, size);
+  }
+
+  void _drawFoliose(
+    Canvas canvas,
+    Offset center,
+    double w,
+    double h,
+    double phase,
+  ) {
+    final paint = Paint()
+      ..color = AppTheme.primaryGreen.withValues(alpha: 0.15)
+      ..style = PaintingStyle.fill;
+
+    final points = <Offset>[
+      Offset(center.dx - w * 0.48, center.dy - h * 0.22),
+      Offset(center.dx - w * 0.18, center.dy - h * 0.62),
+      Offset(center.dx + w * 0.18, center.dy - h * 0.58),
+      Offset(center.dx + w * 0.52, center.dy - h * 0.18),
+      Offset(center.dx + w * 0.44, center.dy + h * 0.18),
+      Offset(center.dx + w * 0.16, center.dy + h * 0.56),
+      Offset(center.dx - w * 0.22, center.dy + 0.48),
+      Offset(center.dx - w * 0.50, center.dy + h * 0.08),
+    ];
+
+    final path = _smoothClosedPath(points);
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawCrustose(
+    Canvas canvas,
+    Offset center,
+    double w,
+    double h,
+    double phase,
+  ) {
+    final paint = Paint()
+      ..color = AppTheme.primaryGreen.withValues(alpha: 0.08)
+      ..style = PaintingStyle.fill;
+
+    final points = <Offset>[
+      Offset(center.dx - w * 0.42, center.dy - h * 0.18),
+      Offset(center.dx - w * 0.08, center.dy - h * 0.48),
+      Offset(center.dx + w * 0.22, center.dy - h * 0.32),
+      Offset(center.dx + w * 0.44, center.dy - h * 0.04),
+      Offset(center.dx + w * 0.32, center.dy + h * 0.28),
+      Offset(center.dx + w * 0.04, center.dy + h * 0.42),
+      Offset(center.dx - w * 0.28, center.dy + h * 0.22),
+      Offset(center.dx - w * 0.44, center.dy - h * 0.06),
+    ];
+
+    final path = _smoothClosedPath(points);
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawFruticose(Canvas canvas, Offset from, Offset to, double phase) {
+    final paint = Paint()
+      ..color = AppTheme.primaryGreen.withValues(alpha: 0.07)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2
+      ..strokeCap = StrokeCap.round;
+
+    final mid = Offset(
+      (from.dx + to.dx) / 2 + 6 * math.sin(progress * 3 * math.pi + phase),
+      (from.dy + to.dy) / 2 + 6 * math.cos(progress * 3 * math.pi + phase),
+    );
+    canvas.drawPath(
+      Path()
+        ..moveTo(from.dx, from.dy)
+        ..quadraticBezierTo(mid.dx, mid.dy, to.dx, to.dy),
+      paint,
+    );
+  }
+
+  void _drawMicroTexture(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppTheme.primaryGreen.withValues(alpha: 0.06)
+      ..style = PaintingStyle.fill;
+
+    final microDots = <Offset>[
+      Offset(size.width * 0.12, size.height * 0.10),
+      Offset(size.width * 0.18, size.height * 0.14),
+      Offset(size.width * 0.88, size.height * 0.88),
+      Offset(size.width * 0.92, size.height * 0.84),
+      Offset(size.width * 0.10, size.height * 0.80),
+      Offset(size.width * 0.14, size.height * 0.84),
+      Offset(size.width * 0.90, size.height * 0.14),
+      Offset(size.width * 0.86, size.height * 0.18),
+      Offset(size.width * 0.50, size.height * 0.08),
+      Offset(size.width * 0.52, size.height * 0.12),
+      Offset(size.width * 0.48, size.height * 0.92),
+      Offset(size.width * 0.52, size.height * 0.88),
+    ];
+
+    for (final dot in microDots) {
+      canvas.drawCircle(dot, 1.2, paint);
+    }
+  }
+
+  void _drawApothecia(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppTheme.primaryGreen.withValues(alpha: 0.07)
+      ..style = PaintingStyle.fill;
+
+    final apothecia = <Offset>[
+      Offset(size.width * 0.16, size.height * 0.24),
+      Offset(size.width * 0.84, size.height * 0.78),
+      Offset(size.width * 0.20, size.height * 0.82),
+      Offset(size.width * 0.80, size.height * 0.16),
+      Offset(size.width * 0.50, size.height * 0.92),
+      Offset(size.width * 0.50, size.height * 0.06),
+    ];
+
+    for (var i = 0; i < apothecia.length; i++) {
+      final p = apothecia[i];
+      final pulse = 1.0 + 0.12 * math.sin(progress * 2 * math.pi + i * 1.1);
+      final radius = (1.4 + (i % 2) * 0.6) * pulse;
+      canvas.drawCircle(p, radius, paint);
+    }
+  }
+
+  Path _smoothClosedPath(List<Offset> points) {
+    if (points.length < 3) return Path();
+
+    final path = Path();
+    final mid01 = Offset(
+      (points.last.dx + points.first.dx) / 2,
+      (points.last.dy + points.first.dy) / 2,
+    );
+    path.moveTo(mid01.dx, mid01.dy);
+
+    for (var i = 0; i < points.length; i++) {
+      final current = points[i];
+      final next = points[(i + 1) % points.length];
+      final mid = Offset(
+        (current.dx + next.dx) / 2,
+        (current.dy + next.dy) / 2,
+      );
+      path.quadraticBezierTo(current.dx, current.dy, mid.dx, mid.dy);
+    }
+
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldRepaint(_LichenVectorPainter oldDelegate) => true;
+}
+
+class _AnimatedLogo extends StatefulWidget {
+  @override
+  State<_AnimatedLogo> createState() => _AnimatedLogoState();
+}
+
+class _AnimatedLogoState extends State<_AnimatedLogo>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+  late AnimationController _breatheController;
+  late Animation<double> _breatheScale;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _scale = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+
+    _controller.forward();
+
+    _breatheController = AnimationController(
+      duration: const Duration(milliseconds: 3000),
+      vsync: this,
+    );
+    _breatheScale = Tween<double>(begin: 1.0, end: 1.04).animate(
+      CurvedAnimation(parent: _breatheController, curve: Curves.easeInOutSine),
+    );
+    _breatheController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _breatheController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scale,
+      child: ScaleTransition(
+        scale: _breatheScale,
+        child: Container(
+          width: 95,
+          height: 95,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFFF2F0E6).withValues(alpha: 0.12),
+            border: Border.all(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+              width: 1.5,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Image.asset('assets/logo/logo.png', fit: BoxFit.contain),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AnimatedTitle extends StatelessWidget {
+  const _AnimatedTitle();
+
+  @override
+  Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 800),
-      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
           child: Transform.translate(
-            offset: Offset(0, 20 * (1 - value)),
+            offset: Offset(0, 14 * (1 - value)),
             child: child,
           ),
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2F7D32), Color(0xFF1B5E20)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF2F7D32).withOpacity(0.35),
-              blurRadius: 15,
-              offset: const Offset(0, 6),
-              spreadRadius: 1,
+      child: Column(
+        children: [
+          Text(
+            'Lichen Dreams',
+            style: GoogleFonts.poppins(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textDark,
             ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: _loading || !_isFormValid
-                ? null
-                : () async {
-                    final email = _emailController.text.trim();
-                    final password = _passwordController.text;
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Lee el aire, entiende tu entorno',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-                    setState(() => _loading = true);
-                    try {
-                      await _api.login(email, password);
-                      _goToDashboard();
-                    } catch (error) {
-                      final message = error is ApiException
-                          ? error.message
-                          : 'Error: ${error.toString()}';
-                      _showErrorMessage(message);
-                    } finally {
-                      if (mounted) setState(() => _loading = false);
-                    }
-                  },
-            borderRadius: BorderRadius.circular(12),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_loading)
-                    SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    )
-                  else
-                    const Icon(
-                      Icons.login_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  const SizedBox(width: 12),
-                  Text(
-                    _loading ? 'Conectando...' : 'Iniciar sesión',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: _isFormValid && !_loading
-                          ? Colors.white
-                          : Colors.white.withOpacity(0.7),
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+class _AnimatedField extends StatelessWidget {
+  final Duration delay;
+  final Widget child;
+
+  const _AnimatedField({required this.delay, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 18 * (1 - value)),
+            child: Transform.scale(scale: 0.98 + 0.02 * value, child: child),
           ),
+        );
+      },
+      child: child,
+    );
+  }
+}
+
+class _LoginButton extends StatefulWidget {
+  final bool loading;
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  const _LoginButton({
+    required this.loading,
+    required this.enabled,
+    required this.onPressed,
+  });
+
+  @override
+  State<_LoginButton> createState() => _LoginButtonState();
+}
+
+class _LoginButtonState extends State<_LoginButton>
+    with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 180),
+      vsync: this,
+    );
+    _scale = Tween<double>(
+      begin: 1,
+      end: 0.97,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) => _controller.reverse(),
+      onTapCancel: () => _controller.reverse(),
+      child: ScaleTransition(
+        scale: _scale,
+        child: ElevatedButton(
+          onPressed: widget.loading || !widget.enabled
+              ? null
+              : widget.onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.darkGreen,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+            shape: RoundedRectangleBorder(borderRadius: AppTheme.defaultRadius),
+            textStyle: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            elevation: 4,
+            shadowColor: AppTheme.primaryGreen.withValues(alpha: 0.55),
+          ),
+          child: widget.loading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white70),
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(LucideIcons.logIn, size: 20),
+                    SizedBox(width: 10),
+                    Text('Iniciar sesión'),
+                  ],
+                ),
         ),
       ),
     );
