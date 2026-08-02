@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'app_theme.dart';
 
-/// Card moderna con sombra y gradiente
 class ModernCard extends StatelessWidget {
   final Widget child;
   final Color? backgroundColor;
@@ -28,29 +26,25 @@ class ModernCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: gradient != null
-              ? LinearGradient(colors: gradient!, begin: Alignment.topLeft, end: Alignment.bottomRight)
-              : null,
+           gradient: () {
+              final g = gradient;
+              return g != null
+                  ? LinearGradient(colors: g, begin: Alignment.topLeft, end: Alignment.bottomRight)
+                  : null;
+            }(),
           color: gradient == null ? (backgroundColor ?? AppTheme.surfaceColor) : null,
-          borderRadius: borderRadius ?? BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: borderRadius ?? AppTheme.cardRadius,
+          boxShadow: const [AppTheme.baseShadow],
         ),
         child: Padding(
           padding: padding,
           child: child,
         ),
       ),
-    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0);
+    );
   }
 }
 
-/// Botón moderno con animación
 class ModernButton extends StatefulWidget {
   final String label;
   final VoidCallback onPressed;
@@ -90,6 +84,7 @@ class _ModernButtonState extends State<ModernButton> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = widget.color ?? AppTheme.primaryGreen;
     return SizedBox(
       width: widget.width,
       height: 56,
@@ -97,8 +92,8 @@ class _ModernButtonState extends State<ModernButton> with SingleTickerProviderSt
           ? OutlinedButton(
               onPressed: widget.isLoading ? null : widget.onPressed,
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: widget.color ?? AppTheme.primaryGreen, width: 2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                side: BorderSide(color: effectiveColor, width: 2),
+                shape: RoundedRectangleBorder(borderRadius: AppTheme.defaultRadius),
               ),
               child: widget.isLoading
                   ? const SizedBox(
@@ -111,16 +106,17 @@ class _ModernButtonState extends State<ModernButton> with SingleTickerProviderSt
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: widget.color ?? AppTheme.primaryGreen,
+                        color: effectiveColor,
                       ),
                     ),
             )
           : ElevatedButton(
               onPressed: widget.isLoading ? null : widget.onPressed,
               style: ElevatedButton.styleFrom(
-                backgroundColor: widget.color ?? AppTheme.primaryGreen,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                elevation: 4,
+                backgroundColor: effectiveColor,
+                shape: RoundedRectangleBorder(borderRadius: AppTheme.defaultRadius),
+                elevation: 0,
+                shadowColor: Colors.transparent,
               ),
               child: widget.isLoading
                   ? const SizedBox(
@@ -141,7 +137,6 @@ class _ModernButtonState extends State<ModernButton> with SingleTickerProviderSt
   }
 }
 
-/// Input field moderno
 class ModernTextField extends StatefulWidget {
   final String label;
   final String? hint;
@@ -204,26 +199,25 @@ class _ModernTextFieldState extends State<ModernTextField> {
         prefixIcon: widget.prefixIcon,
         suffixIcon: widget.suffixIcon,
         filled: true,
-        fillColor: _isFocused ? Colors.white : AppTheme.backgroundColor,
+        fillColor: _isFocused ? AppTheme.surfaceColor : AppTheme.backgroundColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppTheme.inputRadius,
           borderSide: const BorderSide(color: AppTheme.borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppTheme.inputRadius,
           borderSide: const BorderSide(color: AppTheme.borderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppTheme.inputRadius,
           borderSide: const BorderSide(color: AppTheme.primaryGreen, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       ),
-    ).animate().fadeIn(duration: 400.ms);
+    );
   }
 }
 
-/// Stats card para dashboard
 class StatsCard extends StatelessWidget {
   final String title;
   final String value;
@@ -243,7 +237,7 @@ class StatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ModernCard(
-      backgroundColor: backgroundColor.withOpacity(0.1),
+      backgroundColor: backgroundColor.withValues(alpha: 0.08),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -252,23 +246,23 @@ class StatsCard extends StatelessWidget {
               color: color,
               borderRadius: BorderRadius.circular(12),
             ),
-            padding: const EdgeInsets.all(12),
-            child: Icon(icon, color: Colors.white, size: 24),
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             title,
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               color: AppTheme.textGray,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             value,
             style: GoogleFonts.poppins(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -279,7 +273,6 @@ class StatsCard extends StatelessWidget {
   }
 }
 
-/// Feature card con descripción
 class FeatureCard extends StatelessWidget {
   final String title;
   final String description;
@@ -298,10 +291,11 @@ class FeatureCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveColor = color ?? AppTheme.primaryGreen;
     return ModernCard(
       gradient: [
-        (color ?? AppTheme.primaryGreen).withOpacity(0.1),
-        (color ?? AppTheme.primaryGreen).withOpacity(0.05),
+        effectiveColor.withOpacity(0.1),
+        effectiveColor.withOpacity(0.05),
       ],
       onTap: onTap,
       child: Row(
@@ -309,11 +303,11 @@ class FeatureCard extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: color ?? AppTheme.primaryGreen,
+              color: effectiveColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             padding: const EdgeInsets.all(12),
-            child: Icon(icon, color: Colors.white, size: 24),
+            child: Icon(icon, color: effectiveColor, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -350,7 +344,6 @@ class FeatureCard extends StatelessWidget {
   }
 }
 
-/// Section header moderno
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -365,6 +358,7 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sub = subtitle;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -379,10 +373,10 @@ class SectionHeader extends StatelessWidget {
                 color: AppTheme.textDark,
               ),
             ),
-            if (subtitle != null) ...[
+            if (sub != null) ...[
               const SizedBox(height: 4),
               Text(
-                subtitle!,
+                sub,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -409,7 +403,6 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
-/// Empty state moderno
 class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -428,6 +421,8 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final actionCb = onAction;
+    final actionLbl = actionLabel;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -463,11 +458,11 @@ class EmptyState extends StatelessWidget {
               color: AppTheme.textGray,
             ),
           ),
-          if (onAction != null && actionLabel != null) ...[
+          if (actionCb != null && actionLbl != null) ...[
             const SizedBox(height: 24),
             ModernButton(
-              label: actionLabel!,
-              onPressed: onAction!,
+              label: actionLbl,
+              onPressed: actionCb,
               width: 200,
             ),
           ],

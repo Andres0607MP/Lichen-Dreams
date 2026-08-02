@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -47,7 +48,9 @@ class ApiService {
 
     for (final uri in candidates) {
       try {
-        final response = await _client.get(uri).timeout(const Duration(seconds: 8));
+        final response = await _client
+            .get(uri)
+            .timeout(const Duration(seconds: 8));
 
         if (response.statusCode >= 200 && response.statusCode < 300) {
           final decoded = jsonDecode(response.body);
@@ -59,10 +62,12 @@ class ApiService {
           return 'Backend conectado correctamente';
         }
 
-        throw ApiException(_parseResponseMessage(
-          response,
-          'El backend respondió con código ${response.statusCode}',
-        ));
+        throw ApiException(
+          _parseResponseMessage(
+            response,
+            'El backend respondió con código ${response.statusCode}',
+          ),
+        );
       } on ApiException {
         rethrow;
       } catch (error) {
@@ -76,10 +81,12 @@ class ApiService {
   Future<Map<String, dynamic>> getJson(String path) async {
     final response = await _client.get(AppConfig.buildUri(path));
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al consumir $path',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al consumir $path',
+        ),
+      );
     }
 
     final decoded = jsonDecode(response.body);
@@ -107,10 +114,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al consumir $path',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al consumir $path',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -121,10 +130,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al consumir /admin/users',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al consumir /admin/users',
+        ),
+      );
     }
     return jsonDecode(response.body) as List<dynamic>;
   }
@@ -135,11 +146,75 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode != 204) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al eliminar usuario',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al eliminar usuario',
+        ),
+      );
     }
+  }
+
+  /// Subir imagen para LiquenPedia o perfil desde el dispositivo
+  Future<String> uploadImage(File imageFile, {String imageType = 'article'}) async {
+    final uri = AppConfig.buildUri('/imagenes/upload');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers.addAll(await _headers(authorized: true));
+    request.fields['imagen_tipo'] = imageType;
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'file',
+        imageFile.path,
+        filename: imageFile.path.split(Platform.pathSeparator).last,
+      ),
+    );
+
+    final streamedResponse = await _client.send(request);
+    final response = await http.Response.fromStream(streamedResponse);
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al subir imagen',
+        ),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      _normalizeImageUrl(decoded);
+      return decoded['url']?.toString() ??
+          decoded['data']?['url']?.toString() ??
+          '';
+    }
+
+    throw ApiException('Respuesta inesperada al subir imagen');
+  }
+
+  /// Descargar imagen privada (profiles/ o analyses/) con token de auth
+  Future<Uint8List> downloadPrivateImageBytes(String imagePath) async {
+    final normalized = imagePath.trim();
+    if (!normalized.startsWith('/uploads/')) {
+      throw ApiException('Path de imagen invalido: $imagePath');
+    }
+    final fileSubpath = normalized.substring('/uploads/'.length);
+    final uri = AppConfig.buildUri('/imagenes/file/$fileSubpath');
+
+    final response = await _client.get(
+      uri,
+      headers: await _headers(authorized: true),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al descargar imagen',
+        ),
+      );
+    }
+
+    return Uint8List.fromList(response.bodyBytes);
   }
 
   Future<Map<String, dynamic>> updateUser(
@@ -161,10 +236,12 @@ class ApiService {
       body: jsonEncode(payload),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al actualizar usuario',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al actualizar usuario',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -176,10 +253,7 @@ class ApiService {
           .post(
             AppConfig.buildUri('/auth/login'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'email': email,
-              'password': password,
-            }),
+            body: jsonEncode({'email': email, 'password': password}),
           )
           .timeout(const Duration(seconds: 10));
 
@@ -204,10 +278,12 @@ class ApiService {
         throw ApiException('Email o contraseña incorrectos');
       }
 
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error en autenticación: ${response.statusCode}',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error en autenticación: ${response.statusCode}',
+        ),
+      );
     } on http.ClientException catch (error) {
       throw ApiException('Error de conexión: ${error.message}');
     } on Exception catch (error) {
@@ -249,10 +325,12 @@ class ApiService {
         return jsonDecode(response.body) as Map<String, dynamic>;
       }
 
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error en registro: ${response.statusCode}',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error en registro: ${response.statusCode}',
+        ),
+      );
     } catch (error) {
       if (error is ApiException) rethrow;
       throw ApiException('Error al registrarse: ${error.toString()}');
@@ -321,10 +399,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener perfil',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener perfil',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -337,31 +417,38 @@ class ApiService {
       body: jsonEncode(data),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al actualizar perfil',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al actualizar perfil',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  
   Future<List<Map<String, dynamic>>> getLiquenpediaArticles() async {
     final response = await _client.get(
       AppConfig.buildUri('/liquenpedia'),
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener artículos',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener artículos',
+        ),
+      );
     }
     final data = jsonDecode(response.body);
     if (data is List) {
-      return List<Map<String, dynamic>>.from(
+      final list = List<Map<String, dynamic>>.from(
         data.map((item) => item as Map<String, dynamic>),
       );
+      for (final item in list) {
+        _normalizeImageUrl(item);
+      }
+      return list;
     }
     return <Map<String, dynamic>>[];
   }
@@ -373,12 +460,16 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener artículo',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener artículo',
+        ),
+      );
     }
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    _normalizeImageUrl(decoded);
+    return decoded;
   }
 
   /// Guardar un análisis en el historial del usuario autenticado
@@ -389,10 +480,12 @@ class ApiService {
       body: jsonEncode(payload),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al guardar historial',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al guardar historial',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -404,29 +497,70 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener historial',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener historial',
+        ),
+      );
     }
 
     final decoded = jsonDecode(response.body);
     if (decoded is List) {
-      return List<Map<String, dynamic>>.from(
+      final list = List<Map<String, dynamic>>.from(
         decoded.map((item) => item as Map<String, dynamic>),
       );
+      for (final item in list) {
+        _normalizeImageUrl(item);
+      }
+      return list;
     }
     if (decoded is Map<String, dynamic> && decoded['data'] is List) {
-      return List<Map<String, dynamic>>.from(
+      final list = List<Map<String, dynamic>>.from(
         (decoded['data'] as List).map((item) => item as Map<String, dynamic>),
       );
+      for (final item in list) {
+        _normalizeImageUrl(item);
+      }
+      return list;
     }
     if (decoded is Map<String, dynamic> && decoded['history'] is List) {
-      return List<Map<String, dynamic>>.from(
-        (decoded['history'] as List).map((item) => item as Map<String, dynamic>),
+      final list = List<Map<String, dynamic>>.from(
+        (decoded['history'] as List).map(
+          (item) => item as Map<String, dynamic>,
+        ),
       );
+      for (final item in list) {
+        _normalizeImageUrl(item);
+      }
+      return list;
     }
     throw ApiException('Respuesta inesperada del historial de análisis');
+  }
+
+  /// Obtener puntos ambientales para el mapa
+  Future<List<Map<String, dynamic>>> getMapPoints() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/api/maps/points'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener puntos del mapa',
+        ),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is List) {
+      final list = List<Map<String, dynamic>>.from(
+        decoded.map((item) => item as Map<String, dynamic>),
+      );
+      return list;
+    }
+    return <Map<String, dynamic>>[];
   }
 
   /// Eliminar un registro del historial
@@ -436,10 +570,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode != 204) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al eliminar historial',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al eliminar historial',
+        ),
+      );
     }
   }
 
@@ -450,10 +586,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener estadísticas del dashboard',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener estadísticas del dashboard',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -474,10 +612,12 @@ class ApiService {
     final streamedResponse = await _client.send(request);
     final response = await http.Response.fromStream(streamedResponse);
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al enviar imagen para análisis',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al enviar imagen para análisis',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -489,12 +629,51 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener resultado',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener resultado',
+        ),
+      );
     }
-    return jsonDecode(response.body) as Map<String, dynamic>;
+    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+    _normalizeImageUrl(decoded);
+    return decoded;
+  }
+
+  void _normalizeImageUrl(Map<String, dynamic> json) {
+    final candidates = [
+      'imagen_url',
+      'image_url',
+      'url_imagen',
+      'url',
+      'imagen_articulo',
+    ];
+    for (final key in candidates) {
+      if (json.containsKey(key) && json[key] is String) {
+        var val = (json[key] as String).trim();
+        if (val.isEmpty) continue;
+
+        // Absolute URL -> extract relative path (strip scheme + host).
+        // This ensures legacy DB records with full URLs (e.g. http://192.168.1.100:8000/uploads/x.jpg)
+        // are converted to relative paths (/uploads/x.jpg) so that
+        // AppConfig.getImageUrl() can build the URL using the current API_BASE_URL.
+        if (val.startsWith('http://') || val.startsWith('https://')) {
+          Uri? parsed;
+          try {
+            parsed = Uri.parse(val);
+          } catch (_) {
+            parsed = null;
+          }
+          if (parsed != null && parsed.path.isNotEmpty) {
+            final relativePath = parsed.path + (parsed.hasQuery ? '?${parsed.query}' : '');
+            json[key] = relativePath;
+          }
+        }
+        // Relative paths (starting with '/') are left unchanged so
+        // AppConfig.getImageUrl() can prepend the base URL at the UI layer.
+      }
+    }
   }
 
   /// Obtener el estado actual del análisis
@@ -504,10 +683,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener estado',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener estado',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -519,10 +700,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener humedad',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener humedad',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -534,10 +717,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener calidad del aire',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener calidad del aire',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -549,10 +734,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al obtener recomendación',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener recomendación',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -579,10 +766,12 @@ class ApiService {
       }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al crear artículo',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al crear artículo',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -602,7 +791,8 @@ class ApiService {
     if (contenido != null) payload['contenido'] = contenido;
     if (autor != null) payload['autor'] = autor;
     if (categoria != null) payload['categoria'] = categoria;
-    if (estadoPublicacion != null) payload['estado_publicacion'] = estadoPublicacion;
+    if (estadoPublicacion != null)
+      payload['estado_publicacion'] = estadoPublicacion;
     if (imagenArticulo != null) payload['imagen_articulo'] = imagenArticulo;
 
     final response = await _client.put(
@@ -611,10 +801,12 @@ class ApiService {
       body: jsonEncode(payload),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al actualizar artículo',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al actualizar artículo',
+        ),
+      );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -626,10 +818,12 @@ class ApiService {
       headers: await _headers(authorized: true),
     );
     if (response.statusCode != 204 && response.statusCode != 200) {
-      throw ApiException(_parseResponseMessage(
-        response,
-        'Error ${response.statusCode} al eliminar artículo',
-      ));
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al eliminar artículo',
+        ),
+      );
     }
   }
 
@@ -637,4 +831,3 @@ class ApiService {
     _client.close();
   }
 }
-

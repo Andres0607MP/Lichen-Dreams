@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'app_theme.dart';
 
 class BrandHeader extends StatelessWidget {
   final double size;
@@ -12,13 +13,13 @@ class BrandHeader extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-            color: const Color(0xFFE7F0E7),
+            color: AppTheme.primaryGreen.withOpacity(0.08),
             borderRadius: BorderRadius.circular(28),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.spa_rounded,
             size: 48,
-            color: Color(0xFF2F7D32),
+            color: AppTheme.primaryGreen,
           ),
         ),
         const SizedBox(height: 20),
@@ -28,9 +29,10 @@ class BrandHeader extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(height: 1.05),
         ),
         const SizedBox(height: 8),
-        const Text(
+        Text(
           'Lee el aire, entiende tu entorno',
           textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
     );
@@ -49,7 +51,7 @@ class PrimaryButton extends StatelessWidget {
       onPressed: onPressed,
       style: FilledButton.styleFrom(
         minimumSize: const Size.fromHeight(52),
-        backgroundColor: const Color(0xFF295E2B),
+        backgroundColor: AppTheme.darkGreen,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
       child: loading

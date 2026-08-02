@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/modern_widgets.dart';
 import 'liquenpedia_detail_screen.dart';
@@ -22,12 +23,14 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
   String _searchQuery = '';
   bool _isAdmin = false;
 
-  // Función para traducir estado de publicación
   String _translateEstado(String estado) {
     const mapping = {
       'published': 'Publicado',
       'draft': 'Borrador',
       'archived': 'Archivado',
+      'publicado': 'Publicado',
+      'borrador': 'Borrador',
+      'archivado': 'Archivado',
     };
     return mapping[estado] ?? estado;
   }
@@ -56,9 +59,10 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
     setState(() {
       _loadArticles();
     });
+    await _articlesFuture;
   }
 
-  void _deleteArticle(int id, String title) {
+  Future<void> _deleteArticle(int id, String title) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -77,7 +81,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Artículo eliminado')),
                 );
-                _refreshArticles();
+                await _refreshArticles();
               } catch (e) {
                 ScaffoldMessenger.of(
                   context,
@@ -114,7 +118,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               ),
             ),
             Text(
-              'Aprende sobre los líquenes',
+              'Biomonitores de la naturaleza',
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
@@ -131,7 +135,12 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               padding: const EdgeInsets.all(8.0),
               child: Container(
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.2),
+                      AppTheme.lightGreen.withValues(alpha: 0.1),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: IconButton(
@@ -148,7 +157,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                       ),
                     );
                     if (result == true) {
-                      _refreshArticles();
+                      await _refreshArticles();
                     }
                   },
                 ),
@@ -158,20 +167,28 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
       ),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header educativo
             _buildEducativeHeader().animate().fadeIn(duration: 500.ms),
             const SizedBox(height: 24),
-
-            // Búsqueda
             _buildSearchField(),
             const SizedBox(height: 20),
-
-            // Artículos
+            const Padding(
+              padding: EdgeInsets.only(left: 4),
+              child: Text(
+                'Artículos',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             _buildArticlesList(),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -181,17 +198,29 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
   Widget _buildEducativeHeader() {
     return ModernCard(
       gradient: [
-        AppTheme.primaryGreen.withOpacity(0.1),
-        AppTheme.lightGreen.withOpacity(0.05),
+        AppTheme.primaryGreen.withValues(alpha: 0.12),
+        AppTheme.lightGreen.withValues(alpha: 0.06),
+        AppTheme.backgroundColor.withValues(alpha: 0.5),
       ],
+      borderRadius: BorderRadius.circular(24),
+      padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           Container(
             decoration: BoxDecoration(
-              color: AppTheme.primaryGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryGreen.withValues(alpha: 0.2),
+                  AppTheme.lightGreen.withValues(alpha: 0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                width: 1,
+              ),
             ),
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(14),
             child: const Icon(
               Icons.eco_rounded,
               color: AppTheme.primaryGreen,
@@ -204,7 +233,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Biomonitores de la naturaleza',
+                  'Biomonitores naturales',
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
@@ -213,11 +242,12 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Los líquenes son excelentes indicadores de la calidad del aire',
+                  'Los líquenes revelan la calidad del aire que respiramos',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                     color: AppTheme.textGray,
+                    height: 1.4,
                   ),
                 ),
               ],
@@ -225,17 +255,17 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           ),
         ],
       ),
-    );
+    ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.96, 0.96), end: Offset.zero, duration: 500.ms);
   }
 
   Widget _buildSearchField() {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryGreen.withOpacity(0.1),
-            blurRadius: 12,
+            color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+            blurRadius: 16,
             offset: const Offset(0, 4),
           ),
         ],
@@ -244,19 +274,25 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
         controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Buscar especie, categoría...',
+          hintStyle: GoogleFonts.poppins(
+            color: AppTheme.textGray,
+            fontSize: 14,
+          ),
           prefixIcon: const Icon(
             Icons.search_rounded,
             color: AppTheme.primaryGreen,
+            size: 22,
           ),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
           ),
           filled: true,
           fillColor: AppTheme.surfaceColor,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
-                  icon: const Icon(Icons.clear_rounded),
+                  icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () {
                     _searchController.clear();
                     setState(() => _searchQuery = '');
@@ -276,10 +312,22 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
       future: _articlesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 48),
-              child: CircularProgressIndicator(color: AppTheme.primaryGreen),
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 48),
+            child: Column(
+              children: [
+                ...List.generate(3, (index) {
+                  return Container(
+                    height: 140,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceColor,
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: ShimmerEffect(),
+                  );
+                }),
+              ],
             ),
           );
         }
@@ -290,10 +338,18 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               padding: const EdgeInsets.symmetric(vertical: 48),
               child: Column(
                 children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: AppTheme.errorColor,
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: AppTheme.errorColor.withValues(alpha: 0.08),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.error_outline_rounded,
+                      size: 40,
+                      color: AppTheme.errorColor,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   Text(
@@ -301,12 +357,22 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
+                      color: AppTheme.textDark,
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
+                  const SizedBox(height: 8),
+                  Text(
+                    'Verifica tu conexión e intenta de nuevo',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppTheme.textGray,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ModernButton(
+                    label: 'Reintentar',
                     onPressed: _refreshArticles,
-                    child: const Text('Reintentar'),
+                    color: AppTheme.primaryGreen,
                   ),
                 ],
               ),
@@ -332,31 +398,46 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               padding: const EdgeInsets.symmetric(vertical: 48),
               child: Column(
                 children: [
-                  Icon(
-                    Icons.auto_awesome_motion_rounded,
-                    size: 80,
-                    color: AppTheme.primaryGreen.withOpacity(0.2),
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppTheme.primaryGreen.withValues(alpha: 0.1),
+                          AppTheme.lightGreen.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.search_rounded,
+                      size: 48,
+                      color: AppTheme.primaryGreen,
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   Text(
-                    'No hay artículos disponibles',
+                    _searchQuery.isNotEmpty
+                        ? 'Sin resultados'
+                        : 'No hay artículos',
                     style: GoogleFonts.poppins(
                       fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w700,
                       color: AppTheme.textDark,
                     ),
                   ),
-                  if (_searchQuery.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        'para: "$_searchQuery"',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: AppTheme.textGray,
-                        ),
-                      ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _searchQuery.isNotEmpty
+                        ? 'Intenta con otros términos de búsqueda'
+                        : 'Aún no hay contenido disponible',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: AppTheme.textGray,
                     ),
+                    textAlign: TextAlign.center,
+                  ),
                 ],
               ),
             ),
@@ -371,10 +452,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
             shrinkWrap: true,
             itemCount: articles.length,
             itemBuilder: (_, index) {
-              return _buildArticleCard(articles[index], index)
-                  .animate()
-                  .fadeIn(duration: 500.ms, delay: (index * 100).ms)
-                  .slideY(begin: 0.2, end: 0);
+              return _buildArticleCard(articles[index], index);
             },
           ),
         );
@@ -383,6 +461,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
   }
 
   Widget _buildArticleCard(LiquenpediaArticle article, int index) {
+    final imageUrl = article.imagenArticulo;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: ModernCard(
@@ -395,174 +474,218 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
             ),
           );
           if (result == true) {
-            _refreshArticles();
+            await _refreshArticles();
           }
         },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen
-            if (article.imagenArticulo != null &&
-                article.imagenArticulo!.isNotEmpty)
-              Container(
-                width: double.infinity,
-                height: 180,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  color: AppTheme.primaryGreen.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(24),
+        padding: const EdgeInsets.all(20),
+        gradient: [
+          AppTheme.surfaceColor,
+          AppTheme.primaryGreen.withValues(alpha: 0.02),
+        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+             if (imageUrl != null && imageUrl.isNotEmpty)
+               ClipRRect(
+                 borderRadius: BorderRadius.circular(16),
+                 child: Container(
+                   width: double.infinity,
+                   height: 180,
+                   margin: const EdgeInsets.only(bottom: 14),
+                   decoration: BoxDecoration(
+                     color: AppTheme.primaryGreen.withValues(alpha: 0.05),
+                   ),
+                   child: Image.network(
+                     AppConfig.getImageUrl(imageUrl),
+                     fit: BoxFit.cover,
+                     errorBuilder: (context, error, stackTrace) {
+                       print('[Image.network error] liquenpedia_screen: $imageUrl\n$error');
+                       return Container(
+                         decoration: BoxDecoration(
+                           gradient: LinearGradient(
+                             colors: [
+                               AppTheme.primaryGreen.withValues(alpha: 0.2),
+                               AppTheme.lightGreen.withValues(alpha: 0.1),
+                             ],
+                           ),
+                         ),
+                         child: Center(
+                           child: Icon(
+                             Icons.eco_rounded,
+                             size: 56,
+                             color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                           ),
+                         ),
+                       );
+                     },
+                   ),
+                 ),
+               )
+             else
+               Container(
+                 width: double.infinity,
+                 height: 140,
+                 margin: const EdgeInsets.only(bottom: 14),
+                 decoration: BoxDecoration(
+                   borderRadius: BorderRadius.circular(16),
+                   gradient: LinearGradient(
+                     begin: Alignment.topLeft,
+                     end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.18),
+                      AppTheme.lightGreen.withValues(alpha: 0.1),
+                      AppTheme.accentGreen.withValues(alpha: 0.06),
+                    ],
+                  ),
                 ),
-                child: Image.network(
-                  article.imagenArticulo!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Center(
-                    child: Icon(
-                      Icons.image_not_supported_rounded,
-                      color: AppTheme.primaryGreen.withOpacity(0.3),
-                      size: 48,
+                child: Stack(
+                  children: [
+                    Center(
+                      child: Icon(
+                        Icons.eco_rounded,
+                        size: 48,
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          article.categoria,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 4),
+            Text(
+              article.titulo,
+              style: GoogleFonts.poppins(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textDark,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryGreen.withValues(alpha: 0.15),
+                        AppTheme.primaryGreen.withValues(alpha: 0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    article.categoria,
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryGreen,
                     ),
                   ),
                 ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                height: 120,
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.primaryGreen.withOpacity(0.3),
-                      AppTheme.lightGreen.withOpacity(0.2),
-                    ],
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.warningColor.withValues(alpha: 0.15),
+                        AppTheme.warningColor.withValues(alpha: 0.08),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    _translateEstado(article.estadoPublicacion),
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.warningColor,
+                    ),
                   ),
                 ),
-                child: Center(
-                  child: Icon(
-                    Icons.eco_rounded,
-                    size: 64,
-                    color: AppTheme.primaryGreen.withOpacity(0.4),
-                  ),
-                ),
-              ),
-            // Contenido
+              ],
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
+                Icon(
+                  Icons.person_rounded,
+                  size: 14,
+                  color: AppTheme.textGray.withValues(alpha: 0.7),
+                ),
+                const SizedBox(width: 6),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        article.titulo,
-                        style: GoogleFonts.poppins(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryGreen.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              article.categoria,
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.primaryGreen,
-                              ),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              _translateEstado(article.estadoPublicacion),
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Por ${article.autor}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: AppTheme.textGray,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    article.autor,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.textGray,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 if (_isAdmin)
-                  Column(
+                  Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.edit_rounded,
-                            color: Colors.blue,
-                            size: 20,
-                          ),
-                          onPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => LiquenpediaFormScreen(
-                                  articleToEdit: article,
-                                ),
+                      _buildAdminIconButton(
+                        icon: Icons.edit_rounded,
+                        color: Colors.blue,
+                        onTap: () async {
+                          final result = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LiquenpediaFormScreen(
+                                articleToEdit: article,
                               ),
-                            );
-                            if (result == true) {
-                              _refreshArticles();
-                            }
-                          },
-                        ),
+                            ),
+                          );
+                          if (result == true) {
+                            await _refreshArticles();
+                          }
+                        },
                       ),
-                      const SizedBox(height: 4),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.delete_rounded,
-                            color: Colors.red,
-                            size: 20,
-                          ),
-                          onPressed: () =>
-                              _deleteArticle(article.id ?? 0, article.titulo),
-                        ),
+                      const SizedBox(width: 4),
+                      _buildAdminIconButton(
+                        icon: Icons.delete_rounded,
+                        color: Colors.red,
+                        onTap: () async =>
+                            await _deleteArticle(article.id ?? 0, article.titulo),
                       ),
                     ],
                   ),
@@ -571,6 +694,72 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAdminIconButton({
+    required IconData icon,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, color: color, size: 18),
+        ),
+      ),
+    );
+  }
+}
+
+class ShimmerEffect extends StatefulWidget {
+  const ShimmerEffect({super.key});
+
+  @override
+  State<ShimmerEffect> createState() => _ShimmerEffectState();
+}
+
+class _ShimmerEffectState extends State<ShimmerEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+    _controller.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.borderColor.withValues(alpha: 0.3 * _animation.value),
+            borderRadius: BorderRadius.circular(12),
+          ),
+        );
+      },
     );
   }
 }

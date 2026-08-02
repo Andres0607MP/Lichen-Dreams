@@ -3,13 +3,17 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
 import '../widgets/app_theme.dart';
+import '../widgets/lichen_scaffold.dart';
+import '../widgets/dashboard/lichen_carousel.dart';
+import '../widgets/dashboard/liquenpedia_carousel.dart';
 import '../models/dashboard_stats.dart';
 import '../widgets/modern_widgets.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
+import '../services/navigation_service.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -17,17 +21,25 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _apiService = ApiService();
-  late Future<String> _connectionFuture;
   late Future<DashboardStats> _statsFuture;
   String? _userRole;
+  String? _userName;
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    _connectionFuture = _apiService.testConnection();
-    _statsFuture = _apiService.getDashboardStats().then((json) => DashboardStats.fromJson(json));
+    _loadStats();
     _loadUserRole();
+    _loadUserName();
+  }
+
+  Future<void> _loadStats() async {
+    setState(() {
+      _statsFuture = _apiService.getDashboardStats().then(
+        (json) => DashboardStats.fromJson(json),
+      );
+    });
   }
 
   Future<void> _loadUserRole() async {
@@ -35,6 +47,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _userRole = role;
     });
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final profile = await _apiService.getProfile();
+      if (mounted) {
+        setState(() {
+          _userName = profile['nombre']?.toString();
+        });
+      }
+    } catch (_) {
+      // Silently fail — welcome header shows generic greeting
+    }
+  }
+
+  Widget _buildWelcomeHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryGreen.withValues(alpha: 0.06),
+            AppTheme.lightGreen.withValues(alpha: 0.03),
+          ],
+        ),
+        borderRadius: AppTheme.cardRadius,
+        border: Border.all(
+          color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.eco_rounded,
+              color: AppTheme.primaryGreen,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _userName != null
+                      ? 'Hola, $_userName'
+                      : 'Lichen Dreams',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Explora el estado del aire mediante los líquenes',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.textGray,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -45,298 +133,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Container(
-            decoration: BoxDecoration(
-              color: AppTheme.primaryGreen.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.eco_rounded,
-                color: AppTheme.primaryGreen,
-                size: 28,
-              ),
-            ),
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Lichen Dreams',
-              style: GoogleFonts.poppins(
-                fontSize: 22,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
-              ),
-            ),
-            Text(
-              'Lee el aire, entiende tu entorno',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          if (_userRole == 'admin')
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.eco_outlined, color: Colors.orange),
-                  tooltip: 'LichenPedia',
-                  onPressed: () =>
-                      Navigator.pushNamed(context, AppRoutes.liquenpedia),
-                ),
-              ),
-            ),
-          if (_userRole == 'admin')
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.admin_panel_settings_rounded,
-                    color: Colors.red,
-                  ),
-                  tooltip: 'Panel de administración',
-                  onPressed: () =>
-                      Navigator.pushNamed(context, AppRoutes.adminUsers),
-                ),
-              ),
-            ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.notifications_none_rounded,
-                  color: AppTheme.primaryGreen,
-                ),
-                onPressed: () {},
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.primaryGreen.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.logout_rounded,
-                  color: AppTheme.primaryGreen,
-                ),
-                onPressed: () async {
-                  await _apiService.clearAuth();
-                  if (!mounted) return;
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.login,
-                    (_) => false,
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Sección de bienvenida
-            _buildWelcomeSection(),
-            const SizedBox(height: 24),
-
-            // Estado de conexión
-            _buildConnectionStatus(),
-            const SizedBox(height: 24),
-
-            // Sección de estadísticas
-            _buildStatsSection(),
-            const SizedBox(height: 24),
-
-            // Acciones rápidas
-            SectionHeader(
-              title: 'Acciones rápidas',
-              subtitle: 'Comienza tu análisis',
-            ),
-            const SizedBox(height: 12),
-            _buildQuickActions(),
-            const SizedBox(height: 24),
-
-            // Características destacadas
-            SectionHeader(
-              title: 'Características',
-              subtitle: 'Explora todas las funciones',
-            ),
-            const SizedBox(height: 12),
-            _buildFeaturedFeatures(),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() => _selectedIndex = index);
-          _navigateToSection(index);
-        },
-        backgroundColor: AppTheme.surfaceColor,
-        elevation: 8,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.primaryGreen,
-        unselectedItemColor: AppTheme.textGray,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home_rounded),
-            label: 'Inicio',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.camera_alt_rounded),
-            label: 'Análisis',
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: 'Mapa'),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history_rounded),
-            label: 'Historial',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_rounded),
-            label: 'Perfil',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWelcomeSection() {
-    return ModernCard(
-      gradient: [AppTheme.primaryGreen, AppTheme.darkGreen],
-      padding: const EdgeInsets.all(20),
-      child: Column(
+    return LichenScaffold(
+      userRole: _userRole,
+      apiService: _apiService,
+      bottomNavIndex: _selectedIndex,
+      onBottomNavTap: (index) {
+        LichenNavigation.instance.navigateTo(index);
+        setState(() => _selectedIndex = index);
+        _navigateToSection(index);
+      },
+      showParticleBackground: true,
+      body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '¡Bienvenido!',
-            style: GoogleFonts.poppins(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Analiza líquenes y descubre la calidad del aire en tu entorno',
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-              color: Colors.white.withOpacity(0.9),
-            ),
-          ),
+          _buildWelcomeHeader().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
           const SizedBox(height: 16),
-          ModernButton(
-            label: 'Realizar análisis',
-            onPressed: () => Navigator.pushNamed(context, AppRoutes.analisis),
-            width: double.infinity,
-          ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 600.ms);
-  }
+          LichenCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 24),
 
-  Widget _buildConnectionStatus() {
-    return FutureBuilder<String>(
-      future: _connectionFuture,
-      builder: (context, snapshot) {
-        final isConnected =
-            snapshot.connectionState == ConnectionState.done &&
-            snapshot.hasData;
-        final statusColor = isConnected ? AppTheme.accentGreen : Colors.orange;
-
-        return ModernCard(
-          backgroundColor: statusColor.withOpacity(0.05),
-          child: Row(
+          // Lichenpedia Section
+          Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(12),
+                width: 3,
+                height: 20,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: statusColor.withOpacity(0.2),
-                ),
-                child: Icon(
-                  isConnected
-                      ? Icons.cloud_done_rounded
-                      : Icons.cloud_off_rounded,
-                  color: statusColor,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isConnected ? 'Conectado' : 'Reconectando...',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: statusColor,
-                      ),
-                    ),
-                    Text(
-                      snapshot.data ?? 'Esperando conexión...',
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w400,
-                        color: AppTheme.textGray,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-              if (!isConnected)
-                const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.orange),
+                  gradient: LinearGradient(
+                    colors: [AppTheme.primaryGreen, AppTheme.lightGreen],
                   ),
+                  borderRadius: BorderRadius.circular(2),
                 ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: SectionHeader(
+                  title: 'Lichenpedia',
+                  subtitle: 'Explora el conocimiento de los líquenes',
+                ),
+              ),
             ],
+          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 12),
+          LiquenpediaCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 24),
+
+          // Thin natural accent
+          Container(
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.borderColor.withValues(alpha: 0.2),
+                  AppTheme.borderColor.withValues(alpha: 0.05),
+                  AppTheme.borderColor.withValues(alpha: 0.2),
+                ],
+              ),
+            ),
           ),
-        );
-      },
+          const SizedBox(height: 24),
+
+          // Sección de estadísticas
+          _buildStatsSection().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 24),
+          _buildPrimaryAction().animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.96, 0.96), end: const Offset(1, 1), duration: 500.ms),
+          const SizedBox(height: 24),
+          SectionHeader(
+            title: 'Acciones rápidas',
+            subtitle: 'Comienza tu análisis',
+          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 12),
+          _buildQuickActions().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 24),
+          SectionHeader(
+            title: 'Características',
+            subtitle: 'Explora todas las funciones',
+          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 12),
+          _buildFeaturedFeatures().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
+          const SizedBox(height: 20),
+        ],
+      ),
     );
   }
 
@@ -357,11 +233,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 ElevatedButton(
                   onPressed: () {
-                    setState(() {
-                      _statsFuture = _apiService
-                          .getDashboardStats()
-                          .then((json) => DashboardStats.fromJson(json));
-                    });
+                    _loadStats();
                   },
                   child: const Text('Reintentar'),
                 ),
@@ -370,7 +242,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         }
 
-        final stats = snapshot.data!;
+        final stats = snapshot.data ?? DashboardStats(
+          analysisCount: 0,
+          zoneCount: 0,
+          airQuality: '---',
+        );
         return Column(
           children: [
             Row(
@@ -382,7 +258,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.analytics_rounded,
                     color: AppTheme.primaryGreen,
                     backgroundColor: AppTheme.primaryGreen,
-                  ),
+                  ).animate().fadeIn(duration: 400.ms),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -392,34 +268,72 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     icon: Icons.location_on_rounded,
                     color: AppTheme.accentGreen,
                     backgroundColor: AppTheme.accentGreen,
-                  ),
+                  ).animate().fadeIn(duration: 400.ms),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: StatsCard(
-                    title: 'Aire',
-                    value: stats.airQuality,
-                    icon: Icons.air_rounded,
-                    color: Colors.amber,
-                    backgroundColor: Colors.amber,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: StatsCard(
-                    title: 'Racha',
-                    value: stats.streakDays,
-                    icon: Icons.local_fire_department_rounded,
-                    color: Colors.orange,
-                    backgroundColor: Colors.orange,
-                  ),
-                ),
+            ModernCard(
+              gradient: [
+                AppTheme.primaryGreen.withValues(alpha: 0.12),
+                AppTheme.lightGreen.withValues(alpha: 0.06),
               ],
-            ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.air_rounded,
+                          color: AppTheme.primaryGreen,
+                          size: 28,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Calidad ambiental',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: AppTheme.textGray,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              stats.airQuality,
+                              style: GoogleFonts.poppins(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.primaryGreen,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Basado en el último análisis de líquenes',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w400,
+                      color: AppTheme.textGray,
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 500.ms),
           ],
         );
       },
@@ -452,6 +366,66 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildPrimaryAction() {
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, AppRoutes.analisis),
+      child: ModernCard(
+        gradient: [
+          AppTheme.primaryGreen.withValues(alpha: 0.15),
+          AppTheme.lightGreen.withValues(alpha: 0.08),
+        ],
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryGreen,
+                borderRadius: BorderRadius.circular(14),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.camera_alt_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Analizar liquen',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Identifica especies con IA',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.textGray,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.96, 0.96), duration: 600.ms),
+    );
+  }
+
   Widget _buildFeaturedFeatures() {
     return Column(
       children: [
@@ -467,7 +441,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           title: 'Mapa interactivo',
           description: 'Visualiza todas las zonas analizadas',
           icon: Icons.map_rounded,
-          color: Colors.teal,
+          color: AppTheme.accentGreen,
           onTap: () => Navigator.pushNamed(context, AppRoutes.mapa),
         ),
         const SizedBox(height: 12),
@@ -475,7 +449,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           title: 'Liquenpedia',
           description: 'Aprende sobre líquenes y el ambiente',
           icon: Icons.school_rounded,
-          color: Colors.purple,
+          color: AppTheme.lightGreen,
           onTap: () => Navigator.pushNamed(context, AppRoutes.liquenpedia),
         ),
       ],
@@ -485,16 +459,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void _navigateToSection(int index) {
     switch (index) {
       case 1:
-        Navigator.pushNamed(context, AppRoutes.analisis);
+        Navigator.pushNamed(
+          context,
+          AppRoutes.analisis,
+        ).then((_) => _loadStats());
         break;
       case 2:
-        Navigator.pushNamed(context, AppRoutes.mapa);
+        Navigator.pushNamed(context, AppRoutes.mapa).then((_) => _loadStats());
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.historial);
+        Navigator.pushNamed(
+          context,
+          AppRoutes.historial,
+        ).then((_) => _loadStats());
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.perfil);
+        Navigator.pushNamed(
+          context,
+          AppRoutes.perfil,
+        ).then((_) => _loadStats());
         break;
     }
   }

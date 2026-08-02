@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
-import '../widgets/modern_widgets.dart';
 import 'liquenpedia_form_screen.dart';
 
 class LiquenpediaDetailScreen extends StatelessWidget {
@@ -17,7 +17,6 @@ class LiquenpediaDetailScreen extends StatelessWidget {
     required this.isAdmin,
   });
 
-  // Función para traducir estado de publicación
   String _translateEstado(String estado) {
     const mapping = {
       'published': 'Publicado',
@@ -67,18 +66,26 @@ class LiquenpediaDetailScreen extends StatelessWidget {
       backgroundColor: AppTheme.backgroundColor,
       body: CustomScrollView(
         slivers: [
-          // AppBar con imagen de fondo
           SliverAppBar(
-            expandedHeight: 280,
+            expandedHeight: 340,
             pinned: true,
-            backgroundColor: AppTheme.primaryGreen,
+            backgroundColor: AppTheme.darkGreen,
+            scrolledUnderElevation: 4,
+            shadowColor: AppTheme.primaryGreen.withValues(alpha: 0.15),
             elevation: 0,
             leading: Padding(
               padding: const EdgeInsets.all(8),
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(12),
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: IconButton(
                   icon: const Icon(
@@ -95,8 +102,11 @@ class LiquenpediaDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(8.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.edit_rounded, color: Colors.white),
@@ -120,8 +130,11 @@ class LiquenpediaDetailScreen extends StatelessWidget {
                   padding: const EdgeInsets.all(8.0),
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.white.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                      ),
                     ),
                     child: IconButton(
                       icon: const Icon(
@@ -134,45 +147,62 @@ class LiquenpediaDetailScreen extends StatelessWidget {
                 ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                children: [
-                  // Imagen o gradiente
-                  if (article.imagenArticulo != null &&
-                      article.imagenArticulo!.isNotEmpty)
-                    Image.network(
-                      article.imagenArticulo!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppTheme.primaryGreen,
-                        child: const Icon(
-                          Icons.image_not_supported_rounded,
-                          size: 80,
-                          color: Colors.white,
-                        ),
-                      ),
-                    )
-                  else
-                    Container(
-                      color: AppTheme.primaryGreen,
-                      child: const Center(
-                        child: Icon(
-                          Icons.eco_rounded,
-                          size: 120,
-                          color: Colors.white30,
-                        ),
-                      ),
-                    ),
-                  // Gradiente oscuro
-                  Container(
+             background: Stack(
+                 children: [
+                   Builder(
+                     builder: (context) {
+                       final imageUrl = article.imagenArticulo;
+                       if (imageUrl != null && imageUrl.isNotEmpty) {
+                         return Image.network(
+                           AppConfig.getImageUrl(imageUrl),
+                           fit: BoxFit.cover,
+                           width: double.infinity,
+                           height: double.infinity,
+                           errorBuilder: (context, error, stackTrace) {
+                             print('[Image.network error] liquenpedia_detail_screen: $imageUrl\n$error');
+                             return _buildFallBackCover();
+                           },
+                         );
+                       }
+                       return _buildFallBackCover();
+                     },
+                   ),
+                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          AppTheme.primaryGreen.withOpacity(0.7),
-                          AppTheme.primaryGreen,
+                          Colors.transparent,
+                          AppTheme.darkGreen.withValues(alpha: 0.6),
+                          AppTheme.darkGreen.withValues(alpha: 0.95),
                         ],
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 16,
+                    left: 16,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Text(
+                        article.categoria,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -180,164 +210,64 @@ class LiquenpediaDetailScreen extends StatelessWidget {
               ),
             ),
           ),
-          // Contenido
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Título y badges
-                  Text(
-                    article.titulo,
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      color: AppTheme.textDark,
-                    ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppTheme.surfaceColor,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                        blurRadius: 16,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // Badges
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryGreen.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: AppTheme.primaryGreen.withOpacity(0.5),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.category_rounded,
-                              size: 16,
-                              color: AppTheme.primaryGreen,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              article.categoria,
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.primaryGreen,
-                              ),
-                            ),
-                          ],
+                      Text(
+                        article.titulo,
+                        style: GoogleFonts.poppins(
+                          fontSize: 26,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textDark,
+                          height: 1.3,
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.orange.withOpacity(0.5),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildBadge(
+                            icon: Icons.category_rounded,
+                            label: article.categoria,
+                            color: AppTheme.primaryGreen,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.publish_rounded,
-                              size: 16,
-                              color: Colors.orange,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _translateEstado(article.estadoPublicacion),
-                              style: GoogleFonts.poppins(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Información del artículo
-                  ModernCard(
-                    gradient: [
-                      AppTheme.primaryGreen.withOpacity(0.08),
-                      AppTheme.lightGreen.withOpacity(0.04),
-                    ],
-                    child: Column(
-                      children: [
-                        _buildInfoTile(
-                          icon: Icons.person_rounded,
-                          label: 'Autor',
-                          value: article.autor,
-                        ),
-                        const Divider(height: 16),
-                        if (article.fechaPublicacion != null)
-                          _buildInfoTile(
-                            icon: Icons.calendar_today_rounded,
-                            label: 'Publicado',
-                            value: _formatDate(article.fechaPublicacion!),
-                          ),
-                        if (article.fechaActualizacion != null) ...[
-                          const Divider(height: 16),
-                          _buildInfoTile(
-                            icon: Icons.update_rounded,
-                            label: 'Actualizado',
-                            value: _formatDate(article.fechaActualizacion!),
+                          _buildBadge(
+                            icon: Icons.publish_rounded,
+                            label: _translateEstado(article.estadoPublicacion),
+                            color: AppTheme.warningColor,
                           ),
                         ],
-                      ],
-                    ),
-                  ).animate().fadeIn(duration: 600.ms),
-                  const SizedBox(height: 32),
-
-                  // Contenido educativo
-                  Text(
-                    'Contenido Educativo',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: AppTheme.borderColor,
-                        width: 1.5,
                       ),
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.white,
-                    ),
-                    child: Text(
-                      article.contenido,
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        height: 1.8,
-                        color: AppTheme.textGray,
-                      ),
-                      textAlign: TextAlign.justify,
-                    ),
+                      const SizedBox(height: 20),
+                      _buildAuthorBlock(),
+                    ],
                   ),
-                  const SizedBox(height: 32),
-                ],
-              ),
+                ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
+                const SizedBox(height: 8),
+                _buildInfoSection(),
+                const SizedBox(height: 16),
+                _buildContentSection(),
+                const SizedBox(height: 32),
+              ],
             ),
           ),
         ],
@@ -345,20 +275,217 @@ class LiquenpediaDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoTile({
+  Widget _buildFallBackCover() {
+    return Container(
+      color: AppTheme.primaryGreen,
+      child: const Center(
+        child: Icon(
+          Icons.eco_rounded,
+          size: 100,
+          color: Colors.white30,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.08),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: color.withValues(alpha: 0.4),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAuthorBlock() {
+    return Row(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.primaryGreen.withValues(alpha: 0.2),
+                AppTheme.lightGreen.withValues(alpha: 0.1),
+              ],
+            ),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+              width: 1.5,
+            ),
+          ),
+          padding: const EdgeInsets.all(10),
+          child: const Icon(
+            Icons.person_rounded,
+            color: AppTheme.primaryGreen,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Autor',
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textGray,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                article.autor,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Builder(
+          builder: (context) {
+            final fecha = article.fechaPublicacion;
+            if (fecha == null) {
+              return const SizedBox.shrink();
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Publicado',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textGray,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(fecha),
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        ],
+      );
+    }
+
+  Widget _buildInfoSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.primaryGreen.withValues(alpha: 0.04),
+            AppTheme.lightGreen.withValues(alpha: 0.02),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.borderColor.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Información de la especie',
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textDark,
+            ),
+          ),
+          const SizedBox(height: 14),
+          _buildInfoRow(
+            icon: Icons.bug_report_rounded,
+            label: 'Especie',
+            value: article.categoria,
+            color: AppTheme.primaryGreen,
+          ),
+          const SizedBox(height: 10),
+          _buildInfoRow(
+            icon: Icons.air_rounded,
+            label: 'Aire',
+            value: 'Bioindicador de calidad del aire',
+            color: AppTheme.lightGreen,
+          ),
+          const SizedBox(height: 10),
+          _buildInfoRow(
+            icon: Icons.wb_sunny_rounded,
+            label: 'Ambiente',
+            value: 'Natural',
+            color: AppTheme.accentGreen,
+          ),
+          const SizedBox(height: 10),
+          _buildInfoRow(
+            icon: Icons.search_rounded,
+            label: 'Investigación',
+            value: 'Exploración científica',
+            color: AppTheme.darkGreen,
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 600.ms);
+  }
+
+  Widget _buildInfoRow({
     required IconData icon,
     required String label,
     required String value,
+    required Color color,
   }) {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          width: 32,
+          height: 32,
           decoration: BoxDecoration(
-            color: AppTheme.primaryGreen.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 20, color: AppTheme.primaryGreen),
+          child: Icon(icon, size: 16, color: color),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -368,16 +495,16 @@ class LiquenpediaDetailScreen extends StatelessWidget {
               Text(
                 label,
                 style: GoogleFonts.poppins(
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textGray,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 value,
                 style: GoogleFonts.poppins(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: AppTheme.textDark,
                 ),
@@ -389,7 +516,84 @@ class LiquenpediaDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildContentSection() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.15),
+                      AppTheme.lightGreen.withValues(alpha: 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.description_rounded,
+                  size: 20,
+                  color: AppTheme.primaryGreen,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'Contenido Educativo',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            article.contenido,
+            style: GoogleFonts.poppins(
+              fontSize: 14.5,
+              height: 1.7,
+              color: AppTheme.textGray,
+            ),
+            textAlign: TextAlign.justify,
+          ),
+        ],
+      ),
+    ).animate().fadeIn(duration: 700.ms);
+  }
+
   String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    final months = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    return '${date.day} de ${months[date.month - 1]} de ${date.year}';
   }
 }

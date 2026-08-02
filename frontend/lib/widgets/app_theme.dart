@@ -2,18 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color primaryGreen = Color(0xFF2F7D32);
-  static const Color darkGreen = Color(0xFF1E5F27);
-  static const Color lightGreen = Color(0xFF66BB6A);
-  static const Color accentGreen = Color(0xFF81C784);
-  static const Color backgroundColor = Color(0xFFF7F8F3);
+  static const Color primaryGreen = Color(0xFF4F7A45);
+  static const Color darkGreen = Color(0xFF1F3D2B);
+  static const Color lightGreen = Color(0xFF6FA05A);
+  static const Color accentGreen = Color(0xFF8FA878);
+  static const Color backgroundColor = Color(0xFFF2F0E6);
   static const Color surfaceColor = Color(0xFFFFFFFF);
-  static const Color textDark = Color(0xFF1E1E1E);
+  static const Color textDark = Color(0xFF3A3F3C);
   static const Color textGray = Color(0xFF5A665D);
-  static const Color borderColor = Color(0xFFD9E1D6);
+  static const Color borderColor = Color(0xFFC5D0B5);
   static const Color errorColor = Color(0xFFD32F2F);
   static const Color successColor = Color(0xFF388E3C);
   static const Color warningColor = Color(0xFFF57C00);
+  static const Color alertColor = Color(0xFFC25E3F);
+  static const Color healthyColor = Color(0xFF4F7A45);
+
+  static const BoxShadow baseShadow = BoxShadow(
+    color: Color(0x0A000000),
+    blurRadius: 8,
+    offset: Offset(0, 2),
+  );
+
+  static const BorderRadius defaultRadius = BorderRadius.all(Radius.circular(12));
+  static const BorderRadius inputRadius = BorderRadius.all(Radius.circular(14));
+  static const BorderRadius cardRadius = BorderRadius.all(Radius.circular(16));
 
   static ThemeData lightTheme() {
     return ThemeData(
@@ -37,7 +49,7 @@ class AppTheme {
       textTheme: TextTheme(
         headlineLarge: GoogleFonts.poppins(
           fontSize: 32,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           color: textDark,
         ),
         headlineMedium: GoogleFonts.poppins(
@@ -75,15 +87,15 @@ class AppTheme {
         filled: true,
         fillColor: surfaceColor,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: inputRadius,
           borderSide: const BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: inputRadius,
           borderSide: const BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: inputRadius,
           borderSide: const BorderSide(color: primaryGreen, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
@@ -101,12 +113,13 @@ class AppTheme {
           backgroundColor: primaryGreen,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: defaultRadius),
           textStyle: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
-          elevation: 4,
+          elevation: 0,
+          shadowColor: Colors.transparent,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -114,7 +127,7 @@ class AppTheme {
           foregroundColor: primaryGreen,
           side: const BorderSide(color: primaryGreen, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: defaultRadius),
           textStyle: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -123,8 +136,8 @@ class AppTheme {
       ),
       cardTheme: CardThemeData(
         color: surfaceColor,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: cardRadius),
         margin: const EdgeInsets.all(0),
       ),
     );

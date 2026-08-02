@@ -6,6 +6,7 @@ import '../screens/register_screen.dart';
 import '../screens/analysis_screen.dart';
 import '../screens/history_screen.dart';
 import '../screens/map_screen.dart';
+import '../screens/map_explorer_screen.dart';
 import '../screens/liquenpedia_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/admin_users_screen.dart';
@@ -20,6 +21,7 @@ class AppRouter {
     AppRoutes.analisis: (_) => const AnalysisScreen(),
     AppRoutes.historial: (_) => const HistoryScreen(),
     AppRoutes.mapa: (_) => const MapScreen(),
+    AppRoutes.mapExplorer: (_) => const MapExplorerScreen(),
     AppRoutes.perfil: (_) => const ProfileScreen(),
     AppRoutes.liquenpedia: (_) => const LiquenpediaScreen(),
   };

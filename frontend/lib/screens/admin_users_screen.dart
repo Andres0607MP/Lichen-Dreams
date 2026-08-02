@@ -33,6 +33,12 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     _usersFuture = _apiService.getUsers();
   }
 
+  int _parseUserId(dynamic rawId) {
+    if (rawId is int) return rawId;
+    if (rawId is String) return int.tryParse(rawId) ?? 0;
+    return 0;
+  }
+
   Future<void> _refreshUsers() async {
     setState(() {
       _loadUsers();
@@ -45,7 +51,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       SnackBar(
         content: Row(
           children: [
-            Icon(success ? Icons.check_circle_outline : Icons.error_outline, color: Colors.white),
+            Icon(
+              success ? Icons.check_circle_outline : Icons.error_outline,
+              color: Colors.white,
+            ),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
@@ -64,7 +73,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _showMessage('Usuario eliminado correctamente.');
       _refreshUsers();
     } catch (error) {
-      _showMessage(error is ApiException ? error.message : 'Error al eliminar usuario.', success: false);
+      _showMessage(
+        error is ApiException ? error.message : 'Error al eliminar usuario.',
+        success: false,
+      );
     }
   }
 
@@ -74,7 +86,10 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
       _showMessage('Estado de usuario actualizado.');
       _refreshUsers();
     } catch (error) {
-      _showMessage(error is ApiException ? error.message : 'Error al actualizar usuario.', success: false);
+      _showMessage(
+        error is ApiException ? error.message : 'Error al actualizar usuario.',
+        success: false,
+      );
     }
   }
 
@@ -187,9 +202,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 future: _usersFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
+                    return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
                     return Center(
@@ -209,7 +222,8 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                       child: EmptyState(
                         icon: Icons.people_outline,
                         title: 'Sin usuarios',
-                        description: 'No hay usuarios registrados en el sistema',
+                        description:
+                            'No hay usuarios registrados en el sistema',
                       ),
                     );
                   }
@@ -217,28 +231,40 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                   return RefreshIndicator(
                     onRefresh: _refreshUsers,
                     child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       physics: const AlwaysScrollableScrollPhysics(),
                       separatorBuilder: (_, __) => const SizedBox(height: 12),
                       itemCount: users.length,
                       itemBuilder: (context, index) {
                         final user = users[index] as Map<String, dynamic>;
-                        final active = user['active'] as bool? ?? false;
-                        final userName = user['name']?.toString() ?? 'Sin nombre';
-                        final userEmail = user['email']?.toString() ?? 'Sin correo';
-                        final userId = user['id'] as int;
+                        final estado =
+                            user['estado_cuenta']?.toString().toLowerCase() ??
+                            '';
+                        final active = estado == 'activo' || estado == 'active';
+                        final userName =
+                            user['nombre']?.toString() ?? 'Sin nombre';
+                        final userEmail =
+                            user['correo']?.toString() ?? 'Sin correo';
+                        final userId = _parseUserId(
+                          user['id_usuario'] ?? user['id'],
+                        );
 
                         return ModernCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           userName,
@@ -274,9 +300,14 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: active ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                                      color: active
+                                          ? Colors.green.withOpacity(0.1)
+                                          : Colors.orange.withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
@@ -284,7 +315,9 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                       style: GoogleFonts.poppins(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: active ? Colors.green : Colors.orange,
+                                        color: active
+                                            ? Colors.green
+                                            : Colors.orange,
                                       ),
                                     ),
                                   ),
@@ -296,13 +329,22 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                   final isMobile = constraints.maxWidth < 400;
                                   return isMobile
                                       ? Column(
-                                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.stretch,
                                           spacing: 8,
                                           children: [
                                             ModernButton(
-                                              label: active ? 'Desactivar' : 'Activar',
-                                              onPressed: () => _toggleUserActive(userId, active),
-                                              color: active ? Colors.orange : Colors.green,
+                                              label: active
+                                                  ? 'Desactivar'
+                                                  : 'Activar',
+                                              onPressed: () =>
+                                                  _toggleUserActive(
+                                                    userId,
+                                                    active,
+                                                  ),
+                                              color: active
+                                                  ? Colors.orange
+                                                  : Colors.green,
                                               width: double.infinity,
                                             ),
                                             ModernButton(
@@ -311,20 +353,37 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                                 showDialog(
                                                   context: context,
                                                   builder: (context) => AlertDialog(
-                                                    title: const Text('Confirmar eliminación'),
-                                                    content: Text('¿Eliminar usuario $userName?'),
+                                                    title: const Text(
+                                                      'Confirmar eliminación',
+                                                    ),
+                                                    content: Text(
+                                                      '¿Eliminar usuario $userName?',
+                                                    ),
                                                     actions: [
                                                       TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('Cancelar'),
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                              context,
+                                                            ),
+                                                        child: const Text(
+                                                          'Cancelar',
+                                                        ),
                                                       ),
                                                       TextButton(
                                                         onPressed: () {
-                                                          Navigator.pop(context);
+                                                          Navigator.pop(
+                                                            context,
+                                                          );
                                                           _deleteUser(userId);
                                                         },
-                                                        style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                                        child: const Text('Eliminar'),
+                                                        style:
+                                                            TextButton.styleFrom(
+                                                              foregroundColor:
+                                                                  Colors.red,
+                                                            ),
+                                                        child: const Text(
+                                                          'Eliminar',
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
@@ -341,9 +400,17 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                           runSpacing: 8,
                                           children: [
                                             ModernButton(
-                                              label: active ? 'Desactivar' : 'Activar',
-                                              onPressed: () => _toggleUserActive(userId, active),
-                                              color: active ? Colors.orange : Colors.green,
+                                              label: active
+                                                  ? 'Desactivar'
+                                                  : 'Activar',
+                                              onPressed: () =>
+                                                  _toggleUserActive(
+                                                    userId,
+                                                    active,
+                                                  ),
+                                              color: active
+                                                  ? Colors.orange
+                                                  : Colors.green,
                                               width: 140,
                                             ),
                                             ModernButton(
@@ -352,20 +419,37 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                                 showDialog(
                                                   context: context,
                                                   builder: (context) => AlertDialog(
-                                                    title: const Text('Confirmar eliminación'),
-                                                    content: Text('¿Eliminar usuario $userName?'),
+                                                    title: const Text(
+                                                      'Confirmar eliminación',
+                                                    ),
+                                                    content: Text(
+                                                      '¿Eliminar usuario $userName?',
+                                                    ),
                                                     actions: [
                                                       TextButton(
-                                                        onPressed: () => Navigator.pop(context),
-                                                        child: const Text('Cancelar'),
+                                                        onPressed: () =>
+                                                            Navigator.pop(
+                                                              context,
+                                                            ),
+                                                        child: const Text(
+                                                          'Cancelar',
+                                                        ),
                                                       ),
                                                       TextButton(
                                                         onPressed: () {
-                                                          Navigator.pop(context);
+                                                          Navigator.pop(
+                                                            context,
+                                                          );
                                                           _deleteUser(userId);
                                                         },
-                                                        style: TextButton.styleFrom(foregroundColor: Colors.red),
-                                                        child: const Text('Eliminar'),
+                                                        style:
+                                                            TextButton.styleFrom(
+                                                              foregroundColor:
+                                                                  Colors.red,
+                                                            ),
+                                                        child: const Text(
+                                                          'Eliminar',
+                                                        ),
                                                       ),
                                                     ],
                                                   ),
