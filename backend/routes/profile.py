@@ -1,10 +1,11 @@
-from datetime import date
+from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from models.core import Usuario
 from config.db import get_db
+from config.settings import normalize_image_path
 from auth.auth_service import get_current_user
 
 router = APIRouter(tags=["Profile"])
@@ -33,13 +34,28 @@ class ProfileResponse(BaseModel):
     numero_documento: Optional[str] = None
     fecha_nacimiento: Optional[str] = None
     foto_perfil: Optional[str] = None
-    fecha_registro: str
+    fecha_registro: Optional[str] = None
 
     class Config:
         from_attributes = True
 
     @staticmethod
     def from_usuario(usuario: Usuario):
+        fecha_nacimiento = None
+        fecha_registro = None
+
+        if usuario.fecha_nacimiento is not None:
+            try:
+                fecha_nacimiento = usuario.fecha_nacimiento.date().isoformat()
+            except Exception:
+                fecha_nacimiento = usuario.fecha_nacimiento.isoformat()
+
+        if usuario.fecha_registro is not None:
+            try:
+                fecha_registro = usuario.fecha_registro.isoformat()
+            except Exception:
+                fecha_registro = datetime.fromtimestamp(usuario.fecha_registro.timestamp()).isoformat()
+
         return ProfileResponse(
             id=usuario.id_usuario,
             nombre=usuario.nombre,
@@ -48,9 +64,9 @@ class ProfileResponse(BaseModel):
             telefono=usuario.telefono,
             tipo_documento=usuario.tipo_documento,
             numero_documento=usuario.numero_documento,
-            fecha_nacimiento=usuario.fecha_nacimiento.date().isoformat() if usuario.fecha_nacimiento else None,
+            fecha_nacimiento=fecha_nacimiento,
             foto_perfil=usuario.foto_perfil,
-            fecha_registro=usuario.fecha_registro.isoformat() if usuario.fecha_registro else None
+            fecha_registro=fecha_registro,
         )
 
 
@@ -98,7 +114,17 @@ def update_profile(
         if profile_update.fecha_nacimiento is not None:
             current_user.fecha_nacimiento = profile_update.fecha_nacimiento
         if profile_update.foto_perfil is not None:
-            current_user.foto_perfil = profile_update.foto_perfil
+            old_foto = current_user.foto_perfil
+            new_foto = normalize_image_path(profile_update.foto_perfil)
+            if old_foto and old_foto != new_foto and old_foto.startswith("/uploads/"):
+                try:
+                    from services.upload_service import resolve_file_path
+                    old_file_path = resolve_file_path(old_foto)
+                    if old_file_path is not None:
+                        old_file_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+            current_user.foto_perfil = new_foto
 
         db.commit()
         db.refresh(current_user)

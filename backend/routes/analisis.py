@@ -1,26 +1,29 @@
-from pathlib import Path
 from datetime import datetime
 from typing import List
+import os
 
-from fastapi import APIRouter, File, UploadFile, status
+from fastapi import APIRouter, File, UploadFile, status, Request, Form, HTTPException, Depends
 from pydantic import BaseModel, Field
 
+from auth.auth_service import get_current_user
+from models.core import Usuario
 from services.analysis_service import AnalysisService
+from services.upload_service import (
+    validate_image,
+    save_file,
+    IMAGE_TYPE_ANALYSIS,
+)
 
 router = APIRouter()
 analysis_service = AnalysisService()
 
-# Configuración de upload
-UPLOAD_DIR = Path("backend/uploads")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-ALLOWED_FORMATS = {"jpg", "jpeg", "png"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
 class AnalysisBaseResponse(BaseModel):
     id: int
     id_usuario: int = 1
-    url_imagen: str = ""
+    url_imagen: str = ""    
     resultado: str = ""
     estado: str = ""
     status: str = ""
@@ -30,6 +33,8 @@ class AnalysisBaseResponse(BaseModel):
     air_quality: str = ""
     recomendacion: str = ""
     recommendation: str = ""
+    imagen_base64: str | None = None
+    image_base64: str | None = None
     fecha_creacion: datetime = Field(default_factory=datetime.now)
 
 
@@ -62,17 +67,35 @@ class RecommendationResponse(AnalysisBaseResponse):
     acciones: List[str] = Field(default_factory=list)
 
 
-@router.post("/upload", summary="Cargar imagen para análisis")
-async def upload_image(file: UploadFile = File(...)):
+@router.post("/upload", summary="Cargar imagen para análisis (requiere auth)")
+async def upload_image(
+    file: UploadFile = File(...),
+    current_user: Usuario = Depends(get_current_user),
+):
     """
     Endpoint para subir una imagen de musgo/liquen
     - RF01: Usuario cargar imágenes
+    - La imagen se guarda en uploads/analyses/user_{id}/
+    - Requiere autenticacion
     """
+    content, ext = validate_image(file)
+
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=413, detail="Imagen demasiado grande")
+
+    url_path = save_file(
+        content=content,
+        extension=ext,
+        image_type=IMAGE_TYPE_ANALYSIS,
+        user_id=current_user.id_usuario,
+    )
+
     return {
-        "file_id": "file_123",
+        "file_id": os.path.basename(url_path),
         "filename": file.filename,
-        "size": file.size,
+        "size": len(content),
         "upload_time": datetime.now(),
+        "url": url_path,
     }
 
 
@@ -82,6 +105,9 @@ async def detect_lichen(request: ProcessRequest):
     Endpoint para detectar si la imagen corresponde a un liquen
     - RF02: Sistema detectar organismo
     """
+    if not request.image_url:
+        raise HTTPException(status_code=422, detail="Debes enviar image_url")
+
     return {
         "image_url": request.image_url,
         "is_lichen": True,
@@ -91,17 +117,58 @@ async def detect_lichen(request: ProcessRequest):
 
 
 @router.post("/process", response_model=AnalysisResponse, summary="Procesar imagen con IA")
-def process_analysis(request: ProcessRequest):
+async def process_analysis(
+    request: Request,
+    file: UploadFile | None = File(default=None),
+    image_url: str | None = Form(default=None),
+    id_modelo: int = Form(default=1),
+    id_dataset: int | None = Form(default=None),
+    id_usuario: int | None = Form(default=None),
+    current_user: Usuario = Depends(get_current_user),
+):
     """
     Endpoint para analizar imagen con IA
     - RF03: Sistema analizar líquenes
     - RF10: Sistema procesar imagen con IA
     """
+    resolved_image_url = image_url
+    resolved_modelo = id_modelo
+    resolved_dataset = id_dataset
+    resolved_usuario = current_user.id_usuario
+
+    if file is not None:
+        content, ext = await validate_image(file)
+
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=413, detail="Imagen demasiado grande")
+
+        resolved_image_url = save_file(
+            content=content,
+            extension=ext,
+            image_type=IMAGE_TYPE_ANALYSIS,
+            user_id=resolved_usuario,
+        )
+    else:
+        # Compatibilidad con clientes que envían JSON en lugar de multipart.
+        try:
+            body = await request.json()
+        except Exception:
+            body = None
+
+        if isinstance(body, dict):
+            resolved_image_url = body.get("image_url", resolved_image_url)
+            resolved_modelo = int(body.get("id_modelo", resolved_modelo) or 1)
+            resolved_dataset = body.get("id_dataset", resolved_dataset)
+            resolved_usuario = int(body.get("id_usuario", resolved_usuario) or 1)
+
+    if not resolved_image_url:
+        raise HTTPException(status_code=422, detail="Debes enviar una imagen o image_url")
+
     return analysis_service.process_analysis(
-        image_url=request.image_url,
-        id_modelo=request.id_modelo,
-        id_dataset=request.id_dataset,
-        id_usuario=request.id_usuario or 1,
+        image_url=resolved_image_url,
+        id_modelo=resolved_modelo,
+        id_dataset=resolved_dataset,
+        id_usuario=resolved_usuario,
     )
 
 

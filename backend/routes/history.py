@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session
 from config.db import get_db
 from models.core import HistorialActividad, Usuario
 from auth.auth_service import get_current_user
+from services.analysis_service import AnalysisService
+
+analysis_service = AnalysisService()
 
 router = APIRouter()
 
@@ -56,16 +59,23 @@ def _history_item_to_contract(item: HistorialActividad) -> HistoryResponse:
                         analysis_id = 0
                 elif key == "location":
                     location = value
+    analysis_data = {}
+    if analysis_id:
+        try:
+            analysis_data = analysis_service.get_results(analysis_id)
+        except Exception:
+            analysis_data = {}
+
     return HistoryResponse(
         id=item.id_historial,
         id_usuario=item.id_usuario,
         id_analisis=analysis_id,
-        url_imagen="",
-        resultado="",
-        estado="",
-        humedad=0.0,
-        calidad_del_aire="",
-        recomendacion="",
+        url_imagen=analysis_data.get('imagen_url') or analysis_data.get('url_imagen') or analysis_data.get('image_url') or "",
+        resultado=analysis_data.get('resultado') or "",
+        estado=analysis_data.get('estado') or "",
+        humedad=float(analysis_data.get('humedad') or 0.0),
+        calidad_del_aire=analysis_data.get('calidad_del_aire') or "",
+        recomendacion=analysis_data.get('recomendacion') or "",
         ubicacion=location,
         fecha_creacion=item.fecha or datetime.now(),
     )

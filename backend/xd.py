@@ -1,0 +1,1 @@
+import glob, py_compile; paths=glob.glob('backend/**/*.py', recursive=True); [py_compile.compile(p, doraise=True) for p in paths]; print('Compiled', len(paths), 'files')

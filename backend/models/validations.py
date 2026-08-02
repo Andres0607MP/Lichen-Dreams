@@ -20,6 +20,8 @@ class UsuarioCreate(BaseModel):
             raise ValueError('Contraseña debe tener al menos una mayúscula')
         if not any(c.isdigit() for c in v):
             raise ValueError('Contraseña debe tener al menos un número')
+        if not any(not c.isalnum() for c in v):
+            raise ValueError('Contraseña debe tener al menos un carácter especial')
         return v
 
 
@@ -97,6 +99,7 @@ class ArticuloCreate(BaseModel):
     categoria: str = Field(..., min_length=3, max_length=100)
     autor: str = Field(..., min_length=2, max_length=150)
     imagen_articulo: Optional[str] = None
+    estado_publicacion: Optional[str] = Field(None, pattern=r'^(draft|published|archived)$')
 
 
 class ArticuloUpdate(BaseModel):
@@ -170,6 +173,22 @@ class SesionResponse(BaseModel):
     fecha_inicio: datetime
     estado_sesion: str
     
+    class Config:
+        from_attributes = True
+
+
+class MapPointResponse(BaseModel):
+    id: int
+    lat: float
+    lng: float
+    zone_name: str
+    air_quality: str
+    contamination_level: Optional[str] = None
+    species: str
+    confidence: float
+    date: datetime
+    status: str
+
     class Config:
         from_attributes = True
 

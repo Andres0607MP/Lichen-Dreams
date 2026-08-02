@@ -10,6 +10,7 @@ from routes.auth import router as auth_router
 from routes.liquenpedia import router as liquen_router
 from config.database import engine
 from config.db import SessionLocal
+from config.settings import BACKEND_URL, UPLOADS_BASE_DIR
 from models.base import Base
 from models.core import Role, Usuario, Analisis, ModeloIA, Dataset
 from auth.jwt_handler import create_access_token as create_token
@@ -25,16 +26,22 @@ Base.metadata.create_all(bind=engine)
 # CORS: permitir peticiones desde el frontend en desarrollo (ajustar en producción)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Ensure uploads directory exists and serve it
-UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+# Ensure uploads directory structure exists.
+# Public: uploads/articles/ served via StaticFiles.
+# Private: uploads/profiles/ and uploads/analyses/ served via auth-guarded endpoints.
+for subdir in ("articles", "profiles", "analyses"):
+    (UPLOADS_BASE_DIR / subdir).mkdir(parents=True, exist_ok=True)
+
+# Only expose /uploads/articles as public static files.
+# Private image directories (profiles/, analyses/) are served
+# via auth-guarded endpoints in routes/imagenes.py.
+app.mount("/uploads/articles", StaticFiles(directory=str(UPLOADS_BASE_DIR / "articles")), name="uploads-articles")
 
 # Importar y registrar routers
 try:
@@ -104,8 +111,14 @@ except ImportError as e:
     print(f"Warning: liquenpedia router not found - {e}")
 
 try:
+    from routes.dashboard import router as dashboard_router
+    app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
+except ImportError as e:
+    print(f"Warning: dashboard router not found - {e}")
+
+try:
     from routes.maps_route import router as maps_router
-    app.include_router(maps_router, tags=["Maps"])
+    app.include_router(maps_router, prefix="/api/maps", tags=["Maps"])
 except ImportError as e:
     print(f"Warning: maps router not found - {e}")
 
@@ -199,6 +212,7 @@ def get_config():
     """Devuelve variables de configuración para el frontend (ej: Google Maps API Key)"""
     return {
         "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY", ""),
+        "backend_url": BACKEND_URL,
     }
 
 @app.get("/token")

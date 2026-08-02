@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, status, Depends
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -39,6 +39,15 @@ class AdminUserCreate(BaseModel):
     name: str
     password: str
     id_rol: Optional[int] = None
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        if len(value) < 6:
+            raise ValueError("La contraseña debe tener al menos 6 caracteres")
+        if not any(not ch.isalnum() for ch in value):
+            raise ValueError("La contraseña debe incluir al menos un carácter especial")
+        return value
 
 
 class AdminUserUpdate(BaseModel):
