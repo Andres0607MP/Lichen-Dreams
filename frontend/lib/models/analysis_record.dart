@@ -61,8 +61,9 @@ class AnalysisRecord {
   }
 
   String get displayDate {
+    final createdAt = this.createdAt;
     if (createdAt != null) {
-      return '${createdAt!.day.toString().padLeft(2, '0')}/${createdAt!.month.toString().padLeft(2, '0')}/${createdAt!.year}';
+      return '${createdAt.day.toString().padLeft(2, '0')}/${createdAt.month.toString().padLeft(2, '0')}/${createdAt.year}';
     }
     return 'Sin fecha';
   }

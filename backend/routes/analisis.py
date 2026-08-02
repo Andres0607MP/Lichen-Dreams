@@ -1,7 +1,6 @@
-from pathlib import Path
 from datetime import datetime
 from typing import List
-import uuid
+import os
 
 from fastapi import APIRouter, File, UploadFile, status, Request, Form, HTTPException, Depends
 from pydantic import BaseModel, Field
@@ -9,14 +8,15 @@ from pydantic import BaseModel, Field
 from auth.auth_service import get_current_user
 from models.core import Usuario
 from services.analysis_service import AnalysisService
+from services.upload_service import (
+    validate_image,
+    save_file,
+    IMAGE_TYPE_ANALYSIS,
+)
 
 router = APIRouter()
 analysis_service = AnalysisService()
 
-# Configuración de upload: usar la misma carpeta `uploads` relativa al paquete backend
-UPLOAD_DIR = Path(__file__).resolve().parent.parent / 'uploads'
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-ALLOWED_FORMATS = {"jpg", "jpeg", "png"}
 MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 
@@ -67,32 +67,35 @@ class RecommendationResponse(AnalysisBaseResponse):
     acciones: List[str] = Field(default_factory=list)
 
 
-@router.post("/upload", summary="Cargar imagen para análisis")
-async def upload_image(file: UploadFile = File(...)):
+@router.post("/upload", summary="Cargar imagen para análisis (requiere auth)")
+async def upload_image(
+    file: UploadFile = File(...),
+    current_user: Usuario = Depends(get_current_user),
+):
     """
     Endpoint para subir una imagen de musgo/liquen
     - RF01: Usuario cargar imágenes
+    - La imagen se guarda en uploads/analyses/user_{id}/
+    - Requiere autenticacion
     """
-    extension = (file.filename or '').split('.')[-1].lower()
-    if extension not in ALLOWED_FORMATS:
-        raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+    content, ext = validate_image(file)
 
-    content = await file.read()
-    if not content:
-        raise HTTPException(status_code=400, detail="La imagen está vacía")
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="Imagen demasiado grande")
 
-    unique_name = f"{uuid.uuid4().hex}.{extension}"
-    destination = UPLOAD_DIR / unique_name
-    destination.write_bytes(content)
+    url_path = save_file(
+        content=content,
+        extension=ext,
+        image_type=IMAGE_TYPE_ANALYSIS,
+        user_id=current_user.id_usuario,
+    )
 
     return {
-        "file_id": unique_name,
+        "file_id": os.path.basename(url_path),
         "filename": file.filename,
         "size": len(content),
         "upload_time": datetime.now(),
-        "url": f"/uploads/{unique_name}",
+        "url": url_path,
     }
 
 
@@ -134,20 +137,17 @@ async def process_analysis(
     resolved_usuario = current_user.id_usuario
 
     if file is not None:
-        extension = (file.filename or '').split('.')[-1].lower()
-        if extension not in ALLOWED_FORMATS:
-            raise HTTPException(status_code=400, detail="Formato de imagen no soportado")
+        content, ext = await validate_image(file)
 
-        content = await file.read()
-        if not content:
-            raise HTTPException(status_code=400, detail="La imagen está vacía")
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=413, detail="Imagen demasiado grande")
 
-        unique_name = f"{uuid.uuid4().hex}.{extension}"
-        destination = UPLOAD_DIR / unique_name
-        destination.write_bytes(content)
-        resolved_image_url = f"/uploads/{unique_name}"
+        resolved_image_url = save_file(
+            content=content,
+            extension=ext,
+            image_type=IMAGE_TYPE_ANALYSIS,
+            user_id=resolved_usuario,
+        )
     else:
         # Compatibilidad con clientes que envían JSON en lugar de multipart.
         try:

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
@@ -154,11 +155,12 @@ class ApiService {
     }
   }
 
-  /// Subir imagen para LiquenPedia desde el dispositivo
-  Future<String> uploadImage(File imageFile) async {
+  /// Subir imagen para LiquenPedia o perfil desde el dispositivo
+  Future<String> uploadImage(File imageFile, {String imageType = 'article'}) async {
     final uri = AppConfig.buildUri('/imagenes/upload');
     final request = http.MultipartRequest('POST', uri);
     request.headers.addAll(await _headers(authorized: true));
+    request.fields['imagen_tipo'] = imageType;
     request.files.add(
       await http.MultipartFile.fromPath(
         'file',
@@ -187,6 +189,32 @@ class ApiService {
     }
 
     throw ApiException('Respuesta inesperada al subir imagen');
+  }
+
+  /// Descargar imagen privada (profiles/ o analyses/) con token de auth
+  Future<Uint8List> downloadPrivateImageBytes(String imagePath) async {
+    final normalized = imagePath.trim();
+    if (!normalized.startsWith('/uploads/')) {
+      throw ApiException('Path de imagen invalido: $imagePath');
+    }
+    final fileSubpath = normalized.substring('/uploads/'.length);
+    final uri = AppConfig.buildUri('/imagenes/file/$fileSubpath');
+
+    final response = await _client.get(
+      uri,
+      headers: await _headers(authorized: true),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al descargar imagen',
+        ),
+      );
+    }
+
+    return Uint8List.fromList(response.bodyBytes);
   }
 
   Future<Map<String, dynamic>> updateUser(
@@ -510,6 +538,31 @@ class ApiService {
     throw ApiException('Respuesta inesperada del historial de análisis');
   }
 
+  /// Obtener puntos ambientales para el mapa
+  Future<List<Map<String, dynamic>>> getMapPoints() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/api/maps/points'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener puntos del mapa',
+        ),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is List) {
+      final list = List<Map<String, dynamic>>.from(
+        decoded.map((item) => item as Map<String, dynamic>),
+      );
+      return list;
+    }
+    return <Map<String, dynamic>>[];
+  }
+
   /// Eliminar un registro del historial
   Future<void> deleteHistory(int historyId) async {
     final response = await _client.delete(
@@ -596,47 +649,29 @@ class ApiService {
       'url',
       'imagen_articulo',
     ];
-    final base = AppConfig.baseUrl;
     for (final key in candidates) {
       if (json.containsKey(key) && json[key] is String) {
         var val = (json[key] as String).trim();
         if (val.isEmpty) continue;
 
-        // Relative path -> prefix with base URL
-        if (val.startsWith('/')) {
-          if (base.isNotEmpty) {
-            final prefix = base.endsWith('/')
-                ? base.substring(0, base.length - 1)
-                : base;
-            json[key] = '$prefix$val';
+        // Absolute URL -> extract relative path (strip scheme + host).
+        // This ensures legacy DB records with full URLs (e.g. http://192.168.1.100:8000/uploads/x.jpg)
+        // are converted to relative paths (/uploads/x.jpg) so that
+        // AppConfig.getImageUrl() can build the URL using the current API_BASE_URL.
+        if (val.startsWith('http://') || val.startsWith('https://')) {
+          Uri? parsed;
+          try {
+            parsed = Uri.parse(val);
+          } catch (_) {
+            parsed = null;
           }
-          continue;
-        }
-
-        // Absolute URL: if it points to localhost/127.0.0.1 or emulator loopback,
-        // rewrite using AppConfig.baseUrl so device can reach the server.
-        Uri? parsed;
-        try {
-          parsed = Uri.parse(val);
-        } catch (_) {
-          parsed = null;
-        }
-        if (parsed != null && base.isNotEmpty) {
-          final host = parsed.host.toLowerCase();
-          if (host == '127.0.0.1' ||
-              host == 'localhost' ||
-              host == '10.0.2.2') {
-            final basePrefix = base.endsWith('/')
-                ? base.substring(0, base.length - 1)
-                : base;
-            final newPath = parsed.path.startsWith('/')
-                ? parsed.path
-                : '/${parsed.path}';
-            final newUrl =
-                '$basePrefix$newPath${parsed.hasQuery ? '?${parsed.query}' : ''}';
-            json[key] = newUrl;
+          if (parsed != null && parsed.path.isNotEmpty) {
+            final relativePath = parsed.path + (parsed.hasQuery ? '?${parsed.query}' : '');
+            json[key] = relativePath;
           }
         }
+        // Relative paths (starting with '/') are left unchanged so
+        // AppConfig.getImageUrl() can prepend the base URL at the UI layer.
       }
     }
   }

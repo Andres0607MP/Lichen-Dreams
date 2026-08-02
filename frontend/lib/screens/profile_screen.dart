@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:intl/intl.dart';
 
 import '../services/api_service.dart';
@@ -51,6 +52,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
+  static String _getInitial(dynamic value) {
+    final s = value?.toString() ?? '';
+    return s.isNotEmpty ? s[0].toUpperCase() : 'U';
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     try {
       final pickedFile = await _imagePicker.pickImage(source: source);
@@ -82,7 +88,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onPrimary: Colors.white,
             ),
           ),
-          child: child!,
+          child: child ?? const SizedBox.shrink(),
         );
       },
     );
@@ -192,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             return const Center(child: Text('No hay datos de perfil'));
           }
 
-          final profile = snapshot.data!;
+          final profile = snapshot.data ?? {};
 
           // Llenar campos con datos actuales (solo una vez)
           if (_nameController.text.isEmpty) {
@@ -231,42 +237,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ],
                         ),
-                        child: _selectedImage != null
-                            ? ClipOval(
-                                child: Image.file(
-                                  _selectedImage!,
-                                  fit: BoxFit.cover,
-                                ),
-                              )
-                            : (profile['foto_perfil'] != null && profile['foto_perfil'].toString().startsWith('http'))
-                                ? ClipOval(
-                                    child: Image.network(
-                                      profile['foto_perfil'],
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Center(
-                                          child: Text(
-                                            (profile['nombre'] ?? 'U')[0].toUpperCase(),
-                                            style: const TextStyle(
-                                              fontSize: 56,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  )
-                                : Center(
-                                    child: Text(
-                                      (profile['nombre'] ?? 'U')[0].toUpperCase(),
-                                      style: const TextStyle(
-                                        fontSize: 56,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                        child: () {
+                          final img = _selectedImage;
+                          if (img != null) {
+                            return ClipOval(
+                              child: Image.file(
+                                img,
+                                fit: BoxFit.cover,
+                              ),
+                            );
+                          }
+                          if (profile['foto_perfil'] != null &&
+                              profile['foto_perfil'].toString().isNotEmpty) {
+                            return ClipOval(
+                              child: FutureBuilder<Uint8List>(
+                                future: ApiService().downloadPrivateImageBytes(
+                                    profile['foto_perfil'].toString()),
+                                builder: (context, snapshot) {
+                                  if (snapshot.connectionState == ConnectionState.waiting) {
+                                    return const Center(child: SizedBox(
+                                      width: 20, height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ));
+                                  }
+                                  final data = snapshot.data;
+                                  if (snapshot.hasError || data == null) {
+                                    print('[Image error] profile_screen: ${profile['foto_perfil']}');
+                                    return Center(
+                                      child: Text(
+                                        _getInitial(profile['nombre']),
+                                        style: const TextStyle(
+                                          fontSize: 56,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
                                       ),
-                                    ),
-                                  ),
+                                    );
+                                  }
+                                  return Image.memory(
+                                    data,
+                                    fit: BoxFit.cover,
+                                  );
+                                },
+                              ),
+                            );
+                          }
+                          return Center(
+                            child: Text(
+                              _getInitial(profile['nombre']),
+                              style: const TextStyle(
+                                fontSize: 56,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          );
+                        }(),
                       ),
                       const SizedBox(height: 16),
                       Row(

@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from sqlalchemy.orm import Session
 from config.db import get_db
+from config.settings import normalize_image_path
 from models.core import Usuario, Sesion, Role
 from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
@@ -129,7 +130,7 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         tipo_documento=request.tipo_documento,
         numero_documento=request.numero_documento,
         fecha_nacimiento=request.fecha_nacimiento,
-        foto_perfil=request.foto_perfil,
+        foto_perfil=normalize_image_path(request.foto_perfil),
         estado_cuenta='active',
         id_rol=user_role.id_rol,
     )

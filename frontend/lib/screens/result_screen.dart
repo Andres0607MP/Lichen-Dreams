@@ -4,6 +4,7 @@ import '../models/analysis_record.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 import '../widgets/common_widgets.dart';
+import '../services/api_service.dart';
 
 class ResultScreen extends StatelessWidget {
   final AnalysisRecord analysis;
@@ -45,15 +46,28 @@ class ResultScreen extends StatelessWidget {
                     // fall through to network/image icon
                   }
                 }
-                if (analysis.imageUrl != null) {
+                final imageUrl = analysis.imageUrl;
+                if (imageUrl != null && imageUrl.isNotEmpty) {
                   return ClipRRect(
                     borderRadius: BorderRadius.circular(16),
-                    child: Image.network(
-                      analysis.imageUrl!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: 220,
-                      errorBuilder: (_, __, ___) => const Center(child: Icon(Icons.broken_image, size: 48)),
+                    child: FutureBuilder<Uint8List>(
+                      future: ApiService().downloadPrivateImageBytes(imageUrl),
+                      builder: (context, snapshot) {
+                        final data = snapshot.data;
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError || data == null) {
+                          print('[Image error] result_screen: $imageUrl\n${snapshot.error}');
+                          return const Center(child: Icon(Icons.broken_image, size: 48));
+                        }
+                        return Image.memory(
+                          data,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: 220,
+                        );
+                      },
                     ),
                   );
                 }

@@ -26,9 +26,12 @@ class ModernCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: gradient != null
-              ? LinearGradient(colors: gradient!, begin: Alignment.topLeft, end: Alignment.bottomRight)
-              : null,
+           gradient: () {
+              final g = gradient;
+              return g != null
+                  ? LinearGradient(colors: g, begin: Alignment.topLeft, end: Alignment.bottomRight)
+                  : null;
+            }(),
           color: gradient == null ? (backgroundColor ?? AppTheme.surfaceColor) : null,
           borderRadius: borderRadius ?? AppTheme.cardRadius,
           boxShadow: const [AppTheme.baseShadow],
@@ -234,7 +237,7 @@ class StatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ModernCard(
-      backgroundColor: backgroundColor.withOpacity(0.08),
+      backgroundColor: backgroundColor.withValues(alpha: 0.08),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -243,23 +246,23 @@ class StatsCard extends StatelessWidget {
               color: color,
               borderRadius: BorderRadius.circular(12),
             ),
-            padding: const EdgeInsets.all(12),
-            child: Icon(icon, color: Colors.white, size: 24),
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             title,
             style: GoogleFonts.poppins(
-              fontSize: 14,
+              fontSize: 12,
               fontWeight: FontWeight.w500,
               color: AppTheme.textGray,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             value,
             style: GoogleFonts.poppins(
-              fontSize: 24,
+              fontSize: 20,
               fontWeight: FontWeight.w700,
               color: color,
             ),
@@ -355,6 +358,7 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final sub = subtitle;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -369,10 +373,10 @@ class SectionHeader extends StatelessWidget {
                 color: AppTheme.textDark,
               ),
             ),
-            if (subtitle != null) ...[
+            if (sub != null) ...[
               const SizedBox(height: 4),
               Text(
-                subtitle!,
+                sub,
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
@@ -417,6 +421,8 @@ class EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final actionCb = onAction;
+    final actionLbl = actionLabel;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -452,11 +458,11 @@ class EmptyState extends StatelessWidget {
               color: AppTheme.textGray,
             ),
           ),
-          if (onAction != null && actionLabel != null) ...[
+          if (actionCb != null && actionLbl != null) ...[
             const SizedBox(height: 24),
             ModernButton(
-              label: actionLabel!,
-              onPressed: onAction!,
+              label: actionLbl,
+              onPressed: actionCb,
               width: 200,
             ),
           ],

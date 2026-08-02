@@ -8,31 +8,15 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_
 
 from config.db import get_db
+from config.settings import normalize_image_path
 from models.core import LiquenPedia, Usuario
 from models.validations import ArticuloCreate, ArticuloUpdate
-from auth.auth_service import get_current_user
+from auth.auth_service import get_current_user, get_current_user_optional
 from auth.jwt_handler import decode_token
 
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
-
-
-def get_current_user_optional(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    """Obtener usuario actual si está autenticado, sino None"""
-    if not token:
-        return None
-    try:
-        payload = decode_token(token)
-        if not payload:
-            return None
-        sub = payload.get("sub")
-        if not sub:
-            return None
-        user = db.query(Usuario).options(joinedload(Usuario.rol)).filter(Usuario.correo == sub).first()
-        return user
-    except:
-        return None
 
 
 class ArticleResponse(BaseModel):
@@ -140,7 +124,7 @@ def create_article(
         contenido=payload.contenido,
         autor=payload.autor,
         categoria=payload.categoria,
-        imagen_articulo=payload.imagen_articulo,
+        imagen_articulo=normalize_image_path(payload.imagen_articulo),
         estado_publicacion=payload.estado_publicacion or 'draft'
     )
     db.add(article)
@@ -215,6 +199,8 @@ def update_article(
     # Actualizar solo los campos proporcionados
     update_data = payload.dict(exclude_unset=True)
     for key, value in update_data.items():
+        if key == 'imagen_articulo':
+            value = normalize_image_path(value)
         setattr(art, key, value)
     
     db.commit()

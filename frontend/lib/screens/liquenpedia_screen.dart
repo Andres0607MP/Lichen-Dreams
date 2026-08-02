@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/modern_widgets.dart';
 import 'liquenpedia_detail_screen.dart';
@@ -460,6 +461,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
   }
 
   Widget _buildArticleCard(LiquenpediaArticle article, int index) {
+    final imageUrl = article.imagenArticulo;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: ModernCard(
@@ -481,53 +483,55 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           AppTheme.surfaceColor,
           AppTheme.primaryGreen.withValues(alpha: 0.02),
         ],
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (article.imagenArticulo != null &&
-                article.imagenArticulo!.isNotEmpty)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: double.infinity,
-                  height: 180,
-                  margin: const EdgeInsets.only(bottom: 14),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.05),
-                  ),
-                  child: Image.network(
-                    article.imagenArticulo!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppTheme.primaryGreen.withValues(alpha: 0.2),
-                            AppTheme.lightGreen.withValues(alpha: 0.1),
-                          ],
-                        ),
-                      ),
-                      child: Center(
-                        child: Icon(
-                          Icons.eco_rounded,
-                          size: 56,
-                          color: AppTheme.primaryGreen.withValues(alpha: 0.35),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              )
-            else
-              Container(
-                width: double.infinity,
-                height: 140,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+             if (imageUrl != null && imageUrl.isNotEmpty)
+               ClipRRect(
+                 borderRadius: BorderRadius.circular(16),
+                 child: Container(
+                   width: double.infinity,
+                   height: 180,
+                   margin: const EdgeInsets.only(bottom: 14),
+                   decoration: BoxDecoration(
+                     color: AppTheme.primaryGreen.withValues(alpha: 0.05),
+                   ),
+                   child: Image.network(
+                     AppConfig.getImageUrl(imageUrl),
+                     fit: BoxFit.cover,
+                     errorBuilder: (context, error, stackTrace) {
+                       print('[Image.network error] liquenpedia_screen: $imageUrl\n$error');
+                       return Container(
+                         decoration: BoxDecoration(
+                           gradient: LinearGradient(
+                             colors: [
+                               AppTheme.primaryGreen.withValues(alpha: 0.2),
+                               AppTheme.lightGreen.withValues(alpha: 0.1),
+                             ],
+                           ),
+                         ),
+                         child: Center(
+                           child: Icon(
+                             Icons.eco_rounded,
+                             size: 56,
+                             color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                           ),
+                         ),
+                       );
+                     },
+                   ),
+                 ),
+               )
+             else
+               Container(
+                 width: double.infinity,
+                 height: 140,
+                 margin: const EdgeInsets.only(bottom: 14),
+                 decoration: BoxDecoration(
+                   borderRadius: BorderRadius.circular(16),
+                   gradient: LinearGradient(
+                     begin: Alignment.topLeft,
+                     end: Alignment.bottomRight,
                     colors: [
                       AppTheme.primaryGreen.withValues(alpha: 0.18),
                       AppTheme.lightGreen.withValues(alpha: 0.1),

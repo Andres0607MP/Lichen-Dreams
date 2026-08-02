@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
 import 'liquenpedia_form_screen.dart';
 
@@ -146,20 +147,27 @@ class LiquenpediaDetailScreen extends StatelessWidget {
                 ),
             ],
             flexibleSpace: FlexibleSpaceBar(
-              background: Stack(
-                children: [
-                  if (article.imagenArticulo != null &&
-                      article.imagenArticulo!.isNotEmpty)
-                    Image.network(
-                      article.imagenArticulo!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (_, __, ___) => _buildFallBackCover(),
-                    )
-                  else
-                    _buildFallBackCover(),
-                  Container(
+             background: Stack(
+                 children: [
+                   Builder(
+                     builder: (context) {
+                       final imageUrl = article.imagenArticulo;
+                       if (imageUrl != null && imageUrl.isNotEmpty) {
+                         return Image.network(
+                           AppConfig.getImageUrl(imageUrl),
+                           fit: BoxFit.cover,
+                           width: double.infinity,
+                           height: double.infinity,
+                           errorBuilder: (context, error, stackTrace) {
+                             print('[Image.network error] liquenpedia_detail_screen: $imageUrl\n$error');
+                             return _buildFallBackCover();
+                           },
+                         );
+                       }
+                       return _buildFallBackCover();
+                     },
+                   ),
+                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
@@ -367,32 +375,39 @@ class LiquenpediaDetailScreen extends StatelessWidget {
             ],
           ),
         ),
-        if (article.fechaPublicacion != null)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'Publicado',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textGray,
+        Builder(
+          builder: (context) {
+            final fecha = article.fechaPublicacion;
+            if (fecha == null) {
+              return const SizedBox.shrink();
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  'Publicado',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textGray,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                _formatDate(article.fechaPublicacion!),
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textDark,
+                const SizedBox(height: 2),
+                Text(
+                  _formatDate(fecha),
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textDark,
+                  ),
                 ),
-              ),
-            ],
-          ),
-      ],
-    );
-  }
+              ],
+            );
+          },
+        ),
+        ],
+      );
+    }
 
   Widget _buildInfoSection() {
     return Container(

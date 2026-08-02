@@ -427,10 +427,11 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
 
                                         setState(() => _loading = true);
                                         try {
-                                          String? fechaNacimientoFormatted;
-                                          if (_selectedFechaNacimiento != null) {
-                                            fechaNacimientoFormatted = DateFormat('yyyy-MM-dd').format(_selectedFechaNacimiento!);
-                                          }
+                                           String? fechaNacimientoFormatted;
+                                           final fecha = _selectedFechaNacimiento;
+                                           if (fecha != null) {
+                                             fechaNacimientoFormatted = DateFormat('yyyy-MM-dd').format(fecha);
+                                           }
 
                                           await _apiService.register(
                                             fullName,
@@ -773,7 +774,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                       onPrimary: Colors.white,
                     ),
                   ),
-                  child: child!,
+                  child: child ?? const SizedBox.shrink(),
                 );
               },
             );

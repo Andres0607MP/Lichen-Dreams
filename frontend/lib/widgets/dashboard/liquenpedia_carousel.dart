@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../models/liquenpedia_article.dart';
 import '../../services/api_service.dart';
+import '../../config/app_config.dart';
 import '../app_theme.dart';
 
 class LiquenpediaCarousel extends StatefulWidget {
@@ -177,6 +178,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
   }
 
   Widget _buildArticleCard(LiquenpediaArticle article, int index) {
+    final imageUrl = article.imagenArticulo;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -207,20 +209,22 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-             if (article.imagenArticulo != null &&
-                 article.imagenArticulo!.isNotEmpty)
+             if (imageUrl != null && imageUrl.isNotEmpty)
                Container(
                  height: 110,
                  width: double.infinity,
                  decoration: BoxDecoration(
                    color: AppTheme.primaryGreen.withValues(alpha: 0.05),
                  ),
-                 child: Image.network(
-                   article.imagenArticulo!,
-                   fit: BoxFit.cover,
-                   errorBuilder: (_, __, ___) => _buildPlaceholderCover(),
-                 ),
-               )
+                child: Image.network(
+                  AppConfig.getImageUrl(imageUrl),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    print('[Image.network error] liquenpedia_carousel: $imageUrl\n$error');
+                    return _buildPlaceholderCover();
+                  },
+                ),
+             )
              else
                _buildPlaceholderCover(),
              Expanded(

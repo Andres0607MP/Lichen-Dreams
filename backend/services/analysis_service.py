@@ -7,7 +7,9 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
 
 from config.db import SessionLocal
-from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad
+from config.settings import normalize_image_path
+from services.upload_service import resolve_file_path
+from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen
 
 
 class AnalysisService:
@@ -74,14 +76,10 @@ class AnalysisService:
         image_base64 = None
         try:
             if image and (image.ruta_imagen or image.url):
-                # Expect ruta_imagen like '/uploads/<filename>' or url similarly
                 ruta = image.ruta_imagen or image.url
-                if ruta.startswith('/'):
-                    filename = Path(ruta).name
-                    uploads_dir = Path(__file__).resolve().parent.parent / 'uploads'
-                    file_path = uploads_dir / filename
-                    if file_path.exists():
-                        image_base64 = base64.b64encode(file_path.read_bytes()).decode('ascii')
+                file_path = resolve_file_path(ruta)
+                if file_path is not None:
+                    image_base64 = base64.b64encode(file_path.read_bytes()).decode('ascii')
         except Exception:
             image_base64 = None
         return {
@@ -131,8 +129,8 @@ class AnalysisService:
             image = Imagen(
                 id_analisis=analysis.id_analisis,
                 nombre_imagen="imagen_analizada.jpg",
-                ruta_imagen=image_url,
-                url=image_url,
+                ruta_imagen=normalize_image_path(image_url),
+                url=normalize_image_path(image_url),
                 formato_imagen="jpg",
                 tamano_archivo=0,
                 resolucion="0x0",
@@ -235,3 +233,46 @@ class AnalysisService:
 
     def get_analysis(self, analysis_id: int) -> Dict[str, Any]:
         return self.get_results(analysis_id=analysis_id)
+
+    def get_map_points(self) -> List[Dict[str, Any]]:
+        with SessionLocal() as db:
+            analyses = db.query(Analisis).options(
+                joinedload(Analisis.ubicacion),
+                joinedload(Analisis.especie),
+            ).filter(
+                Analisis.id_ubicacion.isnot(None),
+            ).all()
+
+            points: List[Dict[str, Any]] = []
+            for analysis in analyses:
+                ubicacion = analysis.ubicacion
+                especie = analysis.especie
+
+                if ubicacion is None or ubicacion.latitud is None or ubicacion.longitud is None:
+                    continue
+
+                lat = float(ubicacion.latitud)
+                lng = float(ubicacion.longitud)
+
+                zone_name = ubicacion.municipio or ubicacion.direccion or 'Zona sin nombre'
+                if ubicacion.direccion and ubicacion.municipio:
+                    zone_name = f"{ubicacion.direccion}, {ubicacion.municipio}"
+
+                species = especie.nombre_cientifico if especie and especie.nombre_cientifico else 'Especie desconocida'
+
+                status_value = self._normalize_status(analysis.estado_validacion)
+
+                points.append({
+                    "id": analysis.id_analisis,
+                    "lat": lat,
+                    "lng": lng,
+                    "zone_name": zone_name,
+                    "air_quality": analysis.calidad_aire or "desconocida",
+                    "contamination_level": analysis.nivel_contaminacion,
+                    "species": species,
+                    "confidence": float(analysis.porcentaje_confianza or 0.0),
+                    "date": analysis.fecha or datetime.utcnow(),
+                    "status": status_value,
+                })
+
+            return points

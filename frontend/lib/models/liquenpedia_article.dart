@@ -28,7 +28,7 @@ class LiquenpediaArticle {
       contenido: json['contenido'] as String? ?? '',
       autor: json['autor'] as String? ?? '',
       categoria: json['categoria'] as String? ?? '',
-      imagenArticulo: json['imagen_articulo'] as String?,
+      imagenArticulo: json['imagen_articulo']?.toString(),
       estadoPublicacion: json['estado_publicacion'] as String? ?? 'borrador',
       fechaPublicacion: json['fecha_publicacion'] != null
           ? DateTime.tryParse(json['fecha_publicacion'] as String)

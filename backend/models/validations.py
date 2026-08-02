@@ -177,6 +177,22 @@ class SesionResponse(BaseModel):
         from_attributes = True
 
 
+class MapPointResponse(BaseModel):
+    id: int
+    lat: float
+    lng: float
+    zone_name: str
+    air_quality: str
+    contamination_level: Optional[str] = None
+    species: str
+    confidence: float
+    date: datetime
+    status: str
+
+    class Config:
+        from_attributes = True
+
+
 class RoleResponse(BaseModel):
     
     id_rol: int

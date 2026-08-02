@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
 
 class LiquenpediaFormScreen extends StatefulWidget {
@@ -95,7 +96,9 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
         _isLoading = true;
       });
 
-      final uploadedUrl = await _apiService.uploadImage(_pickedImage!);
+      final image = _pickedImage;
+      if (image == null) return;
+      final uploadedUrl = await _apiService.uploadImage(image, imageType: 'article');
       if (!mounted) return;
 
       setState(() {
@@ -125,7 +128,8 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   }
 
   Future<void> _guardarArticulo() async {
-    if (!_formKey.currentState!.validate()) {
+    final state = _formKey.currentState;
+    if (state == null || !state.validate()) {
       return;
     }
 
@@ -153,7 +157,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
         );
       } else {
         await _apiService.updateLiquenpediaArticle(
-          widget.articleToEdit!.id ?? 0,
+          widget.articleToEdit?.id ?? 0,
           titulo: _tituloController.text,
           contenido: _contenidoController.text,
           autor: _autorController.text,
@@ -368,25 +372,32 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                                 decoration: BoxDecoration(
                                   color: AppTheme.primaryGreen.withValues(alpha: 0.05),
                                 ),
-                                child: _pickedImage != null
-                                    ? Image.file(
-                                        _pickedImage!,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.network(
-                                        _imagenController.text,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Center(
-                                          child: Icon(
-                                            Icons.image_rounded,
-                                            size: 40,
-                                            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                                          ),
+                                child: () {
+                                  final img = _pickedImage;
+                                  if (img != null) {
+                                    return Image.file(
+                                      img,
+                                      fit: BoxFit.cover,
+                                    );
+                                  }
+                                  return Image.network(
+                                    AppConfig.getImageUrl(_imagenController.text),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      print('[Image.network error] liquenpedia_form_screen: ${_imagenController.text}\n$error');
+                                      return Center(
+                                        child: Icon(
+                                          Icons.image_rounded,
+                                          size: 40,
+                                          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
                                         ),
-                                      ),
+                                      );
+                                    },
+                                  );
+                                }(),
                               ),
                             )
-                          else
+                        else
                             Container(
                               padding: const EdgeInsets.symmetric(vertical: 32),
                               decoration: BoxDecoration(

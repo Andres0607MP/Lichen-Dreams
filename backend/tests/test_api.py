@@ -57,8 +57,8 @@ def test_register_login_and_me():
 
 
 def test_image_upload_and_delete():
-    # create a dummy file
-    files = {"file": ("test.jpg", b"dummydata", "image/jpeg")}
+    # create a dummy file with valid JPEG magic bytes
+    files = {"file": ("test.jpg", b"\xff\xd8\xff\xe0" + b"dummydata", "image/jpeg")}
     r = client.post("/imagenes/upload", files=files)
     assert r.status_code == 200
     data = r.json()

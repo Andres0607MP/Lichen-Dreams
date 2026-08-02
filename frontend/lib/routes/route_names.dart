@@ -7,6 +7,7 @@ class AppRoutes {
   static const analisis = '/analisis';
   static const historial = '/historial';
   static const mapa = '/mapa';
+  static const mapExplorer = '/map-explorer';
   static const perfil = '/perfil';
   static const liquenpedia = '/liquenpedia';
 }
