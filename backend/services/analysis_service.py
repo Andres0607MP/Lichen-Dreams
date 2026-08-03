@@ -11,7 +11,6 @@ from config.db import SessionLocal
 from config.settings import normalize_image_path
 from services.upload_service import resolve_file_path
 from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen
-from ia.modelos.lichen_classifier import predict
 
 
 class AnalysisService:
@@ -108,6 +107,8 @@ class AnalysisService:
 
     def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1) -> Dict[str, Any]:
         try:
+            from ia.modelos.lichen_classifier import predict
+
             physical_path = resolve_file_path(normalize_image_path(image_url))
             if physical_path is not None:
                 ia_result = predict(str(physical_path))

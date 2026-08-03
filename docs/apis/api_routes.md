@@ -173,5 +173,5 @@ Decisión arquitectónica
 
 - Rutas consolidadas: `/analysis/*` y `/history/*` permanecen como la única vía oficial para estos flujos.
 - Rutas eliminadas: no se encontraron endpoints duplicados ni versiones paralelas activas en el backend actual; la protección implementada evita que aparezcan en el futuro.
-- Integración IA/mock: la lógica mock actual se encapsuló en [backend/services/analysis_service.py](backend/services/analysis_service.py) para dejar el contrato REST estable y permitir reemplazar el proveedor en el futuro por IA real o base de datos sin cambiar los endpoints ni los nombres de campo.
+- Integración IA real: el resultado proviene del modelo clasificador en `backend/ia/modelos/lichen_classifier.py`. Los valores de `resultado`, `calidad_del_aire` y `confianza` varían según la imagen procesada.
 
