@@ -25,6 +25,9 @@ class AnalysisBaseResponse(BaseModel):
     id_usuario: int = 1
     url_imagen: str = ""    
     resultado: str = ""
+    categoria: str = ""
+    confianza: float = 0.0
+    nombre_especie: str | None = None
     estado: str = ""
     status: str = ""
     humedad: float = 0.0

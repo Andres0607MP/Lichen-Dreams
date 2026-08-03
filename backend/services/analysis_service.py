@@ -86,13 +86,15 @@ class AnalysisService:
         return {
             "id": analysis.id_analisis,
             "id_usuario": analysis.id_usuario,
-            # Provide multiple common keys for frontend compatibility
             "url_imagen": url_imagen,
             "imagen_url": url_imagen,
             "image_url": url_imagen,
             "imagen_base64": image_base64,
             "image_base64": image_base64,
             "resultado": analysis.resultado_ia or "",
+            "categoria": analysis.resultado_ia or "",
+            "confianza": float(analysis.porcentaje_confianza or 0.0),
+            "nombre_especie": analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None,
             "estado": status_value,
             "status": status_value,
             "humedad": humidity,

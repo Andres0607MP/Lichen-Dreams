@@ -87,3 +87,9 @@ def predict(image_path: str) -> dict:
         "nivel_contaminacion": nivel_contaminacion,
         "calidad_aire": calidad_aire,
     }
+
+# Nota: La arquitectura actual del modelo CNN clasifica en 3 categorías
+# generales (saludable / contaminado / desconocido), pero no incluye
+# una cabeza de clasificación de especies. Por lo tanto, `nombre_especie`
+# se mantiene como None hasta que se entrene un modelo específico de
+# identificación de especies o se integre con la tabla `especies_liquenes`.
