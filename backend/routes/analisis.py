@@ -3,10 +3,12 @@ from typing import List
 import os
 
 from fastapi import APIRouter, File, UploadFile, status, Request, Form, HTTPException, Depends
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from auth.auth_service import get_current_user
-from models.core import Usuario
+from models.core import Usuario , Analisis
+from config.db import get_db
 from services.analysis_service import AnalysisService
 from services.upload_service import (
     validate_image,
@@ -227,8 +229,46 @@ def get_analysis(analysis_id: int):
 
 
 @router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
-def delete_analysis(analysis_id: int):
+def delete_analysis(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
     """
-    Endpoint para eliminar un análisis
+    Elimina un análisis y sus imágenes asociadas.
+    Solo el propietario del análisis o un administrador pueden eliminarlo.
     """
+
+    analysis = db.query(Analisis).filter(
+        Analisis.id_analisis == analysis_id
+    ).first()
+
+    if not analysis:
+        raise HTTPException(
+            status_code=404,
+            detail="Análisis no encontrado"
+        )
+
+    is_owner = analysis.id_usuario == current_user.id_usuario
+
+    is_admin = (
+        current_user.rol 
+        and current_user.rol.nombre_rol == "admin"
+    )
+
+    if not is_owner and not is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para eliminar este análisis"
+        )
+
+    # Eliminar imágenes asociadas
+    for imagen in analysis.imagenes:
+        db.delete(imagen)
+
+    # Eliminar análisis
+    db.delete(analysis)
+
+    db.commit()
+
     return None
