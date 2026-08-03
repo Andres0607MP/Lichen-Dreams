@@ -33,10 +33,45 @@ Control de versiones: GitHub
 ### Estructura del Proyecto:
 
 ```
-├───backend
-├───database
-├───docs
-└───frontend
+proyecto/
+├── .github/
+│   └── workflows/
+
+├── backend/
+│   ├── alembic/
+│   ├── auth/
+│   ├── config/
+│   ├── ia/
+│   │   ├── datasets/
+│   │   ├── entrenamiento/
+│   │   └── modelos/
+│   ├── models/
+│   ├── routes/
+│   ├── scripts/
+│   └── tests/
+
+├── database/
+│   └── scripts/
+
+├── docs/
+│   ├── apis/
+│   └── ia/
+
+└── frontend/
+    ├── lib/
+    │   ├── config/
+    │   ├── models/
+    │   ├── routes/
+    │   ├── screens/
+    │   ├── services/
+    │   └── widgets/
+    ├── test/
+    ├── web/
+    ├── android/
+    ├── ios/
+    ├── linux/
+    ├── macos/
+    └── windows/
 
 ```
 

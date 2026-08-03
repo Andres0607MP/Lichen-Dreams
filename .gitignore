@@ -15,3 +15,21 @@ build/
 
 # Logs
 *.log
+
+# Test databases
+test.db
+*.db
+
+# Kilo
+.kilo/
+
+# RepoMix
+.repomixignore
+repomix-output.xml
+
+# Uploaded images — NEVER commit to repository
+uploads/
+*.jpg
+*.jpeg
+*.png
+*.webp
