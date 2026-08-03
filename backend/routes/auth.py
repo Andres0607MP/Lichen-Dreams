@@ -172,8 +172,25 @@ def me(current_user: Usuario = Depends(get_current_user)):
 
 
 @router.post("/logout", summary="Cerrar sesión")
-def logout():
-    return {"message": "Sesión cerrada exitosamente"}
+def logout(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+
+    sesion = db.query(Sesion).filter(
+        Sesion.id_usuario == current_user.id_usuario,
+        Sesion.estado_sesion == "active"
+    ).order_by(
+        Sesion.fecha_inicio.desc()
+    ).first()
+
+    if sesion:
+        sesion.estado_sesion = "revoked"
+        db.commit()
+
+    return {
+        "message": "Sesión cerrada exitosamente"
+    }
 
 
 @router.post('/refresh', summary='Refresh access token')
