@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Dict, Optional
 import base64
+import logging
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -10,6 +11,7 @@ from config.db import SessionLocal
 from config.settings import normalize_image_path
 from services.upload_service import resolve_file_path
 from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen
+from ia.modelos.lichen_classifier import predict
 
 
 class AnalysisService:
@@ -105,19 +107,40 @@ class AnalysisService:
         }
 
     def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1) -> Dict[str, Any]:
+        try:
+            physical_path = resolve_file_path(normalize_image_path(image_url))
+            if physical_path is not None:
+                ia_result = predict(str(physical_path))
+                resultado_ia = ia_result["categoria"]
+                porcentaje_confianza = ia_result["confianza"]
+                nivel_contaminacion = ia_result["nivel_contaminacion"]
+                calidad_aire = ia_result["calidad_aire"]
+                estado_liquen = "completado"
+                estado_validacion = "completed"
+            else:
+                raise FileNotFoundError(f"No se pudo resolver la ruta física para: {image_url}")
+        except Exception as e:
+            logging.error(f"Error en predicción IA para {image_url}: {e}")
+            resultado_ia = "error"
+            porcentaje_confianza = 0.0
+            nivel_contaminacion = "desconocida"
+            calidad_aire = "desconocida"
+            estado_liquen = "error"
+            estado_validacion = "error"
+
         with SessionLocal() as db:
             analysis = Analisis(
                 id_usuario=id_usuario,
                 id_modelo=id_modelo,
                 id_dataset=id_dataset,
-                resultado_ia="liquen saludable",
-                porcentaje_confianza=0.93,
-                nivel_contaminacion="baja",
-                calidad_aire="moderada",
-                estado_liquen="completado",
+                resultado_ia=resultado_ia,
+                porcentaje_confianza=porcentaje_confianza,
+                nivel_contaminacion=nivel_contaminacion,
+                calidad_aire=calidad_aire,
+                estado_liquen=estado_liquen,
                 tiempo_procesamiento=1.2,
                 observaciones="Buena calidad de aire en la zona",
-                estado_validacion="completed",
+                estado_validacion=estado_validacion,
                 temperatura_ambiente=22.0,
                 humedad_relativa=65.5,
                 fecha=datetime.utcnow(),
