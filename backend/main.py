@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
-from routes.auth import router as auth_router
 from routes.liquenpedia import router as liquen_router
 from config.database import engine
 from config.db import SessionLocal
