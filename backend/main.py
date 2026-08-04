@@ -45,7 +45,7 @@ app.mount("/uploads/articles", StaticFiles(directory=str(UPLOADS_BASE_DIR / "art
 # Importar y registrar routers
 try:
     from routes.auth import router as auth_router
-    app.include_router(auth_router, prefix="/api/auth", tags=["Auth"])
+    app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 except ImportError as e:
     print(f"Warning: auth router not found - {e}")
 
