@@ -14,6 +14,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  final ApiService _apiService = ApiService();
   late Future<Map<String, dynamic>> _profileFuture;
   late TextEditingController _nameController;
   late TextEditingController _lastNameController;
@@ -30,7 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _profileFuture = ApiService().getProfile();
+    _profileFuture = _apiService.getProfile();
     _nameController = TextEditingController();
     _lastNameController = TextEditingController();
     _emailController = TextEditingController();
@@ -111,7 +112,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'numero_documento': _numeroDocumentoController.text.isEmpty ? null : _numeroDocumentoController.text,
       };
 
-      await ApiService().updateProfile(updateData);
+      await _apiService.updateProfile(updateData);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,9 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        setState(() {
-          _profileFuture = ApiService().getProfile();
-        });
+        setState(() => _profileFuture = _apiService.getProfile());
       }
     } catch (e) {
       if (mounted) {
@@ -182,11 +181,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2F7D32),
                     ),
+<<<<<<< HEAD
                     onPressed: () {
                       setState(() {
                         _profileFuture = ApiService().getProfile();
                       });
                     },
+=======
+                    onPressed: () => setState(() => _profileFuture = _apiServicegetProfile()),
+>>>>>>> a95ec17 (arreglo todo los cambios dichos)
                     child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
                   ),
                 ],

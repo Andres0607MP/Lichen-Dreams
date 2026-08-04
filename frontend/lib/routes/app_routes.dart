@@ -10,6 +10,8 @@ import '../screens/map_explorer_screen.dart';
 import '../screens/liquenpedia_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/admin_users_screen.dart';
+import '../screens/location_screen.dart';
+import '../screens/species_screen.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -24,5 +26,7 @@ class AppRouter {
     AppRoutes.mapExplorer: (_) => const MapExplorerScreen(),
     AppRoutes.perfil: (_) => const ProfileScreen(),
     AppRoutes.liquenpedia: (_) => const LiquenpediaScreen(),
+    AppRoutes.location: (_) => const LocationScreen(),
+    AppRoutes.species: (_) => const SpeciesScreen(),
   };
 }
