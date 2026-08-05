@@ -446,6 +446,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         const SizedBox(height: 12),
         FeatureCard(
+          title: 'Guardar ubicación',
+          description: 'Registra tu ubicación de análisis',
+          icon: Icons.location_pin,
+          color: Colors.blueAccent,
+          onTap: () => Navigator.pushNamed(context, AppRoutes.location),
+        ),
+        const SizedBox(height: 12),
+        FeatureCard(
+          title: 'Especies identificadas',
+          description: 'Revisa las especies encontradas',
+          icon: Icons.eco_rounded,
+          color: Colors.deepOrange,
+          onTap: () => Navigator.pushNamed(context, AppRoutes.species),
+        ),
+        const SizedBox(height: 12),
+        FeatureCard(
           title: 'Liquenpedia',
           description: 'Aprende sobre líquenes y el ambiente',
           icon: Icons.school_rounded,

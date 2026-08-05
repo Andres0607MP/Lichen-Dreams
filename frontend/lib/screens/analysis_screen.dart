@@ -184,7 +184,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/logo/iconcam.png',
+              'assets/logo/logo.png',
               width: 80,
               height: 80,
               fit: BoxFit.contain,

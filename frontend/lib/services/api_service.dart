@@ -744,6 +744,69 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getSpecies(int analysisId) async {
+    final response = await _client.get(
+      AppConfig.buildUri('/analysis/$analysisId/species'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener especie',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
+    final response = await _client.get(
+      AppConfig.buildUri('/analysis/$analysisId/location'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener ubicación',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> shareAnalysis(int analysisId) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/analysis/$analysisId/share'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al compartir análisis',
+        ),
+      );
+    }
+  }
+
+  Future<void> saveLocation(Map<String, dynamic> locationData) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/location/save'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(locationData),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al guardar ubicación',
+        ),
+      );
+    }
+  }
+
   /// Crear nuevo artículo (solo admin)
   Future<Map<String, dynamic>> createLiquenpediaArticle({
     required String titulo,

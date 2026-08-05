@@ -10,4 +10,6 @@ class AppRoutes {
   static const mapExplorer = '/map-explorer';
   static const perfil = '/perfil';
   static const liquenpedia = '/liquenpedia';
+  static const location = '/location';
+  static const species = '/species';
 }

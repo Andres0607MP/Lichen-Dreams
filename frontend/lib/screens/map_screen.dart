@@ -24,12 +24,12 @@ class _MapScreenState extends State<MapScreen> {
   GoogleMapController? _mapController;
   bool _locationPermissionGranted = false;
   bool _locationServiceEnabled = false;
+  final ApiService _apiService = ApiService();
   String? _locationStatusMessage;
 
   Future<List<MapAnalysisPoint>> _loadMapPoints() async {
-    final api = ApiService();
     try {
-      final jsonList = await api.getMapPoints();
+      final jsonList = await _apiService.getMapPoints();
       return jsonList
           .map((json) => MapAnalysisPoint.fromJson(json))
           .toList();
@@ -47,6 +47,12 @@ class _MapScreenState extends State<MapScreen> {
       }
       rethrow;
     }
+  }
+
+  @override
+  void dispose() {
+    _apiService.dispose();
+    super.dispose();
   }
 
   void _reloadPoints() {
