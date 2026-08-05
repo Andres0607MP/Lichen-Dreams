@@ -196,9 +196,9 @@ Authorization: Bearer <token>
 {
   "id_analisis": 1,
   "id_usuario": 1,
-  "id_modelo": 2,
-  "id_dataset": 3,
-  "resultado": "Liquen detectado con 92% de confianza",
+  "id_modelo": 1,
+  "id_dataset": null,
+  "resultado": "liquen saludable",
   "fecha": "2026-06-11T10:35:00"
 }
 ```
@@ -225,9 +225,9 @@ Authorization: Bearer <token>
 {
   "id_analisis": 1,
   "id_usuario": 1,
-  "id_modelo": 2,
-  "id_dataset": 3,
-  "resultado": "Liquen detectado con 92% de confianza",
+  "id_modelo": 1,
+  "id_dataset": null,
+  "resultado": "liquen saludable",
   "fecha": "2026-06-11T10:35:00",
   "imagenes": [
     {
