@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../models/analysis_record.dart';
 import '../services/api_service.dart';
 import '../widgets/common_widgets.dart';
 
@@ -31,7 +30,7 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
           final species = await _apiService.getSpecies(id);
           final rawSpecies = species['data'] is List
               ? List<Map<String, dynamic>>.from(species['data'])
-              : [species as Map<String, dynamic>];
+              : [species];
           speciesList.addAll(rawSpecies);
         } catch (_) {
           continue;

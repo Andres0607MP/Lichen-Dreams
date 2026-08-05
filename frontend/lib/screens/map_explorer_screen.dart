@@ -22,6 +22,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   String? _errorMessage;
   bool _locationPermissionGranted = false;
   bool _locationServiceEnabled = false;
+  final ApiService _apiService = ApiService();
   String? _locationStatusMessage;
 
   @override
@@ -31,6 +32,12 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     _requestLocationPermission();
   }
 
+  @override
+  void dispose() {
+    _apiService.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadMapPoints() async {
     setState(() {
       _isLoading = true;
@@ -38,8 +45,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     });
 
     try {
-      final api = ApiService();
-      final jsonList = await api.getMapPoints();
+      final jsonList = await _apiService.getMapPoints();
       final points = jsonList
           .map((json) => MapAnalysisPoint.fromJson(json))
           .toList();

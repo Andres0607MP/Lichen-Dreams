@@ -50,12 +50,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _tipoDocumentoController.dispose();
     _numeroDocumentoController.dispose();
     _fechaNacimientoController.dispose();
+    _apiService.dispose();
     super.dispose();
   }
 
   static String _getInitial(dynamic value) {
     final s = value?.toString() ?? '';
     return s.isNotEmpty ? s[0].toUpperCase() : 'U';
+  }
+
+  Widget _buildImage(Map<String, dynamic> profile) {
+    final img = _selectedImage;
+    if (img != null) {
+      return ClipOval(
+        child: Image.file(
+          img,
+          fit: BoxFit.cover,
+        ),
+      );
+    }
+    if (profile['foto_perfil'] != null &&
+        profile['foto_perfil'].toString().isNotEmpty) {
+      return ClipOval(
+        child: FutureBuilder<Uint8List>(
+          future: _apiService.downloadPrivateImageBytes(
+              profile['foto_perfil'].toString()),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: SizedBox(
+                width: 20, height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ));
+            }
+            final data = snapshot.data;
+            if (snapshot.hasError || data == null) {
+              print('[Image error] profile_screen: ${profile['foto_perfil']}');
+              return Center(
+                child: Text(
+                  _getInitial(profile['nombre']),
+                  style: const TextStyle(
+                    fontSize: 56,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              );
+            }
+            return Image.memory(
+              data,
+              fit: BoxFit.cover,
+            );
+          },
+        ),
+      );
+    }
+    return Center(
+      child: Text(
+        _getInitial(profile['nombre']),
+        style: const TextStyle(
+          fontSize: 56,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -181,15 +239,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2F7D32),
                     ),
-<<<<<<< HEAD
                     onPressed: () {
                       setState(() {
-                        _profileFuture = ApiService().getProfile();
+                        _profileFuture = _apiService.getProfile();
                       });
                     },
-=======
-                    onPressed: () => setState(() => _profileFuture = _apiServicegetProfile()),
->>>>>>> a95ec17 (arreglo todo los cambios dichos)
                     child: const Text('Reintentar', style: TextStyle(color: Colors.white)),
                   ),
                 ],
@@ -240,62 +294,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ],
                         ),
-                        child: () {
-                          final img = _selectedImage;
-                          if (img != null) {
-                            return ClipOval(
-                              child: Image.file(
-                                img,
-                                fit: BoxFit.cover,
-                              ),
-                            );
-                          }
-                          if (profile['foto_perfil'] != null &&
-                              profile['foto_perfil'].toString().isNotEmpty) {
-                            return ClipOval(
-                              child: FutureBuilder<Uint8List>(
-                                future: ApiService().downloadPrivateImageBytes(
-                                    profile['foto_perfil'].toString()),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState == ConnectionState.waiting) {
-                                    return const Center(child: SizedBox(
-                                      width: 20, height: 20,
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ));
-                                  }
-                                  final data = snapshot.data;
-                                  if (snapshot.hasError || data == null) {
-                                    print('[Image error] profile_screen: ${profile['foto_perfil']}');
-                                    return Center(
-                                      child: Text(
-                                        _getInitial(profile['nombre']),
-                                        style: const TextStyle(
-                                          fontSize: 56,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  return Image.memory(
-                                    data,
-                                    fit: BoxFit.cover,
-                                  );
-                                },
-                              ),
-                            );
-                          }
-                          return Center(
-                            child: Text(
-                              _getInitial(profile['nombre']),
-                              style: const TextStyle(
-                                fontSize: 56,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          );
-                        }(),
+                        child: _buildImage(profile),
                       ),
                       const SizedBox(height: 16),
                       Row(

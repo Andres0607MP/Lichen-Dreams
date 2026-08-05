@@ -73,8 +73,6 @@ flutter:
     - assets/background/liquen_003.png
     - assets/background/liquenes.png
     - assets/background/bioindicadores.png
-    - assets/background/fondo.png
-    - assets/logo/iconcam.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

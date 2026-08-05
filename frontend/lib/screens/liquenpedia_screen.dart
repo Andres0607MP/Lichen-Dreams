@@ -97,6 +97,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
 
   @override
   void dispose() {
+    _apiService.dispose();
     _searchController.dispose();
     super.dispose();
   }

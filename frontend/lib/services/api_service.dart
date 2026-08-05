@@ -744,22 +744,6 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<Uint8List> downloadPrivateImageBytes(String imageUrl) async {
-    final response = await _client.get(
-      Uri.parse(imageUrl),
-      headers: await _headers(authorized: true),
-    );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al descargar imagen privada',
-        ),
-      );
-    }
-    return response.bodyBytes;
-  }
-
   Future<Map<String, dynamic>> getSpecies(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$analysisId/species'),
