@@ -6,8 +6,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from backend.main import app
-from backend.config.db import get_db
+from main import app
+from config.db import get_db
 from backend.models.base import Base
 from backend.models.core import Usuario, Role, Analisis, LiquenPedia, Dataset as DatasetModel, ModeloIA
 

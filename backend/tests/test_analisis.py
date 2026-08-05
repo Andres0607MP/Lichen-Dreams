@@ -22,7 +22,7 @@ def obtener_token():
         "/auth/login",
         json={
             "username": "admin@gmail.com",
-            "password": "admin"
+            "password": "admin123"
         }
     )
 
@@ -98,3 +98,16 @@ def test_estado_analisis():
     data = response.json()
 
     assert data["status"] in ("completed", "error")
+
+
+def test_admin_no_login_with_old_password():
+
+    login = client.post(
+        "/auth/login",
+        json={
+            "username": "admin@gmail.com",
+            "password": "admin"
+        }
+    )
+
+    assert login.status_code in [401, 400]

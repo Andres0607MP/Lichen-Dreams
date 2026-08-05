@@ -6,7 +6,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
-from routes.auth import router as auth_router
 from routes.liquenpedia import router as liquen_router
 from config.database import engine
 from config.db import SessionLocal
@@ -46,7 +45,7 @@ app.mount("/uploads/articles", StaticFiles(directory=str(UPLOADS_BASE_DIR / "art
 # Importar y registrar routers
 try:
     from routes.auth import router as auth_router
-    app.include_router(auth_router, prefix="/auth")
+    app.include_router(auth_router, prefix="/auth", tags=["Auth"])
 except ImportError as e:
     print(f"Warning: auth router not found - {e}")
 

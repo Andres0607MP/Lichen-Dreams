@@ -3,10 +3,12 @@ from typing import List
 import os
 
 from fastapi import APIRouter, File, UploadFile, status, Request, Form, HTTPException, Depends
+from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from auth.auth_service import get_current_user
-from models.core import Usuario
+from models.core import Usuario , Analisis
+from config.db import get_db
 from services.analysis_service import AnalysisService
 from services.upload_service import (
     validate_image,
@@ -230,8 +232,129 @@ def get_analysis(analysis_id: int):
 
 
 @router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
-def delete_analysis(analysis_id: int):
+def delete_analysis(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
     """
-    Endpoint para eliminar un análisis
+    Elimina un análisis y sus imágenes asociadas.
+    Solo el propietario del análisis o un administrador pueden eliminarlo.
     """
+
+    analysis = db.query(Analisis).filter(
+        Analisis.id_analisis == analysis_id
+    ).first()
+
+    if not analysis:
+        raise HTTPException(
+            status_code=404,
+            detail="Análisis no encontrado"
+        )
+
+    is_owner = analysis.id_usuario == current_user.id_usuario
+
+    is_admin = (
+        current_user.rol 
+        and current_user.rol.nombre_rol == "admin"
+    )
+
+    if not is_owner and not is_admin:
+        raise HTTPException(
+            status_code=403,
+            detail="No tienes permiso para eliminar este análisis"
+        )
+
+    # Eliminar imágenes asociadas
+    for imagen in analysis.imagenes:
+        db.delete(imagen)
+
+    # Eliminar análisis
+    db.delete(analysis)
+
+    db.commit()
+
     return None
+
+
+@router.get("/{analysis_id}/species", response_model=dict, summary="Obtener especie de liquen identificada")
+def get_analysis_species(analysis_id: int, db: Session = Depends(get_db)):
+    """Devuelve la especie de liquen identificada en un análisis."""
+    analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+
+    especie = analysis.especie
+    if not especie:
+        return {
+            "id_analisis": analysis_id,
+            "nombre_cientifico": None,
+            "nombre_comun": None,
+            "nivel_tolerancia_contaminacion": None,
+            "indicador_calidad_aire": None,
+        }
+
+    return {
+        "id_analisis": analysis_id,
+        "nombre_cientifico": especie.nombre_cientifico,
+        "nombre_comun": especie.nombre_comun,
+        "nivel_tolerancia_contaminacion": especie.nivel_tolerancia_contaminacion,
+        "indicador_calidad_aire": especie.indicador_calidad_aire,
+    }
+
+
+@router.get("/{analysis_id}/location", response_model=dict, summary="Obtener ubicación de un análisis")
+def get_analysis_location(analysis_id: int, db: Session = Depends(get_db)):
+    """Devuelve la ubicación geográfica asociada a un análisis."""
+    analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+
+    ubicacion = analysis.ubicacion
+    if not ubicacion:
+        return {
+            "id_analisis": analysis_id,
+            "latitud": None,
+            "longitud": None,
+            "direccion": None,
+            "municipio": None,
+            "departamento": None,
+            "pais": None,
+        }
+
+    return {
+        "id_analisis": analysis_id,
+        "latitud": float(ubicacion.latitud) if ubicacion.latitud else None,
+        "longitud": float(ubicacion.longitud) if ubicacion.longitud else None,
+        "direccion": ubicacion.direccion,
+        "municipio": ubicacion.municipio,
+        "departamento": ubicacion.departamento,
+        "pais": ubicacion.pais,
+    }
+
+
+@router.post("/{analysis_id}/share", response_model=dict, summary="Compartir análisis en el mapa")
+def share_analysis(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Permite compartir un análisis para que aparezca en el mapa público."""
+    analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+
+    is_owner = analysis.id_usuario == current_user.id_usuario
+    is_admin = current_user.rol and current_user.rol.nombre_rol == "admin"
+    if not is_owner and not is_admin:
+        raise HTTPException(status_code=403, detail="No tienes permiso para compartir este análisis")
+
+    analysis.estado_validacion = "shared"
+    db.commit()
+    db.refresh(analysis)
+
+    return {
+        "id_analisis": analysis_id,
+        "message": "Análisis compartido exitosamente en el mapa",
+        "estado_validacion": analysis.estado_validacion,
+    }

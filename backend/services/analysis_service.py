@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict,List, Optional
 import base64
 import logging
 from pathlib import Path
@@ -91,10 +91,12 @@ class AnalysisService:
             "image_url": url_imagen,
             "imagen_base64": image_base64,
             "image_base64": image_base64,
+
             "resultado": analysis.resultado_ia or "",
             "categoria": analysis.resultado_ia or "",
             "confianza": float(analysis.porcentaje_confianza or 0.0),
-            "nombre_especie": analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None,
+            "nombre_especie": analysis.especie.nombre_cientifico if analysis.especie else "Desconocida",
+
             "estado": status_value,
             "status": status_value,
             "humedad": humidity,
@@ -148,6 +150,26 @@ class AnalysisService:
                 humedad_relativa=65.5,
                 fecha=datetime.utcnow(),
             )
+            prediccion = {}  # Hugo implementará esta función
+
+            if prediccion:
+                analysis.resultado_ia = prediccion.get("categoria", "liquen saludable")
+                analysis.porcentaje_confianza = prediccion.get("confianza", 0.5)
+                analysis.nivel_contaminacion = prediccion.get(
+                "nivel_contaminacion", "desconocida"
+                )
+                analysis.calidad_aire = prediccion.get(
+                "calidad_aire", "desconocida"
+                )
+            else:
+                analysis.resultado_ia = "pendiente de IA"
+                analysis.porcentaje_confianza = 0.0
+                analysis.nivel_contaminacion = "desconocida"
+                analysis.calidad_aire = "desconocida"
+                analysis.estado_validacion = "pending"
+                analysis.estado_liquen = "pendiente"
+
+
             db.add(analysis)
             db.commit()
             db.refresh(analysis)

@@ -17,8 +17,7 @@ def authenticate_user(db: Session, email: str, password: str):
         return None
     if verify_password(password, getattr(user, 'contrasena')):
         return user
-    if user.correo == 'admin@gmail.com' and password in {'admin', 'admin123'}:
-        return user
+    
     return None
 
 
