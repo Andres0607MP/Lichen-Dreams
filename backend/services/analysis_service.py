@@ -150,26 +150,6 @@ class AnalysisService:
                 humedad_relativa=65.5,
                 fecha=datetime.utcnow(),
             )
-            prediccion = {}  # Hugo implementará esta función
-
-            if prediccion:
-                analysis.resultado_ia = prediccion.get("categoria", "liquen saludable")
-                analysis.porcentaje_confianza = prediccion.get("confianza", 0.5)
-                analysis.nivel_contaminacion = prediccion.get(
-                "nivel_contaminacion", "desconocida"
-                )
-                analysis.calidad_aire = prediccion.get(
-                "calidad_aire", "desconocida"
-                )
-            else:
-                analysis.resultado_ia = "pendiente de IA"
-                analysis.porcentaje_confianza = 0.0
-                analysis.nivel_contaminacion = "desconocida"
-                analysis.calidad_aire = "desconocida"
-                analysis.estado_validacion = "pending"
-                analysis.estado_liquen = "pendiente"
-
-
             db.add(analysis)
             db.commit()
             db.refresh(analysis)
