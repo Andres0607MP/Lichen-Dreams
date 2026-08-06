@@ -1,4 +1,4 @@
-# Python
+﻿# Python
 venv/
 __pycache__/
 *.pyc
@@ -33,3 +33,14 @@ uploads/
 *.jpeg
 *.png
 *.webp
+
+# Backend temporary and generated files
+backend/backend/
+backend/flutter
+backend/ash.py
+backend/xd.py
+backend/*.json
+backend/tmp_*
+# Database files
+*.db
+*.db-journal
