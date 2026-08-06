@@ -16,11 +16,8 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Todas las columnas ya existen en la base de datos creada desde schema.sql
-    # Esta migración documenta que usuarios y sesiones están sincronizadas
     pass
 
 
 def downgrade() -> None:
-    # No hay cambios que revertir
     pass
