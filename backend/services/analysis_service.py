@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional, List
 import base64
 import logging
 from pathlib import Path
@@ -22,7 +22,7 @@ class AnalysisService:
             return None
 
         with SessionLocal() as db:
-            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes)).filter(Analisis.id_analisis == 1).first()
+            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes), joinedload(Analisis.especie)).filter(Analisis.id_analisis == 1).first()
             if analysis:
                 return analysis
 
@@ -91,12 +91,10 @@ class AnalysisService:
             "image_url": url_imagen,
             "imagen_base64": image_base64,
             "image_base64": image_base64,
-
             "resultado": analysis.resultado_ia or "",
             "categoria": analysis.resultado_ia or "",
             "confianza": float(analysis.porcentaje_confianza or 0.0),
-            "nombre_especie": analysis.especie.nombre_cientifico if analysis.especie else "Desconocida",
-
+            "nombre_especie": analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None,
             "estado": status_value,
             "status": status_value,
             "humedad": humidity,
@@ -185,7 +183,7 @@ class AnalysisService:
                 # non-fatal: history is optional
                 db.rollback()
 
-            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes)).filter(Analisis.id_analisis == analysis.id_analisis).first()
+            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes), joinedload(Analisis.especie)).filter(Analisis.id_analisis == analysis.id_analisis).first()
 
         return self._analysis_to_contract(analysis)
 
@@ -254,7 +252,7 @@ class AnalysisService:
     def get_results(self, analysis_id: int) -> Dict[str, Any]:
         self._ensure_default_analysis(analysis_id)
         with SessionLocal() as db:
-            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes)).filter(Analisis.id_analisis == analysis_id).first()
+            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes), joinedload(Analisis.especie)).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
         return self._analysis_to_contract(analysis)
