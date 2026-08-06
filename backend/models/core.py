@@ -10,7 +10,6 @@ from .base import Base
 
 class Role(Base):
     __tablename__ = 'roles'
-    __table_kwargs__ = {'extend_existing': True}
     id_rol = Column(Integer, primary_key=True, autoincrement=True)
     nombre_rol = Column(String(50), nullable=False, unique=True)
     descripcion = Column(Text)
@@ -25,7 +24,6 @@ class Role(Base):
 
 class Usuario(Base):
     __tablename__ = 'usuarios'
-    __table_kwargs__ = {'extend_existing': True}
     id_usuario = Column(Integer, primary_key=True, autoincrement=True)
     nombre = Column(String(100))
     apellido = Column(String(100))
@@ -45,6 +43,9 @@ class Usuario(Base):
     rol = relationship('Role', backref='usuarios')
     sesiones = relationship('Sesion', backref='usuario', cascade='all, delete-orphan')
     analisis = relationship('Analisis', backref='usuario', cascade='all, delete-orphan')
+    historial_actividad = relationship('HistorialActividad', back_populates='usuario', cascade='all, delete-orphan')
+    reportes = relationship('Reporte', back_populates='usuario', cascade='all, delete-orphan')
+    notificaciones = relationship('Notificacion', back_populates='usuario', cascade='all, delete-orphan')
 
     __table_args__ = (
         Index('idx_correo', 'correo'),
@@ -62,7 +63,6 @@ class Usuario(Base):
 
 class Sesion(Base):
     __tablename__ = 'sesiones'
-    __table_kwargs__ = {'extend_existing': True}
     id_sesion = Column(Integer, primary_key=True, autoincrement=True)
     token_sesion = Column(Text)
     dispositivo = Column(String(100))
@@ -81,7 +81,6 @@ class Sesion(Base):
 
 class ModeloIA(Base):
     __tablename__ = 'modelos_ia'
-    __table_kwargs__ = {'extend_existing': True}
     id_modelo = Column(Integer, primary_key=True, autoincrement=True)
     nombre_modelo = Column(String(100), nullable=False)
     version = Column(String(50), nullable=False)
@@ -104,7 +103,6 @@ class ModeloIA(Base):
 
 class Dataset(Base):
     __tablename__ = 'datasets'
-    __table_kwargs__ = {'extend_existing': True}
     id_dataset = Column(Integer, primary_key=True, autoincrement=True)
     nombre_dataset = Column(String(100), nullable=False)
     descripcion = Column(Text)
@@ -124,7 +122,6 @@ class Dataset(Base):
 
 class Analisis(Base):
     __tablename__ = 'analisis'
-    __table_kwargs__ = {'extend_existing': True}
     id_analisis = Column(Integer, primary_key=True, autoincrement=True)
     id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
     id_modelo = Column(Integer, ForeignKey('modelos_ia.id_modelo'), nullable=False)
@@ -182,7 +179,6 @@ class Analisis(Base):
 
 class Imagen(Base):
     __tablename__ = 'imagenes'
-    __table_kwargs__ = {'extend_existing': True}
     id_imagen = Column(Integer, primary_key=True, index=True)
     id_analisis = Column(Integer, ForeignKey('analisis.id_analisis'))
     nombre_imagen = Column(String(255))
@@ -211,7 +207,6 @@ class Imagen(Base):
 
 class EspecieLiquen(Base):
     __tablename__ = 'especies_liquenes'
-    __table_kwargs__ = {'extend_existing': True}
     id_especie = Column(Integer, primary_key=True, autoincrement=True)
     nombre_cientifico = Column(String(100))
     nombre_comun = Column(String(100))
@@ -229,7 +224,6 @@ class EspecieLiquen(Base):
 
 class Ubicacion(Base):
     __tablename__ = 'ubicaciones'
-    __table_kwargs__ = {'extend_existing': True}
     id_ubicacion = Column(Integer, primary_key=True, autoincrement=True)
     latitud = Column(DECIMAL(10, 8))
     longitud = Column(DECIMAL(11, 8))
@@ -250,7 +244,6 @@ class Ubicacion(Base):
 
 class ProcesamientoIA(Base):
     __tablename__ = 'procesamiento_ia'
-    __table_kwargs__ = {'extend_existing': True}
     id_procesamiento = Column(Integer, primary_key=True, autoincrement=True)
     id_analisis = Column(Integer, ForeignKey('analisis.id_analisis'))
     tiempo_ejecucion = Column(Float)
@@ -264,7 +257,6 @@ class ProcesamientoIA(Base):
 
 class ZonaAmbiental(Base):
     __tablename__ = 'zonas_ambientales'
-    __table_kwargs__ = {'extend_existing': True}
     id_zona = Column(Integer, primary_key=True, autoincrement=True)
     nombre_zona = Column(String(100))
     nivel_riesgo = Column(String(50))
@@ -275,7 +267,6 @@ class ZonaAmbiental(Base):
 
 class Notificacion(Base):
     __tablename__ = 'notificaciones'
-    __table_kwargs__ = {'extend_existing': True}
     id_notificacion = Column(Integer, primary_key=True, autoincrement=True)
     id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
     titulo = Column(String(100))
@@ -283,11 +274,11 @@ class Notificacion(Base):
     tipo_notificacion = Column(String(50))
     estado_notificacion = Column(String(50))
     fecha = Column(TIMESTAMP, server_default=func.now())
+    usuario = relationship('Usuario', back_populates='notificaciones')
 
 
 class LiquenPedia(Base):
     __tablename__ = 'liquenpedia'
-    __table_kwargs__ = {'extend_existing': True}
     id_articulo = Column(Integer, primary_key=True, autoincrement=True)
     titulo = Column(String(150), nullable=False)
     contenido = Column(Text, nullable=False)
@@ -306,7 +297,6 @@ class LiquenPedia(Base):
 
 class Reporte(Base):
     __tablename__ = 'reportes'
-    __table_kwargs__ = {'extend_existing': True}
     id_reporte = Column(Integer, primary_key=True, autoincrement=True)
     titulo = Column(String(100))
     descripcion = Column(Text)
@@ -315,12 +305,11 @@ class Reporte(Base):
     estado_reporte = Column(String(50))
     fecha_generacion = Column(TIMESTAMP, server_default=func.now())
     id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
-    usuario = relationship('Usuario')
+    usuario = relationship('Usuario', back_populates='reportes')
 
 
 class HistorialActividad(Base):
     __tablename__ = 'historial_actividad'
-    __table_kwargs__ = {'extend_existing': True}
     id_historial = Column(Integer, primary_key=True, autoincrement=True)
     id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
     accion_realizada = Column(String(255))
@@ -328,12 +317,11 @@ class HistorialActividad(Base):
     dispositivo = Column(String(100))
     ip_usuario = Column(String(50))
     fecha = Column(TIMESTAMP, server_default=func.now())
-    usuario = relationship('Usuario')
+    usuario = relationship('Usuario', back_populates='historial_actividad')
 
 
 class ModeloDataset(Base):
     __tablename__ = 'modelo_dataset'
-    __table_kwargs__ = {'extend_existing': True}
     id = Column(Integer, primary_key=True, autoincrement=True)
     id_modelo = Column(Integer, ForeignKey('modelos_ia.id_modelo'))
     id_dataset = Column(Integer, ForeignKey('datasets.id_dataset'))
