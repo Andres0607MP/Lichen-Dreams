@@ -4,9 +4,11 @@ import os
 
 from fastapi import APIRouter, File, UploadFile, status, Request, Form, HTTPException, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from auth.auth_service import get_current_user
-from models.core import Usuario
+from config.db import get_db
+from models.core import Analisis, Usuario
 from services.analysis_service import AnalysisService
 from services.upload_service import (
     validate_image,
@@ -23,7 +25,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 class AnalysisBaseResponse(BaseModel):
     id: int
     id_usuario: int = 1
-    url_imagen: str = ""    
+    url_imagen: str = ""
     resultado: str = ""
     estado: str = ""
     status: str = ""
@@ -78,7 +80,7 @@ async def upload_image(
     - La imagen se guarda en uploads/analyses/user_{id}/
     - Requiere autenticacion
     """
-    content, ext = validate_image(file)
+    content, ext = await validate_image(file)
 
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="Imagen demasiado grande")
@@ -227,8 +229,21 @@ def get_analysis(analysis_id: int):
 
 
 @router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
-def delete_analysis(analysis_id: int):
+def delete_analysis(
+    analysis_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
     """
     Endpoint para eliminar un análisis
     """
+    analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+
+    if analysis.id_usuario != current_user.id_usuario:
+        raise HTTPException(status_code=403, detail="No tienes permiso para eliminar este análisis")
+
+    db.delete(analysis)
+    db.commit()
     return None
