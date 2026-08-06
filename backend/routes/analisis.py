@@ -5,9 +5,10 @@ import os
 from fastapi import APIRouter, File, UploadFile, status, Request, Form, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
 from auth.auth_service import get_current_user
-from models.core import Usuario , Analisis
+from models.core import Analisis, Usuario
 from config.db import get_db
 from services.analysis_service import AnalysisService
 from services.upload_service import (
@@ -25,7 +26,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 class AnalysisBaseResponse(BaseModel):
     id: int
     id_usuario: int = 1
-    url_imagen: str = ""    
+    url_imagen: str = ""
     resultado: str = ""
     categoria: str = ""
     confianza: float = 0.0
@@ -83,7 +84,7 @@ async def upload_image(
     - La imagen se guarda en uploads/analyses/user_{id}/
     - Requiere autenticacion
     """
-    content, ext = validate_image(file)
+    content, ext = await validate_image(file)
 
     if len(content) > MAX_FILE_SIZE:
         raise HTTPException(status_code=413, detail="Imagen demasiado grande")
@@ -241,7 +242,6 @@ def delete_analysis(
     Elimina un análisis y sus imágenes asociadas.
     Solo el propietario del análisis o un administrador pueden eliminarlo.
     """
-
     analysis = db.query(Analisis).filter(
         Analisis.id_analisis == analysis_id
     ).first()
@@ -273,7 +273,6 @@ def delete_analysis(
     db.delete(analysis)
 
     db.commit()
-
     return None
 
 
