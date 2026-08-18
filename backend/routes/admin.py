@@ -1,8 +1,8 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Response
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, List
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from config.db import get_db
 from models.core import Usuario, Role, Reporte, Sesion, Analisis
@@ -55,6 +55,7 @@ class AdminUserUpdate(BaseModel):
     name: Optional[str] = None
     id_rol: Optional[int] = None
     estado_cuenta: Optional[str] = None
+    active: Optional[bool] = None
 
 
 class ReportResponse(BaseModel):
@@ -83,7 +84,7 @@ def get_all_users(
     db: Session = Depends(get_db),
 ):
     """Lista todos los usuarios registrados (solo administradores)."""
-    users = db.query(Usuario).offset(skip).limit(limit).all()
+    users = db.query(Usuario).filter(Usuario.estado_cuenta != 'eliminado').offset(skip).limit(limit).all()
     return users
 
 
@@ -131,6 +132,8 @@ def update_user(
         user.id_rol = request.id_rol
     if request.estado_cuenta is not None:
         user.estado_cuenta = request.estado_cuenta
+    if request.active is not None:
+        user.estado_cuenta = 'active' if request.active else 'inactive'
 
     db.commit()
     db.refresh(user)
@@ -148,9 +151,12 @@ def delete_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
+    if current_user.id_usuario == user_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El administrador no puede eliminarse a sí mismo")
+
     user.estado_cuenta = "eliminado"
     db.commit()
-    return None
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/reports", response_model=List[ReportResponse], summary="Obtener informes (Admin)")

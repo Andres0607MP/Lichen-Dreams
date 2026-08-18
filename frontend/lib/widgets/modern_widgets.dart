@@ -277,7 +277,7 @@ class FeatureCard extends StatelessWidget {
   final String title;
   final String description;
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final Color? color;
 
   const FeatureCard({
@@ -285,7 +285,7 @@ class FeatureCard extends StatelessWidget {
     required this.title,
     required this.description,
     required this.icon,
-    required this.onTap,
+    this.onTap,
     this.color,
   }) : super(key: key);
 
@@ -339,6 +339,101 @@ class FeatureCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class QuickActionCard extends StatefulWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback? onTap;
+  final Color? color;
+  final IconData? backgroundIcon;
+
+  const QuickActionCard({
+    Key? key,
+    required this.title,
+    required this.icon,
+    this.onTap,
+    this.color,
+    this.backgroundIcon,
+  }) : super(key: key);
+
+  @override
+  State<QuickActionCard> createState() => _QuickActionCardState();
+}
+
+class _QuickActionCardState extends State<QuickActionCard> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveColor = widget.color ?? AppTheme.primaryGreen;
+
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        child: Container(
+          clipBehavior: Clip.antiAlias,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                effectiveColor.withValues(alpha: 0.08),
+                effectiveColor.withValues(alpha: 0.02),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: effectiveColor.withValues(alpha: 0.12),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: effectiveColor.withValues(alpha: 0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Transform.rotate(
+                angle: -18 * 3.141592653589793 / 180,
+                child: Icon(
+                  widget.backgroundIcon ?? widget.icon,
+                  size: 140,
+                  color: effectiveColor.withValues(alpha: 0.07),
+                ),
+              ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    widget.title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textDark,
+                    ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

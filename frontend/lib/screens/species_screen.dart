@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../services/api_service.dart';
+import '../state/species_state.dart';
 import '../widgets/common_widgets.dart';
 
 class SpeciesScreen extends StatefulWidget {
@@ -11,35 +12,6 @@ class SpeciesScreen extends StatefulWidget {
 }
 
 class _SpeciesScreenState extends State<SpeciesScreen> {
-  final ApiService _apiService = ApiService();
-  late Future<List<Map<String, dynamic>>> _speciesFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _speciesFuture = _loadSpecies();
-  }
-
-  Future<List<Map<String, dynamic>>> _loadSpecies() async {
-    final history = await _apiService.getAnalysisHistory();
-    final speciesList = <Map<String, dynamic>>[];
-    for (final analysis in history) {
-      final id = analysis['id'] is int ? analysis['id'] as int : int.tryParse(analysis['id']?.toString() ?? '');
-      if (id != null) {
-        try {
-          final species = await _apiService.getSpecies(id);
-          final rawSpecies = species['data'] is List
-              ? List<Map<String, dynamic>>.from(species['data'])
-              : [species];
-          speciesList.addAll(rawSpecies);
-        } catch (_) {
-          continue;
-        }
-      }
-    }
-    return speciesList;
-  }
-
   Widget _buildSpeciesItem(Map<String, dynamic> species) {
     final nombreCientifico = species['nombre_cientifico']?.toString() ?? species['scientific_name']?.toString() ?? 'Desconocido';
     final nombreComun = species['nombre_comun']?.toString() ?? species['common_name']?.toString() ?? 'No disponible';
@@ -92,56 +64,41 @@ class _SpeciesScreenState extends State<SpeciesScreen> {
   }
 
   @override
-  void dispose() {
-    _apiService.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
+    final speciesState = context.watch<SpeciesState>();
+
     return Scaffold(
       appBar: AppBar(title: const Text('Especies identificadas')),
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: _speciesFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.error_outline, size: 64, color: Colors.red),
-                    const SizedBox(height: 16),
-                    Text('Error al cargar especies:\n${snapshot.error}', textAlign: TextAlign.center),
-                    const SizedBox(height: 16),
-                    PrimaryButton(onPressed: () => setState(() => _speciesFuture = _loadSpecies()), child: const Text('Reintentar')),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final species = snapshot.data ?? [];
-          if (species.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('No se encontraron especies en tu historial de análisis.'),
-              ),
-            );
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 16, bottom: 24),
-            itemCount: species.length,
-            itemBuilder: (context, index) => _buildSpeciesItem(species[index]),
-          );
-        },
-      ),
+      body: speciesState.loading
+          ? const Center(child: CircularProgressIndicator())
+          : speciesState.error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text('Error al cargar especies:\n${speciesState.error}', textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        PrimaryButton(onPressed: speciesState.loadSpecies, child: const Text('Reintentar')),
+                      ],
+                    ),
+                  ),
+                )
+              : speciesState.species.isEmpty
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('No se encontraron especies en tu historial de análisis.'),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 16, bottom: 24),
+                      itemCount: speciesState.species.length,
+                      itemBuilder: (context, index) => _buildSpeciesItem(speciesState.species[index]),
+                    ),
     );
   }
 }

@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from config.db import get_db
-from models.core import HistorialActividad, Usuario
+from models.core import Analisis, HistorialActividad, Usuario
 from auth.auth_service import get_current_user
 from services.analysis_service import AnalysisService
 
@@ -21,6 +21,8 @@ class HistoryResponse(BaseModel):
     url_imagen: str = ""
     resultado: str = ""
     estado: str = ""
+    estado_validacion: str = ""
+    visibilidad: str = ""
     humedad: float = 0.0
     calidad_del_aire: str = ""
     recomendacion: str = ""
@@ -73,6 +75,8 @@ def _history_item_to_contract(item: HistorialActividad) -> HistoryResponse:
         url_imagen=analysis_data.get('imagen_url') or analysis_data.get('url_imagen') or analysis_data.get('image_url') or "",
         resultado=analysis_data.get('resultado') or "",
         estado=analysis_data.get('estado') or "",
+        estado_validacion=analysis_data.get('estado_validacion') or "",
+        visibilidad=analysis_data.get('visibilidad') or "",
         humedad=float(analysis_data.get('humedad') or 0.0),
         calidad_del_aire=analysis_data.get('calidad_del_aire') or "",
         recomendacion=analysis_data.get('recomendacion') or "",
@@ -147,6 +151,24 @@ def delete_history(
 
     if not (is_owner or is_admin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para eliminar este registro")
+
+    analysis_id = None
+    if registro.descripcion_accion:
+        for part in registro.descripcion_accion.split(";"):
+            key_value = part.strip().split("=", 1)
+            if len(key_value) == 2:
+                key, value = key_value
+                if key == "analysis_id":
+                    try:
+                        analysis_id = int(value)
+                    except ValueError:
+                        analysis_id = None
+                    break
+
+    if analysis_id is not None:
+        analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+        if analysis:
+            db.delete(analysis)
 
     db.delete(registro)
     db.commit()

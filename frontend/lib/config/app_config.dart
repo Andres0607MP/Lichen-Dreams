@@ -25,10 +25,6 @@ class AppConfig {
         imagePath.startsWith('/') ? imagePath : '/$imagePath';
 
     final result = '$normalizedBase$normalizedPath';
-    assert(() {
-      print('[AppConfig.getImageUrl] input: "$imagePath" -> output: "$result"');
-      return true;
-    }());
     return result;
   }
 

@@ -340,14 +340,14 @@ def test_guardar_ubicacion(client):
     assert response.json()["latitud"] == 4.7110
 
 
-def test_obtener_puntos_del_mapa(client, db):
+def test_obtener_puntos_del_mapa(client, db, test_regular_user):
     ubicacion = Ubicacion(latitud=4.71, longitud=-74.07, direccion="Bogotá", municipio="Bogotá")
     db.add(ubicacion)
     db.commit()
     db.refresh(ubicacion)
 
     analysis = Analisis(
-        id_usuario=1,
+        id_usuario=test_regular_user.id_usuario,
         id_modelo=1,
         id_dataset=1,
         id_ubicacion=ubicacion.id_ubicacion,
@@ -359,7 +359,8 @@ def test_obtener_puntos_del_mapa(client, db):
     db.commit()
     db.refresh(analysis)
 
-    response = client.get("/api/maps/points")
+    headers = _login_headers(client, "userqa@example.com", "User123!")
+    response = client.get("/api/maps/points", headers=headers)
     assert response.status_code == 200
     assert any(point["id"] == analysis.id_analisis for point in response.json())
 

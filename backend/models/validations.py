@@ -179,6 +179,7 @@ class SesionResponse(BaseModel):
 
 class MapPointResponse(BaseModel):
     id: int
+    id_usuario: int
     lat: float
     lng: float
     zone_name: str
@@ -188,6 +189,10 @@ class MapPointResponse(BaseModel):
     confidence: float
     date: datetime
     status: str
+    visibilidad: str = "private"
+    usuario: Optional[dict] = None
+    analysis_count: int = 1
+    analyses: List[dict] = []
 
     class Config:
         from_attributes = True

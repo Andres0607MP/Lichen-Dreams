@@ -8,10 +8,12 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:frontend/main.dart';
+import 'package:frontend/state/auth_state.dart';
+import 'package:frontend/services/api_service.dart';
 
 void main() {
   testWidgets('renders the login screen', (WidgetTester tester) async {
-    await tester.pumpWidget(const LichenDreamsApp());
+    await tester.pumpWidget(LichenDreamsApp(authState: AuthState(), apiService: ApiService()));
 
     expect(find.text('Lichen\nDreams'), findsOneWidget);
     expect(find.text('Iniciar sesión'), findsOneWidget);

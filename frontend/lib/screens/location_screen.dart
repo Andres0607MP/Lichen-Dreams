@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../services/api_service.dart';
 import '../widgets/common_widgets.dart';
@@ -11,7 +12,6 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
@@ -22,7 +22,6 @@ class _LocationScreenState extends State<LocationScreen> {
 
   @override
   void dispose() {
-    _apiService.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
     _direccionController.dispose();
@@ -52,7 +51,8 @@ class _LocationScreenState extends State<LocationScreen> {
 
     setState(() => _isSaving = true);
     try {
-      await _apiService.saveLocation(locationData);
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      await apiService.saveLocation(locationData);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

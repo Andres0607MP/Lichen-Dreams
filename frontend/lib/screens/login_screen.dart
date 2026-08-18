@@ -3,12 +3,21 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:provider/provider.dart';
 
 import '../routes/route_names.dart';
-import '../services/api_service.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/page_transitions.dart';
+import '../state/auth_state.dart';
+import '../state/profile_state.dart';
+import '../state/dashboard_state.dart';
+import '../state/history_state.dart';
+import '../state/map_state.dart';
+import '../state/articles_state.dart';
+import '../state/notifications_state.dart';
+import '../state/analysis_state.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,8 +32,6 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
-  final ApiService _api = ApiService();
-  bool _loading = false;
 
   String? _emailError;
   String? _passwordError;
@@ -81,7 +88,6 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
-    _api.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     _bgController.dispose();
@@ -90,28 +96,16 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  void _showErrorMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(LucideIcons.triangleAlert, color: Colors.white),
-            const SizedBox(width: 12),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: Colors.red.shade400,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
-
   void _goToDashboard() {
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    context.read<ProfileState>().reset();
+    context.read<DashboardState>().reset();
+    context.read<HistoryState>().reset();
+    context.read<ArticlesState>().reset();
+    context.read<NotificationsState>().reset();
+    context.read<AnalysisState>().reset();
+    context.read<MapState>().reset();
+    Navigator.pushReplacementNamed(context, AppRoutes.loading);
   }
 
   void _validateAllFields() {
@@ -143,12 +137,33 @@ class _LoginScreenState extends State<LoginScreen>
         _passwordError == null;
   }
 
+  void _showLoginError(String error) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(LucideIcons.triangleAlert, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(child: Text(error)),
+          ],
+        ),
+        backgroundColor: Colors.red.shade400,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthState>();
+
     return Scaffold(
       body: Stack(
         children: [
-          Positioned.fill(
+          Positioned.fill(  
             child: ScaleTransition(
               scale: _bgScale,
               child: Image.asset(
@@ -265,27 +280,24 @@ class _LoginScreenState extends State<LoginScreen>
                                   _AnimatedField(
                                     delay: const Duration(milliseconds: 440),
                                     child: _LoginButton(
-                                      loading: _loading,
+                                      loading: authState.loading,
                                       enabled: _isFormValid,
-                                      onPressed: () async {
-                                        final email = _emailController.text
-                                            .trim();
-                                        final password =
-                                            _passwordController.text;
+                                       onPressed: () async {
+                                         final email = _emailController.text
+                                             .trim();
+                                         final password =
+                                             _passwordController.text;
 
-                                        setState(() => _loading = true);
-                                        try {
-                                          await _api.login(email, password);
-                                          _goToDashboard();
-                                        } catch (error) {
-                                          final message = error is ApiException
-                                              ? error.message
-                                              : 'Error: ${error.toString()}';
-                                          _showErrorMessage(message);
-                                        } finally {
-                                          if (mounted)
-                                            setState(() => _loading = false);
-                                        }
+                                         try {
+                                           final success = await authState.login(email, password);
+                                           if (success && mounted) {
+                                             _goToDashboard();
+                                           }
+                                         } catch (e) {
+                                           if (mounted) {
+                                             _showLoginError(e.toString());
+                                           }
+                                         }
                                       },
                                     ),
                                   ),
@@ -400,7 +412,6 @@ class _LoginScreenState extends State<LoginScreen>
           decoration: InputDecoration(
             labelText: label,
 
-            // Animación del label flotante más limpia
             floatingLabelBehavior: FloatingLabelBehavior.auto,
 
             floatingLabelStyle: GoogleFonts.poppins(
@@ -461,7 +472,6 @@ class _LoginScreenState extends State<LoginScreen>
 
             filled: true,
 
-            // Menos opaco que AppTheme.surfaceColor
             fillColor: Colors.white.withValues(alpha: 0.75),
 
             contentPadding: const EdgeInsets.symmetric(
@@ -527,7 +537,6 @@ class _LichenVectorPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final breathe = 1.0 + 0.03 * math.sin(progress * math.pi * 2);
 
-    // Foliose: talos grandes en esquinas
     _drawFoliose(
       canvas,
       Offset(size.width * 0.10, size.height * 0.18),
@@ -571,7 +580,6 @@ class _LichenVectorPainter extends CustomPainter {
       3.1,
     );
 
-    // Crustose: parches planos pequeños
     _drawCrustose(
       canvas,
       Offset(size.width * 0.92, size.height * 0.10),
@@ -608,7 +616,6 @@ class _LichenVectorPainter extends CustomPainter {
       1.8,
     );
 
-    // Fruticose: ramas finas
     _drawFruticose(
       canvas,
       Offset(size.width * 0.12, size.height * 0.20),
@@ -646,7 +653,6 @@ class _LichenVectorPainter extends CustomPainter {
       6.7,
     );
 
-    // Textura microscópica y puntos
     _drawMicroTexture(canvas, size);
     _drawApothecia(canvas, size);
   }

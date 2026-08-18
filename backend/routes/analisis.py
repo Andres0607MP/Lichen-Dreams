@@ -8,7 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth.auth_service import get_current_user
-from models.core import Analisis, Usuario
+from models.core import Analisis, Usuario, HistorialActividad
 from config.db import get_db
 from services.analysis_service import AnalysisService
 from services.upload_service import (
@@ -25,7 +25,7 @@ MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
 
 class AnalysisBaseResponse(BaseModel):
     id: int
-    id_usuario: int = 1
+    id_usuario: int
     url_imagen: str = ""
     resultado: str = ""
     categoria: str = ""
@@ -42,6 +42,8 @@ class AnalysisBaseResponse(BaseModel):
     imagen_base64: str | None = None
     image_base64: str | None = None
     fecha_creacion: datetime = Field(default_factory=datetime.now)
+    rechazado: bool = False
+    mensaje_rechazo: str | None = None
 
 
 class AnalysisResponse(AnalysisBaseResponse):
@@ -129,7 +131,7 @@ async def process_analysis(
     image_url: str | None = Form(default=None),
     id_modelo: int = Form(default=1),
     id_dataset: int | None = Form(default=None),
-    id_usuario: int | None = Form(default=None),
+    id_ubicacion: int | None = Form(default=None),
     current_user: Usuario = Depends(get_current_user),
 ):
     """
@@ -141,6 +143,7 @@ async def process_analysis(
     resolved_modelo = id_modelo
     resolved_dataset = id_dataset
     resolved_usuario = current_user.id_usuario
+    resolved_ubicacion = id_ubicacion
 
     if file is not None:
         content, ext = await validate_image(file)
@@ -165,7 +168,7 @@ async def process_analysis(
             resolved_image_url = body.get("image_url", resolved_image_url)
             resolved_modelo = int(body.get("id_modelo", resolved_modelo) or 1)
             resolved_dataset = body.get("id_dataset", resolved_dataset)
-            resolved_usuario = int(body.get("id_usuario", resolved_usuario) or 1)
+            resolved_ubicacion = body.get("id_ubicacion", resolved_ubicacion)
 
     if not resolved_image_url:
         raise HTTPException(status_code=422, detail="Debes enviar una imagen o image_url")
@@ -175,61 +178,62 @@ async def process_analysis(
         id_modelo=resolved_modelo,
         id_dataset=resolved_dataset,
         id_usuario=resolved_usuario,
+        id_ubicacion=resolved_ubicacion,
     )
 
 
 @router.get("/{analysis_id}/status", response_model=AnalysisStatusResponse, summary="Obtener estado del análisis")
-def get_analysis_status(analysis_id: int):
+def get_analysis_status(analysis_id: int, current_user: Usuario = Depends(get_current_user)):
     """
     Endpoint para obtener el estado de un análisis
     """
-    return analysis_service.get_status(analysis_id=analysis_id)
+    return analysis_service.get_status(analysis_id=analysis_id, user_id=current_user.id_usuario)
 
 
 @router.get("/{analysis_id}/humidity", response_model=HumidityResponse, summary="Obtener datos de humedad")
-def get_humidity(analysis_id: int):
+def get_humidity(analysis_id: int, current_user: Usuario = Depends(get_current_user)):
     """
     Endpoint para obtener información de humedad estimada
     - RF05: Sistema estimar humedad
     """
-    payload = analysis_service.get_humidity(analysis_id=analysis_id)
+    payload = analysis_service.get_humidity(analysis_id=analysis_id, user_id=current_user.id_usuario)
     payload["ubicacion"] = "Bosque tropical"
     return payload
 
 
 @router.get("/{analysis_id}/air-quality", response_model=AirQualityResponse, summary="Obtener calidad del aire")
-def get_air_quality(analysis_id: int):
+def get_air_quality(analysis_id: int, current_user: Usuario = Depends(get_current_user)):
     """
     Endpoint para obtener información de calidad del aire
     - RF011: Sistema estimar aire
     """
-    return analysis_service.get_air_quality(analysis_id=analysis_id)
+    return analysis_service.get_air_quality(analysis_id=analysis_id, user_id=current_user.id_usuario)
 
 
 @router.get("/{analysis_id}/recommendation", response_model=RecommendationResponse, summary="Obtener recomendación ecológica")
-def get_recommendation(analysis_id: int):
+def get_recommendation(analysis_id: int, current_user: Usuario = Depends(get_current_user)):
     """
     Endpoint para obtener recomendaciones ambientales
     - RF012: Sistema generar recomendación ecológica
     """
-    return analysis_service.get_recommendation(analysis_id=analysis_id)
+    return analysis_service.get_recommendation(analysis_id=analysis_id, user_id=current_user.id_usuario)
 
 
 @router.get("/results/{analysis_id}", response_model=AnalysisResponse, summary="Obtener resultados completos")
-def get_results(analysis_id: int):
+def get_results(analysis_id: int, current_user: Usuario = Depends(get_current_user)):
     """
     Endpoint para obtener resultados completos del análisis
     - RF09: Usuario consultar resultados
     """
-    return analysis_service.get_results(analysis_id=analysis_id)
+    return analysis_service.get_results(analysis_id=analysis_id, user_id=current_user.id_usuario)
 
 
 @router.get("/{analysis_id}", response_model=AnalysisResponse, summary="Obtener análisis por ID")
-def get_analysis(analysis_id: int):
+def get_analysis(analysis_id: int, current_user: Usuario = Depends(get_current_user)):
     """
     Endpoint para obtener un análisis específico
     """
-    return analysis_service.get_analysis(analysis_id=analysis_id)
+    return analysis_service.get_analysis(analysis_id=analysis_id, user_id=current_user.id_usuario)
 
 
 @router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")
@@ -265,6 +269,13 @@ def delete_analysis(
             detail="No tienes permiso para eliminar este análisis"
         )
 
+    # Eliminar registros de historial asociados
+    for historial in db.query(HistorialActividad).filter(
+        HistorialActividad.id_usuario == analysis.id_usuario,
+        HistorialActividad.descripcion_accion.contains(f"analysis_id={analysis.id_analisis};")
+    ).all():
+        db.delete(historial)
+
     # Eliminar imágenes asociadas
     for imagen in analysis.imagenes:
         db.delete(imagen)
@@ -277,11 +288,13 @@ def delete_analysis(
 
 
 @router.get("/{analysis_id}/species", response_model=dict, summary="Obtener especie de liquen identificada")
-def get_analysis_species(analysis_id: int, db: Session = Depends(get_db)):
+def get_analysis_species(analysis_id: int, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     """Devuelve la especie de liquen identificada en un análisis."""
     analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
     if not analysis:
         raise HTTPException(status_code=404, detail="Análisis no encontrado")
+    if analysis.id_usuario != current_user.id_usuario:
+        raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
 
     especie = analysis.especie
     if not especie:
@@ -303,11 +316,13 @@ def get_analysis_species(analysis_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{analysis_id}/location", response_model=dict, summary="Obtener ubicación de un análisis")
-def get_analysis_location(analysis_id: int, db: Session = Depends(get_db)):
+def get_analysis_location(analysis_id: int, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
     """Devuelve la ubicación geográfica asociada a un análisis."""
     analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
     if not analysis:
         raise HTTPException(status_code=404, detail="Análisis no encontrado")
+    if analysis.id_usuario != current_user.id_usuario:
+        raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
 
     ubicacion = analysis.ubicacion
     if not ubicacion:
@@ -348,12 +363,12 @@ def share_analysis(
     if not is_owner and not is_admin:
         raise HTTPException(status_code=403, detail="No tienes permiso para compartir este análisis")
 
-    analysis.estado_validacion = "shared"
+    analysis.visibilidad = "shared"
     db.commit()
     db.refresh(analysis)
 
     return {
         "id_analisis": analysis_id,
         "message": "Análisis compartido exitosamente en el mapa",
-        "estado_validacion": analysis.estado_validacion,
+        "visibilidad": analysis.visibilidad,
     }

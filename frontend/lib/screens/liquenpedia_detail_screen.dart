@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+
 import '../models/liquenpedia_article.dart';
-import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
+import '../state/articles_state.dart';
 import 'liquenpedia_form_screen.dart';
 
 class LiquenpediaDetailScreen extends StatelessWidget {
@@ -41,8 +43,7 @@ class LiquenpediaDetailScreen extends StatelessWidget {
             onPressed: () async {
               Navigator.pop(context);
               try {
-                final apiService = ApiService();
-                await apiService.deleteLiquenpediaArticle(article.id ?? 0);
+                await context.read<ArticlesState>().deleteArticle(article.id ?? 0);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Artículo eliminado')),
                 );

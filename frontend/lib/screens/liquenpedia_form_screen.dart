@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
+import '../state/articles_state.dart';
 
 class LiquenpediaFormScreen extends StatefulWidget {
   final LiquenpediaArticle? articleToEdit;
@@ -18,7 +21,6 @@ class LiquenpediaFormScreen extends StatefulWidget {
 }
 
 class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
-  final ApiService _apiService = ApiService();
   final _formKey = GlobalKey<FormState>();
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -98,7 +100,8 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
 
       final image = _pickedImage;
       if (image == null) return;
-      final uploadedUrl = await _apiService.uploadImage(image, imageType: 'article');
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final uploadedUrl = await apiService.uploadImage(image, imageType: 'article');
       if (!mounted) return;
 
       setState(() {
@@ -137,9 +140,10 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
 
     try {
       final estadoBackend = _translateToBackend(_estadoPublicacion);
+      final articlesState = context.read<ArticlesState>();
 
       if (widget.articleToEdit == null) {
-        await _apiService.createLiquenpediaArticle(
+        await articlesState.createArticle(
           titulo: _tituloController.text,
           contenido: _contenidoController.text,
           autor: _autorController.text,
@@ -156,7 +160,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
           ),
         );
       } else {
-        await _apiService.updateLiquenpediaArticle(
+        await articlesState.updateArticle(
           widget.articleToEdit?.id ?? 0,
           titulo: _tituloController.text,
           contenido: _contenidoController.text,

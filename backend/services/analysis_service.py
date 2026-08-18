@@ -6,11 +6,12 @@ from pathlib import Path
 
 from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_
 
 from config.db import SessionLocal
 from config.settings import normalize_image_path
 from services.upload_service import resolve_file_path
-from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen
+from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen, Notificacion
 
 
 class AnalysisService:
@@ -48,9 +49,24 @@ class AnalysisService:
                 fecha=datetime.utcnow(),
             )
             db.add(analysis)
+            db.flush()
+
+            historial = HistorialActividad(
+                accion_realizada='analisis_guardado',
+                descripcion_accion=f'analysis_id={analysis.id_analisis}; location=',
+                id_usuario=analysis.id_usuario,
+            )
+            db.add(historial)
+
             db.commit()
             db.refresh(analysis)
             return analysis
+
+    def _ensure_owner_or_admin(self, analysis: Analisis, user_id: int) -> bool:
+        with SessionLocal() as db:
+            admin_user = db.query(Usuario).filter(Usuario.correo == 'admin@gmail.com').first()
+        is_admin = admin_user is not None and user_id == admin_user.id_usuario
+        return analysis.id_usuario == user_id or is_admin
 
     def _normalize_status(self, value: Optional[str]) -> str:
         if value is None:
@@ -105,9 +121,11 @@ class AnalysisService:
             "recommendation": recommendation,
             "fecha_creacion": analysis.fecha or datetime.utcnow(),
             "progreso": 100 if status_value == "completed" else 50,
+            "estado_validacion": analysis.estado_validacion or "",
+            "visibilidad": analysis.visibilidad or "private",
         }
 
-    def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1) -> Dict[str, Any]:
+    def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1, id_ubicacion: Optional[int] = None) -> Dict[str, Any]:
         try:
             from ia.modelos.lichen_classifier import predict
 
@@ -131,6 +149,33 @@ class AnalysisService:
             estado_liquen = "error"
             estado_validacion = "error"
 
+        if resultado_ia == "liquen desconocido":
+            return {
+                "id": 0,
+                "id_usuario": id_usuario,
+                "url_imagen": image_url,
+                "imagen_url": image_url,
+                "image_url": image_url,
+                "imagen_base64": None,
+                "image_base64": None,
+                "resultado": resultado_ia,
+                "categoria": resultado_ia,
+                "confianza": porcentaje_confianza,
+                "nombre_especie": None,
+                "estado": estado_validacion,
+                "status": estado_validacion,
+                "humedad": 0.0,
+                "humidity": 0.0,
+                "calidad_del_aire": calidad_aire,
+                "air_quality": calidad_aire,
+                "recomendacion": "La imagen no parece corresponder a un liquen. Intenta tomar otra fotografía.",
+                "recommendation": "La imagen no parece corresponder a un liquen. Intenta tomar otra fotografía.",
+                "fecha_creacion": datetime.utcnow(),
+                "progreso": 0,
+                "rechazado": True,
+                "mensaje_rechazo": "La imagen no parece corresponder a un liquen. Intenta tomar otra fotografía.",
+            }
+
         with SessionLocal() as db:
             analysis = Analisis(
                 id_usuario=id_usuario,
@@ -144,13 +189,26 @@ class AnalysisService:
                 tiempo_procesamiento=1.2,
                 observaciones="Buena calidad de aire en la zona",
                 estado_validacion=estado_validacion,
+                visibilidad="private",
                 temperatura_ambiente=22.0,
                 humedad_relativa=65.5,
                 fecha=datetime.utcnow(),
+                id_ubicacion=id_ubicacion,
             )
             db.add(analysis)
-            db.commit()
-            db.refresh(analysis)
+            db.flush()
+
+            notificacion = Notificacion(
+                id_usuario=id_usuario,
+                titulo="Análisis en proceso",
+                mensaje=f"analysis_id={analysis.id_analisis}|Análisis en proceso",
+                tipo_notificacion="analysis",
+                estado_notificacion="processing",
+                fecha=datetime.utcnow(),
+            )
+            db.add(notificacion)
+            db.flush()
+            print(f"[NOTIFICACION] creada processing para analysis_id={analysis.id_analisis}")
 
             image = Imagen(
                 id_analisis=analysis.id_analisis,
@@ -167,33 +225,64 @@ class AnalysisService:
                 descripcion="Imagen analizada",
             )
             db.add(image)
-            db.commit()
+            db.flush()
+
+            historial = HistorialActividad(
+                accion_realizada='analisis_guardado',
+                descripcion_accion=f'analysis_id={analysis.id_analisis}; location=',
+                id_usuario=analysis.id_usuario,
+            )
+            db.add(historial)
+
+            if estado_validacion == "completed":
+                db.query(Notificacion).filter(
+                    Notificacion.id_usuario == id_usuario,
+                    Notificacion.tipo_notificacion == "analysis",
+                    Notificacion.mensaje.like(f"analysis_id={analysis.id_analisis}|%"),
+                ).update({
+                    Notificacion.titulo: "Tu análisis está listo",
+                    Notificacion.estado_notificacion: "completed",
+                    Notificacion.mensaje: f"analysis_id={analysis.id_analisis}|Resultado disponible",
+                }, synchronize_session=False)
+                print(f"[NOTIFICACION] completada analysis_id={analysis.id_analisis}")
+            else:
+                db.query(Notificacion).filter(
+                    Notificacion.id_usuario == id_usuario,
+                    Notificacion.tipo_notificacion == "analysis",
+                    Notificacion.mensaje.like(f"analysis_id={analysis.id_analisis}|%"),
+                ).update({
+                    Notificacion.titulo: "Análisis fallido",
+                    Notificacion.estado_notificacion: "failed",
+                    Notificacion.mensaje: f"analysis_id={analysis.id_analisis}|No se pudo completar",
+                }, synchronize_session=False)
+                print(f"[NOTIFICACION] fallida analysis_id={analysis.id_analisis}")
+
+            try:
+                db.commit()
+            except Exception as exc:
+                db.rollback()
+                logging.error(f"Error al guardar historial para análisis {analysis.id_analisis}: {exc}")
+                raise
+
+            db.refresh(analysis)
             db.refresh(image)
 
-            # Optionally persist a history record so analyses show up in user history
-            try:
-                historial = HistorialActividad(
-                    accion_realizada='analisis_guardado',
-                    descripcion_accion=f'analysis_id={analysis.id_analisis}; location=',
-                    id_usuario=analysis.id_usuario,
-                )
-                db.add(historial)
-                db.commit()
-            except Exception:
-                # non-fatal: history is optional
-                db.rollback()
-
-            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes), joinedload(Analisis.especie)).filter(Analisis.id_analisis == analysis.id_analisis).first()
+            analysis = db.query(Analisis).options(
+                joinedload(Analisis.imagenes),
+                joinedload(Analisis.especie),
+            ).filter(Analisis.id_analisis == analysis.id_analisis).first()
 
         return self._analysis_to_contract(analysis)
 
-    def get_status(self, analysis_id: int) -> Dict[str, Any]:
+    def get_status(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         analysis = self._ensure_default_analysis(analysis_id)
         if analysis is None:
             with SessionLocal() as db:
                 analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
+        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
         status_value = self._normalize_status(analysis.estado_validacion)
         return {
             "id": analysis.id_analisis,
@@ -202,13 +291,15 @@ class AnalysisService:
             "progreso": 100 if status_value == "completed" else 50,
         }
 
-    def get_humidity(self, analysis_id: int) -> Dict[str, Any]:
+    def get_humidity(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         analysis = self._ensure_default_analysis(analysis_id)
         if analysis is None:
             with SessionLocal() as db:
                 analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
+        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
         return {
             "id": analysis.id_analisis,
             "humedad": float(analysis.humedad_relativa or 0.0),
@@ -217,13 +308,15 @@ class AnalysisService:
             "ubicacion": "",
         }
 
-    def get_air_quality(self, analysis_id: int) -> Dict[str, Any]:
+    def get_air_quality(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         analysis = self._ensure_default_analysis(analysis_id)
         if analysis is None:
             with SessionLocal() as db:
                 analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
+        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
         return {
             "id": analysis.id_analisis,
             "calidad_del_aire": analysis.calidad_aire or "",
@@ -233,13 +326,15 @@ class AnalysisService:
             "fecha_creacion": analysis.fecha or datetime.utcnow(),
         }
 
-    def get_recommendation(self, analysis_id: int) -> Dict[str, Any]:
+    def get_recommendation(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         analysis = self._ensure_default_analysis(analysis_id)
         if analysis is None:
             with SessionLocal() as db:
                 analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
+        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
         recommendation = analysis.observaciones or "Aumentar cobertura vegetal en zona"
         return {
             "id": analysis.id_analisis,
@@ -249,36 +344,46 @@ class AnalysisService:
             "acciones": ["Plantar árboles nativos", "Reducir contaminación", "Proteger ecosistema"],
         }
 
-    def get_results(self, analysis_id: int) -> Dict[str, Any]:
+    def get_results(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         self._ensure_default_analysis(analysis_id)
         with SessionLocal() as db:
             analysis = db.query(Analisis).options(joinedload(Analisis.imagenes), joinedload(Analisis.especie)).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
+        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
         return self._analysis_to_contract(analysis)
 
-    def get_analysis(self, analysis_id: int) -> Dict[str, Any]:
-        return self.get_results(analysis_id=analysis_id)
+    def get_analysis(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
+        return self.get_results(analysis_id=analysis_id, user_id=user_id)
 
-    def get_map_points(self) -> List[Dict[str, Any]]:
+    def get_map_points(self, user_id: int) -> List[Dict[str, Any]]:
         with SessionLocal() as db:
             analyses = db.query(Analisis).options(
                 joinedload(Analisis.ubicacion),
                 joinedload(Analisis.especie),
+                joinedload(Analisis.usuario),
             ).filter(
                 Analisis.id_ubicacion.isnot(None),
-            ).all()
+                or_(
+                    Analisis.id_usuario == user_id,
+                    Analisis.visibilidad == 'shared'
+                )
+            ).order_by(Analisis.fecha.desc()).all()
 
-            points: List[Dict[str, Any]] = []
+            results = []
+
             for analysis in analyses:
                 ubicacion = analysis.ubicacion
                 especie = analysis.especie
+                usuario = analysis.usuario
 
                 if ubicacion is None or ubicacion.latitud is None or ubicacion.longitud is None:
                     continue
 
                 lat = float(ubicacion.latitud)
                 lng = float(ubicacion.longitud)
+                location_id = ubicacion.id_ubicacion
 
                 zone_name = ubicacion.municipio or ubicacion.direccion or 'Zona sin nombre'
                 if ubicacion.direccion and ubicacion.municipio:
@@ -288,8 +393,35 @@ class AnalysisService:
 
                 status_value = self._normalize_status(analysis.estado_validacion)
 
-                points.append({
+                usuario_payload = None
+                if usuario is not None:
+                    usuario_payload = {
+                        "id": usuario.id_usuario,
+                        "nombre": usuario.nombre or "Usuario",
+                        "foto_perfil": usuario.foto_perfil or "",
+                    }
+
+                analysis_payload = {
                     "id": analysis.id_analisis,
+                    "resultado": analysis.resultado_ia or "",
+                    "categoria": analysis.resultado_ia or "",
+                    "confianza": float(analysis.porcentaje_confianza or 0.0),
+                    "nombre_especie": especie.nombre_cientifico if especie and especie.nombre_cientifico else None,
+                    "estado": status_value,
+                    "status": status_value,
+                    "humedad": float(analysis.humedad_relativa or 0.0),
+                    "humidity": float(analysis.humedad_relativa or 0.0),
+                    "calidad_del_aire": analysis.calidad_aire or "",
+                    "air_quality": analysis.calidad_aire or "",
+                    "recomendacion": analysis.observaciones or analysis.resultado_ia or "",
+                    "recommendation": analysis.observaciones or analysis.resultado_ia or "",
+                    "fecha_creacion": analysis.fecha or datetime.utcnow(),
+                    "visibilidad": analysis.visibilidad or "private",
+                }
+
+                results.append({
+                    "id": analysis.id_analisis,
+                    "id_usuario": analysis.id_usuario,
                     "lat": lat,
                     "lng": lng,
                     "zone_name": zone_name,
@@ -299,6 +431,10 @@ class AnalysisService:
                     "confidence": float(analysis.porcentaje_confianza or 0.0),
                     "date": analysis.fecha or datetime.utcnow(),
                     "status": status_value,
+                    "visibilidad": analysis.visibilidad or "private",
+                    "usuario": usuario_payload,
+                    "analysis_count": 1,
+                    "analyses": [analysis_payload],
                 })
 
-            return points
+            return results

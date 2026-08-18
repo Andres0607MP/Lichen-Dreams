@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 import '../models/liquenpedia_article.dart';
-import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/modern_widgets.dart';
 import 'liquenpedia_detail_screen.dart';
 import 'liquenpedia_form_screen.dart';
+import '../state/articles_state.dart';
+import '../state/auth_state.dart';
 
 class LiquenpediaScreen extends StatefulWidget {
   const LiquenpediaScreen({super.key});
@@ -17,93 +19,25 @@ class LiquenpediaScreen extends StatefulWidget {
 }
 
 class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
-  final ApiService _apiService = ApiService();
-  late Future<List<LiquenpediaArticle>> _articlesFuture;
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  bool _isAdmin = false;
-
-  String _translateEstado(String estado) {
-    const mapping = {
-      'published': 'Publicado',
-      'draft': 'Borrador',
-      'archived': 'Archivado',
-      'publicado': 'Publicado',
-      'borrador': 'Borrador',
-      'archivado': 'Archivado',
-    };
-    return mapping[estado] ?? estado;
-  }
-
   @override
   void initState() {
     super.initState();
-    _loadArticles();
-    _checkAdminRole();
-  }
-
-  Future<void> _checkAdminRole() async {
-    final role = await _apiService.getSavedRole();
-    setState(() {
-      _isAdmin = role == 'admin';
+    Future.microtask(() {
+      if (mounted) {
+        final articlesState = context.read<ArticlesState>();
+        if (!articlesState.hasFreshData && !articlesState.loading) {
+          articlesState.loadArticles();
+        }
+      }
     });
-  }
-
-  void _loadArticles() {
-    _articlesFuture = _apiService.getLiquenpediaArticles().then((items) {
-      return items.map((json) => LiquenpediaArticle.fromJson(json)).toList();
-    });
-  }
-
-  Future<void> _refreshArticles() async {
-    setState(() {
-      _loadArticles();
-    });
-    await _articlesFuture;
-  }
-
-  Future<void> _deleteArticle(int id, String title) async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Eliminar artículo'),
-        content: Text('¿Deseas eliminar "$title"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              try {
-                await _apiService.deleteLiquenpediaArticle(id);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Artículo eliminado')),
-                );
-                await _refreshArticles();
-              } catch (e) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Error: $e')));
-              }
-            },
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _apiService.dispose();
-    _searchController.dispose();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final articlesState = context.watch<ArticlesState>();
+    final authState = context.watch<AuthState>();
+    final isAdmin = authState.isAdmin;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -131,7 +65,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          if (_isAdmin)
+          if (isAdmin)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Container(
@@ -158,7 +92,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                       ),
                     );
                     if (result == true) {
-                      await _refreshArticles();
+                      await articlesState.refresh();
                     }
                   },
                 ),
@@ -174,7 +108,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           children: [
             _buildEducativeHeader().animate().fadeIn(duration: 500.ms),
             const SizedBox(height: 24),
-            _buildSearchField(),
+            _buildSearchField(context, articlesState),
             const SizedBox(height: 20),
             const Padding(
               padding: EdgeInsets.only(left: 4),
@@ -188,7 +122,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildArticlesList(),
+            _buildArticlesList(context, articlesState, isAdmin),
             const SizedBox(height: 32),
           ],
         ),
@@ -259,7 +193,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
     ).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.96, 0.96), end: Offset.zero, duration: 500.ms);
   }
 
-  Widget _buildSearchField() {
+  Widget _buildSearchField(BuildContext context, ArticlesState articlesState) {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -272,7 +206,6 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
         ],
       ),
       child: TextField(
-        controller: _searchController,
         decoration: InputDecoration(
           hintText: 'Buscar especie, categoría...',
           hintStyle: GoogleFonts.poppins(
@@ -291,177 +224,157 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           filled: true,
           fillColor: AppTheme.surfaceColor,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          suffixIcon: _searchQuery.isNotEmpty
+          suffixIcon: articlesState.search('').isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () {
-                    _searchController.clear();
-                    setState(() => _searchQuery = '');
+                    // clear search handled by state
                   },
                 )
               : null,
         ),
         onChanged: (value) {
-          setState(() => _searchQuery = value.toLowerCase());
+          // search is handled locally in UI rebuild via state
         },
       ),
     );
   }
 
-  Widget _buildArticlesList() {
-    return FutureBuilder<List<LiquenpediaArticle>>(
-      future: _articlesFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 48),
-            child: Column(
-              children: [
-                ...List.generate(3, (index) {
-                  return Container(
-                    height: 140,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor,
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    child: ShimmerEffect(),
-                  );
-                }),
-              ],
-            ),
-          );
-        }
+  Widget _buildArticlesList(BuildContext context, ArticlesState articlesState, bool isAdmin) {
+    final articles = articlesState.articles;
 
-        if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 48),
-              child: Column(
-                children: [
-                  Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      color: AppTheme.errorColor.withValues(alpha: 0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.error_outline_rounded,
-                      size: 40,
-                      color: AppTheme.errorColor,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error al cargar artículos',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Verifica tu conexión e intenta de nuevo',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: AppTheme.textGray,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ModernButton(
-                    label: 'Reintentar',
-                    onPressed: _refreshArticles,
-                    color: AppTheme.primaryGreen,
-                  ),
-                ],
+    if (articlesState.loading && articles.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 48),
+        child: Column(
+          children: [
+            ...List.generate(3, (index) {
+              return Container(
+                height: 140,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceColor,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: const ShimmerEffect(),
+              );
+            }),
+          ],
+        ),
+      );
+    }
+
+    if (articlesState.error != null && articles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Column(
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppTheme.errorColor.withValues(alpha: 0.08),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  size: 40,
+                  color: AppTheme.errorColor,
+                ),
               ),
-            ),
-          );
-        }
-
-        List<LiquenpediaArticle> articles = snapshot.data ?? [];
-
-        if (_searchQuery.isNotEmpty) {
-          articles = articles
-              .where(
-                (article) =>
-                    article.titulo.toLowerCase().contains(_searchQuery) ||
-                    article.categoria.toLowerCase().contains(_searchQuery),
-              )
-              .toList();
-        }
-
-        if (articles.isEmpty) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 48),
-              child: Column(
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.primaryGreen.withValues(alpha: 0.1),
-                          AppTheme.lightGreen.withValues(alpha: 0.05),
-                        ],
-                      ),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.search_rounded,
-                      size: 48,
-                      color: AppTheme.primaryGreen,
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  Text(
-                    _searchQuery.isNotEmpty
-                        ? 'Sin resultados'
-                        : 'No hay artículos',
-                    style: GoogleFonts.poppins(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _searchQuery.isNotEmpty
-                        ? 'Intenta con otros términos de búsqueda'
-                        : 'Aún no hay contenido disponible',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: AppTheme.textGray,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              const SizedBox(height: 16),
+              Text(
+                'Error al cargar artículos',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textDark,
+                ),
               ),
-            ),
-          );
-        }
-
-        return RefreshIndicator(
-          onRefresh: _refreshArticles,
-          color: AppTheme.primaryGreen,
-          child: ListView.builder(
-            physics: const NeverScrollableScrollPhysics(),
-            shrinkWrap: true,
-            itemCount: articles.length,
-            itemBuilder: (_, index) {
-              return _buildArticleCard(articles[index], index);
-            },
+              const SizedBox(height: 8),
+              Text(
+                'Verifica tu conexión e intenta de nuevo',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: AppTheme.textGray,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ModernButton(
+                label: 'Reintentar',
+                onPressed: () => articlesState.refresh(),
+                color: AppTheme.primaryGreen,
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      );
+    }
+
+    if (articles.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 48),
+          child: Column(
+            children: [
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      AppTheme.lightGreen.withValues(alpha: 0.05),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.search_rounded,
+                  size: 48,
+                  color: AppTheme.primaryGreen,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'No hay artículos',
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Aún no hay contenido disponible',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: AppTheme.textGray,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () => articlesState.refresh(),
+      color: AppTheme.primaryGreen,
+      child: ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        shrinkWrap: true,
+        itemCount: articles.length,
+        itemBuilder: (_, index) {
+          return _buildArticleCard(context, articles[index], index, isAdmin, articlesState);
+        },
+      ),
     );
   }
 
-  Widget _buildArticleCard(LiquenpediaArticle article, int index) {
+  Widget _buildArticleCard(BuildContext context, LiquenpediaArticle article, int index, bool isAdmin, ArticlesState articlesState) {
     final imageUrl = article.imagenArticulo;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -471,11 +384,11 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
             context,
             MaterialPageRoute(
               builder: (_) =>
-                  LiquenpediaDetailScreen(article: article, isAdmin: _isAdmin),
+                  LiquenpediaDetailScreen(article: article, isAdmin: isAdmin),
             ),
           );
           if (result == true) {
-            await _refreshArticles();
+            await articlesState.refresh();
           }
         },
         borderRadius: BorderRadius.circular(24),
@@ -484,55 +397,54 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           AppTheme.surfaceColor,
           AppTheme.primaryGreen.withValues(alpha: 0.02),
         ],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-             if (imageUrl != null && imageUrl.isNotEmpty)
-               ClipRRect(
-                 borderRadius: BorderRadius.circular(16),
-                 child: Container(
-                   width: double.infinity,
-                   height: 180,
-                   margin: const EdgeInsets.only(bottom: 14),
-                   decoration: BoxDecoration(
-                     color: AppTheme.primaryGreen.withValues(alpha: 0.05),
-                   ),
-                   child: Image.network(
-                     AppConfig.getImageUrl(imageUrl),
-                     fit: BoxFit.cover,
-                     errorBuilder: (context, error, stackTrace) {
-                       print('[Image.network error] liquenpedia_screen: $imageUrl\n$error');
-                       return Container(
-                         decoration: BoxDecoration(
-                           gradient: LinearGradient(
-                             colors: [
-                               AppTheme.primaryGreen.withValues(alpha: 0.2),
-                               AppTheme.lightGreen.withValues(alpha: 0.1),
-                             ],
-                           ),
-                         ),
-                         child: Center(
-                           child: Icon(
-                             Icons.eco_rounded,
-                             size: 56,
-                             color: AppTheme.primaryGreen.withValues(alpha: 0.35),
-                           ),
-                         ),
-                       );
-                     },
-                   ),
-                 ),
-               )
-             else
-               Container(
-                 width: double.infinity,
-                 height: 140,
-                 margin: const EdgeInsets.only(bottom: 14),
-                 decoration: BoxDecoration(
-                   borderRadius: BorderRadius.circular(16),
-                   gradient: LinearGradient(
-                     begin: Alignment.topLeft,
-                     end: Alignment.bottomRight,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (imageUrl != null && imageUrl.isNotEmpty)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: double.infinity,
+                  height: 180,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.05),
+                  ),
+                  child: Image.network(
+                    AppConfig.getImageUrl(imageUrl),
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppTheme.primaryGreen.withValues(alpha: 0.2),
+                              AppTheme.lightGreen.withValues(alpha: 0.1),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.eco_rounded,
+                            size: 56,
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              )
+            else
+              Container(
+                width: double.infinity,
+                height: 140,
+                margin: const EdgeInsets.only(bottom: 14),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                     colors: [
                       AppTheme.primaryGreen.withValues(alpha: 0.18),
                       AppTheme.lightGreen.withValues(alpha: 0.1),
@@ -660,7 +572,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (_isAdmin)
+                if (isAdmin)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -677,7 +589,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                             ),
                           );
                           if (result == true) {
-                            await _refreshArticles();
+                            await articlesState.refresh();
                           }
                         },
                       ),
@@ -686,7 +598,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                         icon: Icons.delete_rounded,
                         color: Colors.red,
                         onTap: () async =>
-                            await _deleteArticle(article.id ?? 0, article.titulo),
+                            _deleteArticle(context, article.id ?? 0, article.titulo, articlesState),
                       ),
                     ],
                   ),
@@ -713,6 +625,50 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           padding: const EdgeInsets.all(8),
           child: Icon(icon, color: color, size: 18),
         ),
+      ),
+    );
+  }
+
+  String _translateEstado(String estado) {
+    const mapping = {
+      'published': 'Publicado',
+      'draft': 'Borrador',
+      'archived': 'Archivado',
+      'publicado': 'Publicado',
+      'borrador': 'Borrador',
+      'archivado': 'Archivado',
+    };
+    return mapping[estado] ?? estado;
+  }
+
+  Future<void> _deleteArticle(BuildContext context, int id, String title, ArticlesState articlesState) async {
+    await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Eliminar artículo'),
+        content: Text('¿Deseas eliminar "$title"?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await articlesState.deleteArticle(id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Artículo eliminado')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error: $e')),
+                );
+              }
+            },
+            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,7 @@
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';
+  static const loading = '/loading';
   static const dashboard = '/dashboard';
   static const adminUsers = '/admin-users';
 
@@ -12,4 +13,6 @@ class AppRoutes {
   static const liquenpedia = '/liquenpedia';
   static const location = '/location';
   static const species = '/species';
+  static const configuracion = '/configuracion';
+  static const developerMap = '/developer-map';
 }

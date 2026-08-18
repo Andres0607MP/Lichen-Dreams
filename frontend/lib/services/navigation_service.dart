@@ -13,6 +13,16 @@ class LichenNavigation {
     selectedIndex.value = index;
   }
 
+  void reset() {
+    selectedIndex.value = 0;
+  }
+
+  void sync(int index) {
+    if (selectedIndex.value != index) {
+      selectedIndex.value = index;
+    }
+  }
+
   void goToDashboard(BuildContext context) {
     selectedIndex.value = 0;
     Navigator.pushNamed(context, AppRoutes.dashboard);

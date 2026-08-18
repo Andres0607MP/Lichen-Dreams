@@ -6,11 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:provider/provider.dart';
 
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/page_transitions.dart';
+import '../state/auth_state.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -30,7 +32,6 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   late TextEditingController _apellidoController;
   late TextEditingController _telefonoController;
   late TextEditingController _numeroDocumentoController;
-  final ApiService _apiService = ApiService();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _loading = false;
@@ -126,7 +127,6 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     _apellidoController.dispose();
     _telefonoController.dispose();
     _numeroDocumentoController.dispose();
-    _apiService.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     _bgController.dispose();
@@ -433,16 +433,16 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                              fechaNacimientoFormatted = DateFormat('yyyy-MM-dd').format(fecha);
                                            }
 
-                                          await _apiService.register(
-                                            fullName,
-                                            email,
-                                            password,
-                                            apellido: _apellidoController.text.isEmpty ? null : _apellidoController.text,
-                                            phone: _telefonoController.text.isEmpty ? null : _telefonoController.text,
-                                            tipoDocumento: _selectedTipoDocumento,
-                                            numeroDocumento: _numeroDocumentoController.text.isEmpty ? null : _numeroDocumentoController.text,
-                                            fechaNacimiento: fechaNacimientoFormatted,
-                                          );
+                                           await context.read<AuthState>().register(
+                                             name: fullName,
+                                             email: email,
+                                             password: password,
+                                             apellido: _apellidoController.text.isEmpty ? null : _apellidoController.text,
+                                             phone: _telefonoController.text.isEmpty ? null : _telefonoController.text,
+                                             tipoDocumento: _selectedTipoDocumento,
+                                             numeroDocumento: _numeroDocumentoController.text.isEmpty ? null : _numeroDocumentoController.text,
+                                             fechaNacimiento: fechaNacimientoFormatted,
+                                           );
                                           messenger.showSnackBar(
                                             SnackBar(
                                               content: const Row(

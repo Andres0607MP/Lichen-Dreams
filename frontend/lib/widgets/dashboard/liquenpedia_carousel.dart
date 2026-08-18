@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
+
 import '../../models/liquenpedia_article.dart';
-import '../../services/api_service.dart';
+import '../../state/articles_state.dart';
 import '../../config/app_config.dart';
 import '../app_theme.dart';
 
@@ -17,52 +19,13 @@ class LiquenpediaCarousel extends StatefulWidget {
 
 class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
   final PageController _pageController = PageController();
-  final ApiService _apiService = ApiService();
   int _currentPage = 0;
-  List<LiquenpediaArticle> _articles = [];
-  bool _loading = true;
   Timer? _autoScrollTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadArticles();
-  }
-
-  Future<void> _loadArticles() async {
-    try {
-      final items = await _apiService.getLiquenpediaArticles();
-      final published = items
-          .map((json) => LiquenpediaArticle.fromJson(json))
-          .where((a) => a.estadoPublicacion == 'published')
-          .toList();
-
-      setState(() {
-        _articles = published.take(5).toList();
-        _loading = false;
-      });
-
-      _startAutoScroll();
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  void _startAutoScroll() {
-    _autoScrollTimer?.cancel();
-    _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
-      if (_articles.isEmpty) return;
-      final next = (_currentPage + 1) % _articles.length;
-      _pageController.animateToPage(
-        next,
-        duration: 400.ms,
-        curve: Curves.easeInOutCubic,
-      );
-    });
+    _startAutoScroll();
   }
 
   @override
@@ -72,9 +35,39 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
     super.dispose();
   }
 
+  void _startAutoScroll() {
+    _autoScrollTimer?.cancel();
+    _autoScrollTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      final articlesState = context.read<ArticlesState>();
+      final published = articlesState.articles
+          .where((a) => a.estadoPublicacion == 'published')
+          .take(5)
+          .toList();
+      if (published.isEmpty) return;
+      final currentPage = _pageController.hasClients ? _pageController.page?.toInt() ?? 0 : 0;
+      final next = (currentPage + 1) % published.length;
+      _pageController.animateToPage(
+        next,
+        duration: 400.ms,
+        curve: Curves.easeInOutCubic,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_loading) {
+    final articlesState = context.watch<ArticlesState>();
+    final published = articlesState.articles
+        .where((a) => a.estadoPublicacion == 'published')
+        .take(5)
+        .toList();
+
+    if (_currentPage >= published.length) {
+      _currentPage = 0;
+    }
+
+    if (articlesState.loading && published.isEmpty) {
       return Container(
         height: 240,
         margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -88,7 +81,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
       );
     }
 
-    if (_articles.isEmpty) {
+    if (published.isEmpty) {
       return Container(
         height: 240,
         margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -137,14 +130,14 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
           margin: const EdgeInsets.symmetric(horizontal: 16),
           child: PageView.builder(
             controller: _pageController,
-            itemCount: _articles.length,
+            itemCount: published.length,
             onPageChanged: (index) {
               setState(() {
                 _currentPage = index;
               });
             },
             itemBuilder: (context, index) {
-              return _buildArticleCard(_articles[index], index);
+              return _buildArticleCard(published[index], index);
             },
           ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.96, 0.96), duration: 600.ms),
         ),
@@ -152,7 +145,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
-            _articles.length,
+            published.length,
             (index) {
               final isActive = _currentPage == index;
               return AnimatedContainer(
@@ -179,6 +172,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
 
   Widget _buildArticleCard(LiquenpediaArticle article, int index) {
     final imageUrl = article.imagenArticulo;
+    final imageUrlResolved = imageUrl != null && imageUrl.isNotEmpty ? AppConfig.getImageUrl(imageUrl) : null;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
@@ -216,14 +210,16 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
                  decoration: BoxDecoration(
                    color: AppTheme.primaryGreen.withValues(alpha: 0.05),
                  ),
-                child: Image.network(
-                  AppConfig.getImageUrl(imageUrl),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    print('[Image.network error] liquenpedia_carousel: $imageUrl\n$error');
-                    return _buildPlaceholderCover();
-                  },
-                ),
+                 child: imageUrlResolved != null
+                     ? Image.network(
+                         imageUrlResolved,
+                         fit: BoxFit.cover,
+                         errorBuilder: (context, error, stackTrace) {
+                           print('[Image.network error] liquenpedia_carousel: $imageUrl\n$error');
+                           return _buildPlaceholderCover();
+                         },
+                       )
+                     : _buildPlaceholderCover(),
              )
              else
                _buildPlaceholderCover(),

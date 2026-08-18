@@ -136,6 +136,7 @@ class Analisis(Base):
     tiempo_procesamiento = Column(Float)
     observaciones = Column(Text)
     estado_validacion = Column(String(50))
+    visibilidad = Column(String(50), nullable=False, server_default='private')
     temperatura_ambiente = Column(Float)
     humedad_relativa = Column(Float)
     fecha = Column(TIMESTAMP, server_default=func.now())
@@ -173,6 +174,7 @@ class Analisis(Base):
     __table_args__ = (
         Index('idx_id_usuario', 'id_usuario'),
         Index('idx_estado_validacion', 'estado_validacion'),
+        Index('idx_visibilidad', 'visibilidad'),
         Index('idx_fecha', 'fecha'),
     )
 

@@ -6,6 +6,10 @@ class AnalysisRecord {
   final String? imageUrl;
   final String? imageBase64;
   final DateTime? createdAt;
+  final String? ubicacion;
+  final double? humedad;
+  final String? calidadDelAire;
+  final String source;
   final Map<String, dynamic> raw;
 
   AnalysisRecord({
@@ -16,27 +20,31 @@ class AnalysisRecord {
     this.imageUrl,
     this.imageBase64,
     this.createdAt,
+    this.ubicacion,
+    this.humedad,
+    this.calidadDelAire,
+    this.source = 'camera',
     required this.raw,
   });
 
   factory AnalysisRecord.fromJson(Map<String, dynamic> json) {
-    final status = json['estado']?.toString() ??
+    final status = (json['estado']?.toString() ??
         json['status']?.toString() ??
         json['state']?.toString() ??
         json['resultado']?.toString() ??
-        'Desconocido';
-    final title = json['titulo']?.toString() ??
+        'Desconocido').trim();
+    final title = (json['resultado']?.toString() ??
+        json['titulo']?.toString() ??
         json['nombre']?.toString() ??
-        json['resultado']?.toString() ??
-        status;
-    final summary = json['resumen']?.toString() ??
+        status).trim();
+    final summary = (json['recomendacion']?.toString() ??
+        json['resumen']?.toString() ??
         json['summary']?.toString() ??
         json['detalle']?.toString() ??
         json['description']?.toString() ??
-        json['recommendation']?.toString() ??
-        '';
-    final imageUrl = json['imagen_url']?.toString() ??
-        json['url_imagen']?.toString() ??
+        '').trim();
+    final imageUrl = json['url_imagen']?.toString() ??
+        json['imagen_url']?.toString() ??
         json['image_url']?.toString() ??
         json['foto']?.toString();
     final imageBase64 = json['imagen_base64']?.toString() ?? json['image_base64']?.toString();
@@ -45,9 +53,18 @@ class AnalysisRecord {
     if (createdValue is String) {
       createdAt = DateTime.tryParse(createdValue);
     }
+    final ubicacion = json['ubicacion']?.toString();
+    final humedad = json['humedad'] is num
+        ? (json['humedad'] as num).toDouble()
+        : double.tryParse(json['humedad']?.toString() ?? '');
+    final calidadDelAire = json['calidad_del_aire']?.toString() ??
+        json['calidadDelAire']?.toString() ??
+        json['calidad_aire']?.toString();
+    final source = (json['source'] ?? json['origen'] ?? 'camera').toString();
     final filteredRaw = Map<String, dynamic>.from(json);
     filteredRaw.remove('imagen_base64');
     filteredRaw.remove('image_base64');
+
     return AnalysisRecord(
       id: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
       title: title,
@@ -56,6 +73,10 @@ class AnalysisRecord {
       imageUrl: imageBase64 != null ? null : imageUrl,
       imageBase64: imageBase64,
       createdAt: createdAt,
+      ubicacion: ubicacion,
+      humedad: humedad,
+      calidadDelAire: calidadDelAire,
+      source: source,
       raw: filteredRaw,
     );
   }
@@ -66,5 +87,85 @@ class AnalysisRecord {
       return '${createdAt.day.toString().padLeft(2, '0')}/${createdAt.month.toString().padLeft(2, '0')}/${createdAt.year}';
     }
     return 'Sin fecha';
+  }
+
+  bool get isShared {
+    final value = raw['visibilidad'];
+    if (value is String) return value.toLowerCase() == 'shared';
+    if (value is int) return value == 1;
+    return false;
+  }
+
+  String get envResult {
+    final result = (raw['resultado'] ?? title).toString().toLowerCase().trim();
+
+    if (result.contains('saludable') || result.contains('healthy')) {
+      return 'saludable';
+    }
+    if (result.contains('contaminado') || result.contains('polluted')) {
+      return 'crítico';
+    }
+
+    final calidadAire = (calidadDelAire ??
+        raw['calidad_del_aire'] ??
+        raw['air_quality'] ??
+        '').toString().toLowerCase().trim();
+    if (calidadAire.isNotEmpty) {
+      if (calidadAire.contains('buena') ||
+          calidadAire.contains('good') ||
+          calidadAire.contains('excelente')) {
+        return 'saludable';
+      }
+      if (calidadAire.contains('mala') ||
+          calidadAire.contains('bad') ||
+          calidadAire.contains('poor')) {
+        return 'crítico';
+      }
+      if (calidadAire.contains('moderada') || calidadAire.contains('moderate')) {
+        return 'moderado';
+      }
+    }
+
+    final nivelContaminacion = (raw['nivel_contaminacion'] ?? '')
+        .toString()
+        .toLowerCase()
+        .trim();
+    if (nivelContaminacion.isNotEmpty) {
+      if (nivelContaminacion.contains('baja') ||
+          nivelContaminacion.contains('low') ||
+          nivelContaminacion.contains('clean')) {
+        return 'saludable';
+      }
+      if (nivelContaminacion.contains('alta') ||
+          nivelContaminacion.contains('high') ||
+          nivelContaminacion.contains('severe') ||
+          nivelContaminacion.contains('critical')) {
+        return 'crítico';
+      }
+      if (nivelContaminacion.contains('moderada') ||
+          nivelContaminacion.contains('moderate')) {
+        return 'moderado';
+      }
+    }
+
+    final state = status.toLowerCase().trim();
+    if (state.contains('error') ||
+        state.contains('fallido') ||
+        state.contains('failed')) {
+      return 'crítico';
+    }
+    if (state.contains('processing') ||
+        state.contains('procesando') ||
+        state.contains('pending') ||
+        state.contains('pendiente')) {
+      return 'moderado';
+    }
+    if (state.contains('completed') ||
+        state.contains('completado') ||
+        state.contains('success')) {
+      return 'saludable';
+    }
+
+    return 'moderado';
   }
 }

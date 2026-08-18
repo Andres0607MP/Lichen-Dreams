@@ -2,10 +2,19 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:provider/provider.dart';
 
 import '../models/analysis_record.dart';
-import '../widgets/common_widgets.dart';
+import '../widgets/modern_widgets.dart';
+import '../widgets/app_theme.dart';
+import '../routes/route_names.dart';
 import '../services/api_service.dart';
+import '../state/map_state.dart';
+import '../state/history_state.dart';
+import '../state/analysis_state.dart';
+import '../state/notifications_state.dart';
 
 class ResultScreen extends StatefulWidget {
   final AnalysisRecord analysis;
@@ -17,12 +26,72 @@ class ResultScreen extends StatefulWidget {
 }
 
 class _ResultScreenState extends State<ResultScreen> {
-  final ApiService _apiService = ApiService();
   bool _isSharing = false;
+  bool _notificationMarked = false;
+  bool _hasLocation = false;
+  bool _loadingLocation = true;
+  bool _isShared = false;
+  Uint8List? _cachedImageBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_notificationMarked && widget.analysis.id != null && widget.analysis.id != 0) {
+        _notificationMarked = true;
+        context.read<NotificationsState>().markAsRead('analysis_${widget.analysis.id}');
+      }
+    });
+    _checkLocationAndShareStatus();
+  }
+
+  Future<void> _checkLocationAndShareStatus() async {
+    final apiService = Provider.of<ApiService>(context, listen: false);
+    final rejected = widget.analysis.raw['rechazado'] == true;
+    final analysisId = widget.analysis.raw['id_analisis'] is int
+        ? widget.analysis.raw['id_analisis'] as int
+        : (widget.analysis.id ?? 0);
+    final raw = widget.analysis.raw;
+
+    if (analysisId == 0 || rejected) {
+      if (mounted) setState(() {
+        _loadingLocation = false;
+        _hasLocation = false;
+        _isShared = false;
+      });
+      return;
+    }
+
+    try {
+      await apiService.getAnalysisLocation(analysisId);
+      if (mounted) {
+        setState(() => _hasLocation = true);
+        final visibilidad = raw['visibilidad']?.toString().toLowerCase();
+        setState(() => _isShared = visibilidad == 'shared');
+      }
+    } on ApiException catch (_) {
+      if (mounted) {
+        setState(() {
+          _hasLocation = false;
+          _isShared = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _hasLocation = false;
+          _isShared = false;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingLocation = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
-    _apiService.dispose();
     super.dispose();
   }
 
@@ -31,14 +100,11 @@ class _ResultScreenState extends State<ResultScreen> {
     if (base64Data != null && base64Data.isNotEmpty) {
       try {
         final bytes = base64Decode(base64Data);
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: Image.memory(
-            Uint8List.fromList(bytes),
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: 220,
-          ),
+        return Image.memory(
+          Uint8List.fromList(bytes),
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
         );
       } catch (_) {
         // fall through to network/image icon
@@ -47,55 +113,384 @@ class _ResultScreenState extends State<ResultScreen> {
 
     final imageUrl = widget.analysis.imageUrl;
     if (imageUrl != null && imageUrl.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: FutureBuilder<Uint8List>(
-          future: _apiService.downloadPrivateImageBytes(imageUrl),
-          builder: (context, snapshot) {
-            final data = snapshot.data;
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const SizedBox(
-                height: 220,
-                child: Center(child: CircularProgressIndicator()),
-              );
-            }
-            if (snapshot.hasError || data == null) {
-              print('[Image error] result_screen: $imageUrl\n${snapshot.error}');
-              return const SizedBox(
-                height: 220,
-                child: Center(child: Icon(Icons.broken_image, size: 48)),
-              );
-            }
-            return Image.memory(
-              data,
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: 220,
+      if (_cachedImageBytes != null) {
+        return Image.memory(
+          _cachedImageBytes!,
+          fit: BoxFit.cover,
+          width: double.infinity,
+          height: double.infinity,
+        );
+      }
+
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      return FutureBuilder<Uint8List>(
+        future: apiService.downloadPrivateImageBytes(imageUrl),
+        builder: (context, snapshot) {
+          final data = snapshot.data;
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox.expand(
+              child: Center(child: CircularProgressIndicator()),
             );
-          },
-        ),
+          }
+          if (snapshot.hasError || data == null) {
+            print('[Image error] result_screen: $imageUrl\n${snapshot.error}');
+            return _buildImagePlaceholder();
+          }
+          if (_cachedImageBytes == null && mounted) {
+            _cachedImageBytes = data;
+          }
+          return Image.memory(
+            data,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            height: double.infinity,
+          );
+        },
       );
     }
 
-    return const SizedBox(
-      height: 220,
-      child: Center(child: Icon(Icons.image_outlined, size: 64)),
+    return _buildImagePlaceholder();
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryGreen.withValues(alpha: 0.15),
+            AppTheme.lightGreen.withValues(alpha: 0.08),
+          ],
+        ),
+      ),
+      child: Center(
+        child: Icon(
+          Icons.image_outlined,
+          size: 64,
+          color: AppTheme.primaryGreen.withValues(alpha: 0.4),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeroImage() {
+    return GestureDetector(
+      onTap: _showImagePreview,
+      child: Container(
+        height: 300,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryGreen.withValues(alpha: 0.18),
+              blurRadius: 28,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              _buildImage(),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.18),
+                      ],
+                      stops: const [0.45, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.05, end: 0, duration: 600.ms);
+  }
+
+  void _showImagePreview() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (context) => _ImagePreviewDialog(imageBuilder: _buildImage),
+    );
+  }
+
+  _AnalysisCase _detectCase(String rawResult) {
+    final text = rawResult.toLowerCase();
+
+    if (text.contains('saludable') ||
+        text.contains('healthy') ||
+        text.contains('buen') ||
+        text.contains('good') ||
+        text.contains('limpio') ||
+        text.contains('clean')) {
+      return _AnalysisCase.healthy;
+    }
+
+    if (text.contains('contaminado') ||
+        text.contains('contaminated') ||
+        text.contains('polluted') ||
+        text.contains('afectado') ||
+        text.contains('dañado') ||
+        text.contains('mala calidad') ||
+        text.contains('bad air')) {
+      return _AnalysisCase.contaminated;
+    }
+
+    return _AnalysisCase.unknown;
+  }
+
+  String _getPrimaryResult() {
+    final raw = widget.analysis.raw;
+    final keys = [
+      'resultado',
+      'resultado_ia',
+      'ia_resultado',
+      'prediction',
+      'prediccion',
+      'clasificacion',
+      'classification',
+      'result',
+      'estado',
+      'status',
+    ];
+
+    for (final key in keys) {
+      final value = raw[key];
+      if (value != null && value.toString().trim().isNotEmpty) {
+        return value.toString().trim();
+      }
+    }
+
+    return widget.analysis.title;
+  }
+
+  Widget _buildResultCard() {
+    final primaryResult = _getPrimaryResult();
+    final analysisCase = _detectCase(primaryResult);
+
+    IconData icon;
+    Color color;
+    String title;
+    String description;
+    String whatItMeans;
+    String recommendation;
+
+    switch (analysisCase) {
+      case _AnalysisCase.healthy:
+        icon = Icons.eco_rounded;
+        color = AppTheme.successColor;
+        title = 'Líquen saludable';
+        description =
+            'Se identificó un líquen con características compatibles con un ambiente de buena calidad ambiental.';
+        whatItMeans =
+            'Los líquenes saludables suelen encontrarse en zonas con menor contaminación atmosférica y mejores condiciones ambientales.';
+        recommendation =
+            'Continúa realizando análisis en otras zonas para contribuir al monitoreo ambiental.';
+        break;
+      case _AnalysisCase.contaminated:
+        icon = Icons.warning_amber_rounded;
+        color = AppTheme.warningColor;
+        title = 'Líquen contaminado';
+        description =
+            'El modelo detectó características compatibles con un líquen afectado por contaminantes ambientales.';
+        whatItMeans =
+            'Esto puede indicar que la zona presenta una menor calidad del aire o condiciones ambientales desfavorables.';
+        recommendation =
+            'Realiza nuevos análisis en diferentes puntos cercanos y comparte el resultado para ayudar al monitoreo ambiental.';
+        break;
+      case _AnalysisCase.unknown:
+        icon = Icons.help_outline_rounded;
+        color = AppTheme.textGray;
+        title = 'Líquen no identificado';
+        description = 'No fue posible clasificar el organismo observado.';
+        whatItMeans =
+            'Esto puede deberse a una imagen borrosa, poca iluminación, que el objeto no sea un líquen o que la especie aún no haga parte del modelo.';
+        recommendation = widget.analysis.summary.isNotEmpty
+            ? widget.analysis.summary
+            : 'Intenta tomar una nueva fotografía con mejor iluminación, enfoque y acercamiento.';
+        break;
+  }
+
+    return Transform.translate(
+      offset: const Offset(0, -1),
+      child: ModernCard(
+        gradient: [
+          color.withValues(alpha: 0.06),
+          AppTheme.lightGreen.withValues(alpha: 0.02),
+        ],
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
+              ),
+              child: Icon(icon, size: 40, color: color),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
+                color: AppTheme.textDark,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              style: GoogleFonts.poppins(
+                fontSize: 15,
+                fontWeight: FontWeight.w400,
+                color: AppTheme.textGray,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            Container(
+              height: 1,
+              width: double.infinity,
+              color: AppTheme.borderColor.withValues(alpha: 0.2),
+            ),
+            const SizedBox(height: 20),
+            _buildResultSection(
+              title: '¿Qué significa?',
+              content: whatItMeans,
+              color: color,
+            ),
+            const SizedBox(height: 16),
+            _buildResultSection(
+              title: 'Recomendación',
+              content: recommendation,
+              color: color,
+            ),
+          ],
+        ),
+      ),
+    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms).scale(begin: const Offset(0.98, 0.98), end: const Offset(1, 1), duration: 500.ms);
+  }
+
+  Widget _buildResultSection({
+    required String title,
+    required String content,
+    required Color color,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 4,
+              height: 16,
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textDark,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          content,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: AppTheme.textGray,
+            height: 1.5,
+          ),
+        ),
+      ],
     );
   }
 
   Future<void> _shareAnalysis() async {
-    if (widget.analysis.id == null) return;
+    final apiService = Provider.of<ApiService>(context, listen: false);
+    final analysisId = widget.analysis.raw['id_analisis'] is int
+        ? widget.analysis.raw['id_analisis'] as int
+        : (widget.analysis.id ?? 0);
+    final isGallery = widget.analysis.source == 'gallery';
+    if (analysisId == 0 || isGallery || widget.analysis.raw['rechazado'] == true) {
+      if (!mounted) return;
+      String message = 'Este análisis no se puede compartir porque no corresponde a un liquen.';
+      if (isGallery) {
+        message = 'Los análisis desde galería no se pueden compartir en el mapa.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
-    setState(() => _isSharing = true);
-    try {
-      await _apiService.shareAnalysis(widget.analysis.id!);
+    if (!_hasLocation) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Análisis compartido en el mapa correctamente'),
-          backgroundColor: Colors.green,
+          content: Text('Este análisis no tiene ubicación asociada. No se puede compartir en el mapa.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
         ),
       );
+      return;
+    }
+
+    setState(() => _isSharing = true);
+    try {
+      await apiService.shareAnalysis(analysisId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Compartido en mapa'),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      if (mounted) {
+        setState(() => _isShared = true);
+        try {
+          context.read<AnalysisState>().markLastAsShared();
+        } catch (_) {}
+        try {
+          await context.read<HistoryState>().refresh();
+          try {
+            context.read<HistoryState>().markAnalysisAsShared(analysisId);
+          } catch (_) {}
+        } catch (_) {}
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -109,62 +504,198 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
+  Future<void> _openMap() async {
+    final analysisId = widget.analysis.id;
+    final isGallery = widget.analysis.source == 'gallery';
+    if (analysisId == null || analysisId == 0 || isGallery || widget.analysis.raw['rechazado'] == true) {
+      if (!mounted) return;
+      String message = 'Este análisis no se puede abrir en el mapa porque no corresponde a un liquen.';
+      if (isGallery) {
+        message = 'Los análisis desde galería no están disponibles en el mapa.';
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+    Navigator.pushNamed(
+      context,
+      AppRoutes.mapExplorer,
+    );
+  }
+
+  Widget _buildShareButton() {
+    if (_loadingLocation) {
+      return const SizedBox.shrink();
+    }
+    final rejected = widget.analysis.raw['rechazado'] == true || widget.analysis.id == 0;
+    final isGallery = widget.analysis.source == 'gallery';
+    if (rejected || isGallery) {
+      return const SizedBox.shrink();
+    }
+
+    final isShared = _isShared;
+    final label = isShared ? 'Ver en mapa' : 'Compartir en mapa';
+    final icon = isShared ? Icons.map_rounded : Icons.share_rounded;
+    final onTap = isShared ? _openMap : _shareAnalysis;
+
+    return GestureDetector(
+      onTap: _isSharing ? null : onTap,
+      child: AnimatedScale(
+        scale: 1.0,
+        duration: const Duration(milliseconds: 120),
+        child: Container(
+          height: 56,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                AppTheme.primaryGreen,
+                AppTheme.lightGreen,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryGreen.withValues(alpha: 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms);
+  }
+
+  Widget _buildBackButton() {
+    return GestureDetector(
+      onTap: () => Navigator.pushReplacementNamed(context, AppRoutes.historial),
+      child: AnimatedScale(
+        scale: 1.0,
+        duration: const Duration(milliseconds: 120),
+        child: Container(
+          height: 56,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.primaryGreen, width: 1.5),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.arrow_back_rounded, color: AppTheme.primaryGreen, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'Volver al historial',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryGreen,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Resultado de análisis')),
+      appBar: AppBar(
+        title: const Text('Resultado de análisis'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.historial),
+        ),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImage(),
-            const SizedBox(height: 18),
-            Text(
-              widget.analysis.title,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Chip(
-              label: Text(widget.analysis.status),
-              backgroundColor: Colors.green.shade50,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              widget.analysis.summary.isNotEmpty ? widget.analysis.summary : 'Sin descripción disponible',
-              style: const TextStyle(fontSize: 16, height: 1.5),
-            ),
-            const SizedBox(height: 20),
-            Text('Fecha: ${widget.analysis.displayDate}'),
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 16),
-            const Text('Detalles completos', style: TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 12),
-            ...widget.analysis.raw.entries
-                .where((entry) => entry.key != 'imagen_base64' && entry.key != 'image_base64')
-                .map((entry) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('${entry.key}: ', style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Expanded(child: Text(entry.value.toString())),
-                  ],
-                ),
-              );
-            }).toList(),
+            _buildHeroImage(),
+            _buildResultCard(),
             const SizedBox(height: 24),
-            PrimaryButton(
-              onPressed: _isSharing ? null : _shareAnalysis,
-              loading: _isSharing,
-              child: const Text('Compartir en mapa'),
+            _buildShareButton(),
+            const SizedBox(height: 12),
+            _buildBackButton(),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _AnalysisCase { healthy, contaminated, unknown }
+
+class _ImagePreviewDialog extends StatelessWidget {
+  final Widget Function() imageBuilder;
+
+  const _ImagePreviewDialog({required this.imageBuilder});
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: EdgeInsets.zero,
+      child: SafeArea(
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                minScale: 1.0,
+                maxScale: 4.0,
+                child: imageBuilder(),
+              ),
             ),
-            const SizedBox(height: 16),
-            PrimaryButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Volver al historial'),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 16,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  customBorder: const CircleBorder(),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

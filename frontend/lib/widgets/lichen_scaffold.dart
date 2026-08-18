@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../services/api_service.dart';
 import '../services/navigation_service.dart';
@@ -18,6 +19,8 @@ class LichenScaffold extends StatefulWidget {
   final bool showBottomNav;
   final bool showDrawer;
   final bool showParticleBackground;
+  final bool isFullScreen;
+  final PreferredSizeWidget? appBar;
 
   const LichenScaffold({
     super.key,
@@ -29,6 +32,8 @@ class LichenScaffold extends StatefulWidget {
     this.showBottomNav = true,
     this.showDrawer = true,
     this.showParticleBackground = false,
+    this.isFullScreen = false,
+    this.appBar,
   });
 
   @override
@@ -43,7 +48,7 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
   void initState() {
     super.initState();
     _bottomNavController = AnimationController(
-      duration: const Duration(seconds: 7),
+      duration: const Duration(milliseconds: 400),
       vsync: this,
     );
     if (_isBottomNavVisible && widget.showBottomNav) {
@@ -110,13 +115,32 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final isScrollable = _isScrollableWidget(widget.body);
+    Widget bodyContent;
+    if (widget.isFullScreen) {
+      bodyContent = SizedBox.expand(child: widget.body);
+    } else if (!isScrollable) {
+      bodyContent = SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: widget.body,
+      );
+    } else {
+      bodyContent = widget.body;
+    }
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: const LichenAppBar(),
+      appBar: widget.appBar ?? const LichenAppBar(),
       endDrawer: widget.showDrawer
-          ? LichenDrawer(
-              userRole: widget.userRole,
-              apiService: widget.apiService ?? ApiService(),
+          ? ValueListenableBuilder<int>(
+              valueListenable: LichenNavigation.instance.selectedIndex,
+              builder: (context, currentIndex, child) {
+                return LichenDrawer(
+                  userRole: widget.userRole,
+                  apiService: widget.apiService ?? Provider.of<ApiService>(context, listen: false),
+                  selectedIndex: currentIndex,
+                );
+              },
             )
           : null,
       body: Stack(
@@ -131,19 +155,19 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
           ],
           AnimatedBuilder(
             animation: _bottomNavController,
+            child: bodyContent,
             builder: (context, child) {
+              final bottomPadding = widget.showBottomNav
+                  ? (16 + 84 * _bottomNavController.value)
+                  : 0.0;
+              final padding = EdgeInsets.fromLTRB(16, 16, 16, bottomPadding);
+
               return Positioned.fill(
                 child: SafeArea(
                   bottom: false,
                   child: NotificationListener<ScrollNotification>(
                     onNotification: _onScrollNotification,
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: EdgeInsets.all(16).copyWith(
-                        bottom: 16 + 84 * _bottomNavController.value,
-                      ),
-                      child: widget.body,
-                    ),
+                    child: Padding(padding: padding, child: child),
                   ),
                 ),
               );
@@ -178,6 +202,19 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
         ],
       ),
     );
+  }
+
+  bool _isScrollableWidget(Widget widget) {
+    return widget is ListView ||
+        widget is GridView ||
+        widget is CustomScrollView ||
+        widget is SingleChildScrollView ||
+        widget is NestedScrollView ||
+        widget is RefreshIndicator ||
+        widget is Consumer ||
+        widget is Selector ||
+        widget is AnimatedBuilder ||
+        widget is ValueListenableBuilder;
   }
 }
 

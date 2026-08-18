@@ -249,13 +249,14 @@ class ApiService {
   /// Login con email y contraseña
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await _client
-          .post(
-            AppConfig.buildUri('/auth/login'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'email': email, 'password': password}),
-          )
-          .timeout(const Duration(seconds: 10));
+      final uri = AppConfig.buildUri('/auth/login');
+      final request = http.Request('POST', uri);
+      request.headers.addAll(await _headers(authorized: false));
+      request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+      request.bodyFields = {'email': email, 'password': password};
+
+      final responseStream = await _client.send(request).timeout(const Duration(seconds: 10));
+      final response = await http.Response.fromStream(responseStream);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -597,7 +598,10 @@ class ApiService {
   }
 
   /// Enviar imagen para análisis por backend
-  Future<Map<String, dynamic>> submitAnalysis(File imageFile) async {
+  Future<Map<String, dynamic>> submitAnalysis(
+    File imageFile, {
+    int? id_ubicacion,
+  }) async {
     final uri = AppConfig.buildUri('/analysis/process');
     final request = http.MultipartRequest('POST', uri);
     request.headers.addAll(await _headers(authorized: true));
@@ -608,6 +612,9 @@ class ApiService {
         filename: imageFile.path.split(Platform.pathSeparator).last,
       ),
     );
+    if (id_ubicacion != null) {
+      request.fields['id_ubicacion'] = id_ubicacion.toString();
+    }
 
     final streamedResponse = await _client.send(request);
     final response = await http.Response.fromStream(streamedResponse);
@@ -776,6 +783,59 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  Future<List<Map<String, dynamic>>> getNotifications() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/notificaciones'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener notificaciones',
+        ),
+      );
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is List) {
+      return List<Map<String, dynamic>>.from(
+        decoded.map((item) => item as Map<String, dynamic>),
+      );
+    }
+    return <Map<String, dynamic>>[];
+  }
+
+  Future<void> clearNotifications() async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/notificaciones/clear'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al limpiar notificaciones',
+        ),
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> markNotificationRead(int notificationId) async {
+    final response = await _client.patch(
+      AppConfig.buildUri('/notificaciones/$notificationId/read'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al marcar notificación como leída',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<void> shareAnalysis(int analysisId) async {
     final response = await _client.post(
       AppConfig.buildUri('/analysis/$analysisId/share'),
@@ -791,7 +851,7 @@ class ApiService {
     }
   }
 
-  Future<void> saveLocation(Map<String, dynamic> locationData) async {
+  Future<Map<String, dynamic>> saveLocation(Map<String, dynamic> locationData) async {
     final response = await _client.post(
       AppConfig.buildUri('/location/save'),
       headers: await _headers(authorized: true),
@@ -805,6 +865,40 @@ class ApiService {
         ),
       );
     }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> findOrCreateLocation({
+    required double latitude,
+    required double longitude,
+    double radiusMeters = 15.0,
+    String? direccion,
+    String? municipio,
+    String? departamento,
+    String? pais = 'Colombia',
+  }) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/location/find-or-create'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode({
+        'latitude': latitude,
+        'longitude': longitude,
+        'radius_meters': radiusMeters,
+        'direccion': direccion,
+        'municipio': municipio,
+        'departamento': departamento,
+        'pais': pais,
+      }),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al buscar/crear ubicación',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   /// Crear nuevo artículo (solo admin)

@@ -11,7 +11,7 @@ from config.database import engine
 from config.db import SessionLocal
 from config.settings import BACKEND_URL, UPLOADS_BASE_DIR
 from models.base import Base
-from models.core import Role, Usuario, Analisis, ModeloIA, Dataset
+from models.core import Role, Usuario, Analisis, ModeloIA, Dataset, HistorialActividad
 from auth.jwt_handler import create_access_token as create_token
 from auth.password_handler import hash_password
 from passlib.context import CryptContext
@@ -116,6 +116,12 @@ except ImportError as e:
     print(f"Warning: dashboard router not found - {e}")
 
 try:
+    from routes.notificaciones import router as notificaciones_router
+    app.include_router(notificaciones_router, prefix="/notificaciones", tags=["Notificaciones"])
+except ImportError as e:
+    print(f"Warning: notificaciones router not found - {e}")
+
+try:
     from routes.maps_route import router as maps_router
     app.include_router(maps_router, prefix="/api/maps", tags=["Maps"])
 except ImportError as e:
@@ -192,6 +198,14 @@ def startup():
                 humedad_relativa=65.5,
             )
             db.add(seed_analysis)
+            db.flush()
+
+            seed_historial = HistorialActividad(
+                accion_realizada='analisis_guardado',
+                descripcion_accion=f'analysis_id={seed_analysis.id_analisis}; location=',
+                id_usuario=seed_analysis.id_usuario,
+            )
+            db.add(seed_historial)
             db.commit()
     except Exception as e:
         print('Error inicializando la base de datos:', e)
