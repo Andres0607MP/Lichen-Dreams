@@ -29,7 +29,17 @@ class _MapScreenState extends State<MapScreen> {
   String? _locationStatusMessage;
   Set<Marker>? _cachedMarkers;
   String? _markersHash;
-  Map<AirQualityLevel, bool> expandedGroups = {
+  Map<AirQualityLevel, bool> expandedOwnGroups = {
+    AirQualityLevel.good: true,
+    AirQualityLevel.moderate: false,
+    AirQualityLevel.poor: false,
+  };
+  Map<AirQualityLevel, bool> expandedCommunityGroups = {
+    AirQualityLevel.good: true,
+    AirQualityLevel.moderate: false,
+    AirQualityLevel.poor: false,
+  };
+  Map<AirQualityLevel, bool> expandedFilteredGroups = {
     AirQualityLevel.good: true,
     AirQualityLevel.moderate: false,
     AirQualityLevel.poor: false,
@@ -366,12 +376,50 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
+                 ),
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 60,
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 400),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppTheme.surfaceColor,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextButton.icon(
+                          onPressed: () {
+                            Navigator.pushNamed(context, AppRoutes.mapExplorer);
+                          },
+                          icon: Icon(Icons.explore_rounded, color: AppTheme.successColor),
+                          label: Text(
+                            'Explorar mapa',
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.successColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-            ],
-          ),
-        );
-      },
-    );
+             ],
+           ),
+         );
+       },
+     );
   }
 
   Widget _buildInlineFilters() {
@@ -382,29 +430,73 @@ class _MapScreenState extends State<MapScreen> {
       _buildFilterChip(label: 'Saludable', value: 'good'),
       _buildFilterChip(label: 'Contaminado', value: 'poor'),
       _buildFilterChip(label: 'Transición', value: 'moderate'),
+      const SizedBox(width: 8),
+      _buildFilterChip(
+        label: 'Filtros',
+        value: '__advanced__',
+        icon: Icons.tune_rounded,
+      ),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: chips,
-      ),
+    return Stack(
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: chips,
+          ),
+        ),
+        Positioned(
+          right: 0,
+          top: 0,
+          bottom: 0,
+          width: 40,
+          child: IgnorePointer(
+            ignoring: true,
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    AppTheme.backgroundColor.withValues(alpha: 0.0),
+                    AppTheme.backgroundColor.withValues(alpha: 0.95),
+                  ],
+                ),
+              ),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: AppTheme.textGray.withValues(alpha: 0.6),
+                size: 18,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildFilterChip({required String label, required String? value}) {
-    final isActive = _selectedFilterChip == value;
+  Widget _buildFilterChip({required String label, required String? value, IconData? icon}) {
+    final isAdvanced = value == '__advanced__';
+    final isActive = isAdvanced
+        ? (_qualityFilters.isNotEmpty || _contaminationFilters.isNotEmpty || _confidenceFilters.isNotEmpty || _dateRange != DateRange.all)
+        : _selectedFilterChip == value;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: InkWell(
         onTap: () {
-          setState(() {
-            if (_selectedFilterChip == value) {
-              _selectedFilterChip = null;
-            } else {
-              _selectedFilterChip = value;
-            }
-          });
+          if (isAdvanced) {
+            _showAdvancedFilters();
+          } else {
+            setState(() {
+              if (_selectedFilterChip == value) {
+                _selectedFilterChip = null;
+              } else {
+                _selectedFilterChip = value;
+              }
+            });
+          }
         },
         borderRadius: BorderRadius.circular(20),
         child: Container(
@@ -413,20 +505,306 @@ class _MapScreenState extends State<MapScreen> {
             color: isActive ? AppTheme.primaryGreen.withValues(alpha: 0.08) : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: isActive ? AppTheme.primaryGreen : AppTheme.textGray,
-            ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Icon(
+                  icon,
+                  size: 14,
+                  color: isActive ? AppTheme.primaryGreen : AppTheme.textGray,
+                ),
+                const SizedBox(width: 4),
+              ],
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isActive ? AppTheme.primaryGreen : AppTheme.textGray,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAnalysisPanel(String title, List<MapAnalysisPoint> points, bool showEmptyState, {bool showUserInfo = false}) {
+  void _showAdvancedFilters() {
+    final tempQuality = Set<AirQualityLevel>.from(_qualityFilters);
+    final tempContamination = Set<ContaminationLevel>.from(_contaminationFilters);
+    final tempConfidence = Set<ConfidenceLevel>.from(_confidenceFilters);
+    DateRange? tempDateRange = _dateRange;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: AppTheme.surfaceColor,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: AppTheme.borderColor.withValues(alpha: 0.3))),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Filtros avanzados',
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textDark,
+                        ),
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () {
+                        setModalState(() {
+                          tempQuality.clear();
+                          tempContamination.clear();
+                          tempConfidence.clear();
+                          tempDateRange = DateRange.all;
+                        });
+                      },
+                      icon: Icon(Icons.refresh_rounded, size: 18, color: AppTheme.textGray),
+                      label: Text(
+                        'Limpiar',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textGray,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildFilterSectionTitle('Calidad del aire'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: AirQualityLevel.values.map((level) {
+                          final label = switch (level) {
+                            AirQualityLevel.good => 'Saludable',
+                            AirQualityLevel.moderate => 'Moderado',
+                            AirQualityLevel.poor => 'Contaminado',
+                          };
+                          final isSelected = tempQuality.contains(level);
+                          return _buildFilterChoiceChip(
+                            label: label,
+                            isSelected: isSelected,
+                            onSelected: (selected) {
+                              setModalState(() {
+                                if (selected) {
+                                  tempQuality.add(level);
+                                } else {
+                                  tempQuality.remove(level);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildFilterSectionTitle('Contaminación'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: ContaminationLevel.values.map((level) {
+                          if (level == ContaminationLevel.unknown) return const SizedBox.shrink();
+                          String label;
+                          switch (level) {
+                            case ContaminationLevel.low:
+                              label = 'Baja';
+                              break;
+                            case ContaminationLevel.medium:
+                              label = 'Media';
+                              break;
+                            case ContaminationLevel.high:
+                              label = 'Alta';
+                              break;
+                            default:
+                              return const SizedBox.shrink();
+                          }
+                          final isSelected = tempContamination.contains(level);
+                          return _buildFilterChoiceChip(
+                            label: label,
+                            isSelected: isSelected,
+                            onSelected: (selected) {
+                              setModalState(() {
+                                if (selected) {
+                                  tempContamination.add(level);
+                                } else {
+                                  tempContamination.remove(level);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildFilterSectionTitle('Confianza IA'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: ConfidenceLevel.values.map((level) {
+                          final label = switch (level) {
+                            ConfidenceLevel.high => 'Alta',
+                            ConfidenceLevel.medium => 'Media',
+                            ConfidenceLevel.low => 'Baja',
+                          };
+                          final isSelected = tempConfidence.contains(level);
+                          return _buildFilterChoiceChip(
+                            label: label,
+                            isSelected: isSelected,
+                            onSelected: (selected) {
+                              setModalState(() {
+                                if (selected) {
+                                  tempConfidence.add(level);
+                                } else {
+                                  tempConfidence.remove(level);
+                                }
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildFilterSectionTitle('Fecha'),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: DateRange.values.map((range) {
+                          final label = switch (range) {
+                            DateRange.today => 'Hoy',
+                            DateRange.week => 'Última semana',
+                            DateRange.month => 'Último mes',
+                            DateRange.all => 'Todos',
+                          };
+                          final isSelected = tempDateRange == range;
+                          return _buildFilterChoiceChip(
+                            label: label,
+                            isSelected: isSelected,
+                            onSelected: (selected) {
+                              setModalState(() {
+                                tempDateRange = selected ? range : DateRange.all;
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: AppTheme.borderColor.withValues(alpha: 0.3))),
+                ),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _qualityFilters = tempQuality;
+                        _contaminationFilters = tempContamination;
+                        _confidenceFilters = tempConfidence;
+                        _dateRange = tempDateRange ?? DateRange.all;
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryGreen,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'Aplicar',
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFilterSectionTitle(String title) {
+    return Text(
+      title,
+      style: GoogleFonts.poppins(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppTheme.textDark,
+      ),
+    );
+  }
+
+  Widget _buildFilterChoiceChip({
+    required String label,
+    required bool isSelected,
+    required ValueChanged<bool> onSelected,
+  }) {
+    return InkWell(
+      onTap: () => onSelected(!isSelected),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppTheme.primaryGreen.withValues(alpha: 0.08) : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected ? AppTheme.primaryGreen.withValues(alpha: 0.3) : AppTheme.borderColor.withValues(alpha: 0.4),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnalysisPanel(String title, List<MapAnalysisPoint> points, bool showEmptyState, {bool showUserInfo = false, Map<AirQualityLevel, bool>? expandedGroups}) {
     if (showEmptyState) return _buildEmptyState();
 
     final groups = <AirQualityLevel, List<MapAnalysisPoint>>{
@@ -437,6 +815,8 @@ class _MapScreenState extends State<MapScreen> {
     for (final point in points) {
       groups[point.qualityLevel]!.add(point);
     }
+
+    final expandedGroupsState = expandedGroups ?? <AirQualityLevel, bool>{};
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,10 +847,10 @@ class _MapScreenState extends State<MapScreen> {
           return _QualityGroup(
             level: level,
             points: groupPoints,
-            isExpanded: expandedGroups[level] ?? false,
+            isExpanded: expandedGroupsState[level] ?? false,
             onToggle: () {
               setState(() {
-                expandedGroups[level] = !(expandedGroups[level] ?? false);
+                expandedGroupsState[level] = !(expandedGroupsState[level] ?? false);
               });
             },
             selectedPoint: _selectedPoint,
@@ -479,7 +859,7 @@ class _MapScreenState extends State<MapScreen> {
               setState(() {
                 _selectedPoint = point;
                 _expandedAnalysisId = point.id;
-                expandedGroups[point.qualityLevel] = true;
+                expandedGroupsState[point.qualityLevel] = true;
               });
               if (point.lat.isFinite && point.lng.isFinite) {
                 _mapController?.animateCamera(
@@ -732,23 +1112,6 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 12),
           _buildLegendSection(),
           const SizedBox(height: 12),
-          Center(
-            child: TextButton.icon(
-              onPressed: () {
-                Navigator.pushNamed(context, AppRoutes.mapExplorer);
-              },
-              icon: Icon(Icons.explore_rounded, color: AppTheme.successColor),
-              label: Text(
-                'Explorar mapa',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.successColor,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
           _buildMapCard(markers, circles, initialPosition, initialZoom),
           const SizedBox(height: 20),
           if (ownPoints.isNotEmpty)
@@ -757,6 +1120,7 @@ class _MapScreenState extends State<MapScreen> {
               ownPoints,
               false,
               showUserInfo: false,
+              expandedGroups: expandedOwnGroups,
             ),
           if (communityPoints.isNotEmpty)
             _buildAnalysisPanel(
@@ -764,6 +1128,7 @@ class _MapScreenState extends State<MapScreen> {
               communityPoints,
               false,
               showUserInfo: true,
+              expandedGroups: expandedCommunityGroups,
             ),
           if (ownPoints.isEmpty && communityPoints.isEmpty)
             _buildAnalysisPanel(
@@ -771,6 +1136,7 @@ class _MapScreenState extends State<MapScreen> {
               filteredPoints,
               true,
               showUserInfo: false,
+              expandedGroups: expandedFilteredGroups,
             ),
         ],
       ),
@@ -778,7 +1144,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 }
 
-class _QualityGroup extends StatelessWidget {
+class _QualityGroup extends StatefulWidget {
   final AirQualityLevel level;
   final List<MapAnalysisPoint> points;
   final bool isExpanded;
@@ -803,8 +1169,16 @@ class _QualityGroup extends StatelessWidget {
     this.showUserInfo = false,
   });
 
+  @override
+  State<_QualityGroup> createState() => _QualityGroupState();
+}
+
+class _QualityGroupState extends State<_QualityGroup> {
+  static const int _initialVisibleItems = 5;
+  bool _showAll = false;
+
   String get _groupLabel {
-    switch (level) {
+    switch (widget.level) {
       case AirQualityLevel.good:
         return 'Saludables';
       case AirQualityLevel.moderate:
@@ -816,6 +1190,11 @@ class _QualityGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final visiblePoints = _showAll
+        ? widget.points
+        : widget.points.take(_initialVisibleItems).toList();
+    final hasMore = widget.points.length > _initialVisibleItems;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -834,7 +1213,7 @@ class _QualityGroup extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           GestureDetector(
-            onTap: onToggle,
+            onTap: widget.onToggle,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
               child: Row(
@@ -843,12 +1222,12 @@ class _QualityGroup extends StatelessWidget {
                     width: 28,
                     height: 28,
                     decoration: BoxDecoration(
-                      color: qualityColor.withValues(alpha: 0.12),
+                      color: widget.qualityColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
                       Icons.eco_rounded,
-                      color: qualityColor,
+                      color: widget.qualityColor,
                       size: 16,
                     ),
                   ),
@@ -868,22 +1247,22 @@ class _QualityGroup extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: qualityColor.withValues(alpha: 0.08),
+                      color: widget.qualityColor.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      '${points.length} ${points.length == 1 ? "observación" : "observaciones"}',
+                      '${widget.points.length} ${widget.points.length == 1 ? "observación" : "observaciones"}',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: qualityColor,
+                        color: widget.qualityColor,
                       ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   AnimatedRotation(
                     duration: const Duration(milliseconds: 250),
-                    turns: isExpanded ? 0.5 : 0.0,
+                    turns: widget.isExpanded ? 0.5 : 0.0,
                     child: Icon(
                       Icons.expand_more_rounded,
                       size: 18,
@@ -897,7 +1276,7 @@ class _QualityGroup extends StatelessWidget {
           AnimatedSize(
             duration: const Duration(milliseconds: 280),
             curve: Curves.easeInOut,
-            child: isExpanded
+            child: widget.isExpanded
                 ? Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                     child: Column(
@@ -905,18 +1284,43 @@ class _QualityGroup extends StatelessWidget {
                       children: [
                         Divider(height: 1, color: AppTheme.borderColor.withValues(alpha: 0.25)),
                         const SizedBox(height: 8),
-                        ...points.map((point) {
-                          final isSelected = selectedPoint?.id == point.id;
-                          final isAnalysisExpanded = expandedAnalysisId == point.id;
+                        ...visiblePoints.map((point) {
+                          final isSelected = widget.selectedPoint?.id == point.id;
+                          final isAnalysisExpanded = widget.expandedAnalysisId == point.id;
                           return _AnalysisCard(
                             point: point,
                             isSelected: isSelected,
                             isExpanded: isAnalysisExpanded,
-                            onTap: () => onCardTap(point),
-                            formattedDate: formatDate(point.date),
-                            showUserInfo: showUserInfo,
+                            onTap: () => widget.onCardTap(point),
+                            formattedDate: widget.formatDate(point.date),
+                            showUserInfo: widget.showUserInfo,
                           );
                         }),
+                        if (hasMore)
+                          TextButton.icon(
+                            onPressed: () {
+                              setState(() {
+                                _showAll = !_showAll;
+                              });
+                            },
+                            icon: Icon(
+                              _showAll
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              size: 18,
+                              color: AppTheme.textGray,
+                            ),
+                            label: Text(
+                              _showAll
+                                  ? 'Ver menos'
+                                  : 'Ver ${widget.points.length - _initialVisibleItems} más',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textGray,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   )

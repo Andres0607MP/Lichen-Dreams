@@ -38,6 +38,9 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   Timer? _serviceCheckTimer;
   MapType _mapType = MapType.normal;
   final ValueNotifier<double> _zoomNotifier = ValueNotifier<double>(15);
+  bool _showOwn = true;
+  bool _showCommunity = true;
+  bool _showZones = true;
 
   static const Color moderateYellow = Color(0xFFFFC107);
 
@@ -385,20 +388,6 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     _zoomNotifier.value = 16;
   }
 
-  void _zoomIn() {
-    if (_mapController == null || !mounted) return;
-    _mapController!.animateCamera(
-      CameraUpdate.zoomIn(),
-    );
-  }
-
-  void _zoomOut() {
-    if (_mapController == null || !mounted) return;
-    _mapController!.animateCamera(
-      CameraUpdate.zoomOut(),
-    );
-  }
-
   void _toggleMapType() {
     setState(() {
       _mapType = _mapType == MapType.normal
@@ -407,22 +396,16 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     });
   }
 
-  Set<Marker> _buildMarkers(List<MapAnalysisPoint> points, List<EnvironmentalZone> zones) {
+  Set<Marker> _buildMarkers(List<MapAnalysisPoint> points, List<EnvironmentalZone> zones, MapState mapState) {
     final Set<Marker> markers = {};
+    final Set<int> seenIds = {};
 
     for (final point in points) {
-      final level = point.visualQualityLevel;
+      if (seenIds.contains(point.id)) continue;
+      seenIds.add(point.id);
 
-      markers.add(Marker(
-        markerId: MarkerId('analysis_${point.id}'),
-        position: point.latLng,
-        icon: BitmapDescriptor.defaultMarkerWithHue(level.hue),
-        infoWindow: InfoWindow(
-          title: point.zoneName,
-          snippet: '${point.species} - ${point.airQuality}',
-        ),
-        onTap: () => _onPointTap(point),
-      ));
+      final role = _markerRole(point, mapState);
+      markers.add(_buildAnalysisMarker(point, role: role));
     }
 
     for (final zone in zones) {
@@ -443,6 +426,32 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     }
 
     return markers;
+  }
+
+  String _markerRole(MapAnalysisPoint point, MapState mapState) {
+    final isOwn = point.idUsuario == mapState.userId;
+    if (isOwn) {
+      return point.isShared ? 'own-published' : 'own-private';
+    }
+    return point.isShared ? 'community' : 'own-private';
+  }
+
+  Marker _buildAnalysisMarker(MapAnalysisPoint point, {required String role}) {
+    final level = point.visualQualityLevel;
+    final hue = role == 'own-published'
+        ? BitmapDescriptor.hueAzure
+        : level.hue;
+
+    return Marker(
+      markerId: MarkerId('analysis_${point.id}'),
+      position: point.latLng,
+      icon: BitmapDescriptor.defaultMarkerWithHue(hue),
+      infoWindow: InfoWindow(
+        title: point.zoneName,
+        snippet: '${point.species} - ${point.airQuality}',
+      ),
+      onTap: () => _onPointTap(point),
+    );
   }
 
   void _onPointTap(MapAnalysisPoint point) {
@@ -516,12 +525,13 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                 )
               : !_locationServiceEnabled || !_locationPermissionGranted
                   ? _buildLocationRequired()
-                  : _buildMapContent(mapState.points),
+                  : _buildMapContent(mapState),
     );
   }
 
-  Widget _buildMapContent(List<MapAnalysisPoint> points) {
-    final zones = calculateEnvironmentalZones(points);
+  Widget _buildMapContent(MapState mapState) {
+    final points = _visiblePoints(mapState);
+    final zones = _showZones ? calculateEnvironmentalZones(points) : <EnvironmentalZone>[];
     final selected = _selectedPoint;
     final selectedZone = _selectedZone;
 
@@ -543,7 +553,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               bearing: 0,
             ),
             mapType: _mapType,
-            markers: _buildMarkers(points, zones),
+            markers: _buildMarkers(points, zones, mapState),
             circles: {..._buildZoneCircles(zones), ..._buildIndividualCircles(points)},
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
@@ -559,7 +569,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
           ),
           if (selectedZone != null)
             _buildZoneTopOverlay(selectedZone),
-          if (selected == null && selectedZone == null && points.isNotEmpty)
+          if (selected == null && selectedZone == null && points.isNotEmpty && _showZones)
             _buildAggregateOverlay(points, zones),
           if (selected != null && selectedZone == null)
             _buildPointTopOverlay(selected, selected.visualQualityLevel.statusColor),
@@ -569,6 +579,23 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
         ],
       ),
     );
+  }
+
+  List<MapAnalysisPoint> _visiblePoints(MapState mapState) {
+    final result = <MapAnalysisPoint>[];
+    final seenIds = <int>{};
+    void addPoints(List<MapAnalysisPoint> source) {
+      for (final point in source) {
+        if (!seenIds.contains(point.id)) {
+          seenIds.add(point.id);
+          result.add(point);
+        }
+      }
+    }
+
+    if (_showOwn) addPoints(mapState.ownPoints);
+    if (_showCommunity) addPoints(mapState.sharedPoints);
+    return result;
   }
 
   Set<Circle> _buildZoneCircles(List<EnvironmentalZone> zones) {
@@ -840,12 +867,87 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     );
   }
 
+  Widget _buildLayerControls() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _layerToggle('Mis análisis', _showOwn, AppTheme.primaryGreen, (value) {
+            setState(() => _showOwn = value);
+          }),
+          const SizedBox(width: 8),
+          _layerToggle('Comunidad', _showCommunity, AppTheme.errorColor, (value) {
+            setState(() => _showCommunity = value);
+          }),
+          const SizedBox(width: 8),
+          _layerToggle('Zonas', _showZones, moderateYellow, (value) {
+            setState(() => _showZones = value);
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _layerToggle(String label, bool active, Color color, ValueChanged<bool> onChanged) {
+    return GestureDetector(
+      onTap: () => onChanged(!active),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: active ? color.withValues(alpha: 0.15) : AppTheme.backgroundColor.withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active ? color.withValues(alpha: 0.6) : AppTheme.borderColor.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              active ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+              size: 14,
+              color: active ? color : AppTheme.textGray,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: active ? color : AppTheme.textGray,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildLegend() {
     return Positioned(
       left: 16,
       bottom: 16,
       child: SafeArea(
-        child: Container(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildLayerControls(),
+            const SizedBox(height: 8),
+            Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor.withValues(alpha: 0.9),
@@ -867,8 +969,10 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               _legendItem(moderateYellow, 'Moderado'),
               const SizedBox(width: 10),
               _legendItem(AppTheme.errorColor, 'Contaminado'),
-            ],
-          ),
+             ],
+           ),
+            ),
+          ],
         ),
       ),
     );
@@ -934,11 +1038,6 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               _zoomNotifier.value = 16;
             },
             tooltip: 'Mi ubicación',
-          ),
-          const SizedBox(height: 8),
-          MapZoomControls(
-            onZoomIn: _zoomIn,
-            onZoomOut: _zoomOut,
           ),
           const SizedBox(height: 8),
           MapControlButton(

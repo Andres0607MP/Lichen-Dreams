@@ -9,16 +9,15 @@ class MapState extends ChangeNotifier {
   MapState({ApiService? apiService, int? userId}) : _apiService = apiService ?? ApiService() {
     _userId = userId;
   }
-  List<MapAnalysisPoint> _points = [];
-  List<MapAnalysisPoint> _ownPoints = [];
-  List<MapAnalysisPoint> _communityPoints = [];
+  List<MapAnalysisPoint> _allPoints = [];
   bool _loading = false;
   String? _error;
 
   int? get userId => _userId;
-  List<MapAnalysisPoint> get points => _points;
-  List<MapAnalysisPoint> get ownPoints => _ownPoints;
-  List<MapAnalysisPoint> get communityPoints => _communityPoints;
+  List<MapAnalysisPoint> get points => _allPoints;
+  List<MapAnalysisPoint> get ownPoints => _allPoints.where((point) => point.idUsuario == _userId).toList();
+  List<MapAnalysisPoint> get sharedPoints => _allPoints.where((point) => point.isShared).toList();
+  List<MapAnalysisPoint> get communityPoints => _allPoints.where((point) => point.isShared && point.idUsuario != _userId).toList();
   bool get loading => _loading;
   String? get error => _error;
 
@@ -28,13 +27,6 @@ class MapState extends ChangeNotifier {
   void updateUserId(int? userId) {
     if (_userId == userId) return;
     _userId = userId;
-    if (_points.isNotEmpty) {
-      _ownPoints = _points.where((point) => point.idUsuario == _userId).toList();
-      _communityPoints = _points.where((point) => point.idUsuario != _userId && point.visibilidad == 'shared').toList();
-    } else {
-      _ownPoints = [];
-      _communityPoints = [];
-    }
     notifyListeners();
   }
 
@@ -47,14 +39,12 @@ class MapState extends ChangeNotifier {
       debugPrint('MAP STATE: cargando puntos del mapa...');
       final jsonList = await _apiService.getMapPoints();
       debugPrint('MAP STATE: recibidos ${jsonList.length} puntos');
-      _points = jsonList.map((json) => MapAnalysisPoint.fromJson(json)).toList();
-      _ownPoints = _points.where((point) => point.idUsuario == _userId).toList();
-      _communityPoints = _points.where((point) => point.idUsuario != _userId && point.visibilidad == 'shared').toList();
-      _cachedCircles = _points
+      _allPoints = jsonList.map((json) => MapAnalysisPoint.fromJson(json)).toList();
+      _cachedCircles = _allPoints
           .where((point) => point.qualityLevel != AirQualityLevel.moderate)
           .map((point) => point.toEnvironmentalCircle())
           .toSet();
-      debugPrint('MAP STATE: mis análisis=${_ownPoints.length}, comunidad=${_communityPoints.length}');
+      debugPrint('MAP STATE: total=${_allPoints.length}, mis análisis=${ownPoints.length}, comunidad=${communityPoints.length}');
       notifyListeners();
     } catch (e) {
       _error = e.toString();
@@ -66,14 +56,14 @@ class MapState extends ChangeNotifier {
 
   List<MapAnalysisPoint> filteredPoints({required bool showOwn, required bool showCommunity}) {
     final result = <MapAnalysisPoint>[];
-    if (showOwn) result.addAll(_ownPoints);
-    if (showCommunity) result.addAll(_communityPoints);
+    if (showOwn) result.addAll(ownPoints);
+    if (showCommunity) result.addAll(communityPoints);
     return result;
   }
 
   Set<Circle> filteredCircles({required bool showZones, required bool showOwn, required bool showCommunity}) {
     final points = filteredPoints(showOwn: showOwn, showCommunity: showCommunity);
-    final envPoints = showZones ? _points : <MapAnalysisPoint>[];
+    final envPoints = showZones ? _allPoints : <MapAnalysisPoint>[];
     final allPoints = {...points, ...envPoints};
     return allPoints
         .where((point) => point.qualityLevel != AirQualityLevel.moderate)
@@ -111,7 +101,7 @@ class MapState extends ChangeNotifier {
   }
 
   Future<void> reset() {
-    _points = [];
+    _allPoints = [];
     _cachedCircles = const {};
     _error = null;
     _loading = false;
