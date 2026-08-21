@@ -155,6 +155,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _searchQuery = '';
   String _sortMode = 'recent';
   final Set<int> _deletingIds = {};
+  List<AnalysisRecord>? _cachedProcessedRecords;
+  _StatsSummary? _cachedStats;
+  int _cachedHistoryLength = -1;
+  int _cachedHistoryVersion = -1;
+  String _cachedFilter = 'todos';
+  String _cachedSearchQuery = '';
+  String _cachedSortMode = 'recent';
 
   @override
   void initState() {
@@ -283,18 +290,37 @@ class _HistoryScreenState extends State<HistoryScreen> {
           }
 
           final records = historyState.history;
-          var processed = _applyFilter(records);
+          final needsRecalc = records.length != _cachedHistoryLength ||
+              historyState.version != _cachedHistoryVersion ||
+              _filter != _cachedFilter ||
+              _searchQuery != _cachedSearchQuery ||
+              _sortMode != _cachedSortMode;
 
-          if (_searchQuery.isNotEmpty) {
-            final q = _searchQuery.toLowerCase();
-            processed = processed.where((r) {
-              return r.title.toLowerCase().contains(q) ||
-                  (r.ubicacion?.toLowerCase().contains(q) ?? false) ||
-                  r.summary.toLowerCase().contains(q);
-            }).toList();
+          List<AnalysisRecord> processed;
+          _StatsSummary stats;
+          if (needsRecalc || _cachedProcessedRecords == null) {
+            processed = _applyFilter(records);
+            if (_searchQuery.isNotEmpty) {
+              final q = _searchQuery.toLowerCase();
+              processed = processed.where((r) {
+                return r.title.toLowerCase().contains(q) ||
+                    (r.ubicacion?.toLowerCase().contains(q) ?? false) ||
+                    r.summary.toLowerCase().contains(q);
+              }).toList();
+            }
+            processed = _sortRecords(processed);
+            stats = _computeStats(records);
+            _cachedProcessedRecords = processed;
+            _cachedStats = stats;
+            _cachedHistoryLength = records.length;
+            _cachedHistoryVersion = historyState.version;
+            _cachedFilter = _filter;
+            _cachedSearchQuery = _searchQuery;
+            _cachedSortMode = _sortMode;
+          } else {
+            processed = _cachedProcessedRecords!;
+            stats = _cachedStats!;
           }
-
-          processed = _sortRecords(processed);
 
           if (records.isEmpty) {
             return _buildEmptyState();
@@ -304,7 +330,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             return _buildFilteredEmptyState();
           }
 
-          final stats = _computeStats(records);
           final last = records.first;
 
           return RefreshIndicator(
@@ -321,7 +346,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   );
                 }
                 if (index == 1) {
-                  return _buildFilterBar(records);
+                  return _buildFilterBar(records, stats: stats);
                 }
                 if (index == 2) {
                   return _CompactStatsCard(
@@ -363,11 +388,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   onChartTap: () => _showEnvironmentalChartSheet([record], singleRecord: record),
                 );
 
-                return card.animate(
-                  key: ValueKey(record.id),
-                  delay: ((index - 4) * 50).ms,
-                ).fadeIn(duration: 350.ms, curve: Curves.easeOut)
-                  .slideY(begin: 0.06, end: 0, duration: 350.ms, curve: Curves.easeOut);
+                return card;
               },
             ),
           );
@@ -816,7 +837,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.1),
                     ),
                   ),
-                  if (context.read<HistoryState>().isShared(record.id))
+                  if (context.read<HistoryState>().isShared(record.analysisId))
                     IconButton(
                       onPressed: () {
                         Navigator.pushNamed(
@@ -1319,13 +1340,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  Widget _buildFilterBar(List<AnalysisRecord> records) {
-    final stats = _computeStats(records);
+  Widget _buildFilterBar(List<AnalysisRecord> records, {_StatsSummary? stats}) {
+    final s = stats ?? _computeStats(records);
     final items = <_FilterOption>[
-      _FilterOption('todos', 'Todos', stats.total),
-      _FilterOption('saludables', 'Saludables', stats.saludables),
-      _FilterOption('moderados', 'Moderados', stats.moderados),
-      _FilterOption('criticos', 'Críticos', stats.criticos),
+      _FilterOption('todos', 'Todos', s.total),
+      _FilterOption('saludables', 'Saludables', s.saludables),
+      _FilterOption('moderados', 'Moderados', s.moderados),
+      _FilterOption('criticos', 'Críticos', s.criticos),
     ];
 
     return Container(

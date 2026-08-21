@@ -74,11 +74,11 @@ class _Badge extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOutBack,
-        width: isDoubleDigit ? 20 : 18,
+        width: displayCount.length > 2 ? 22 : (isDoubleDigit ? 20 : 18),
         height: 18,
         decoration: BoxDecoration(
           color: Colors.redAccent,
-          shape: BoxShape.circle,
+          borderRadius: BorderRadius.circular(9),
           border: Border.all(
             color: AppTheme.surfaceColor,
             width: 1.5,

@@ -1,5 +1,6 @@
 class AnalysisRecord {
   final int? id;
+  final int? analysisId;
   final String title;
   final String status;
   final String summary;
@@ -14,6 +15,7 @@ class AnalysisRecord {
 
   AnalysisRecord({
     this.id,
+    this.analysisId,
     required this.title,
     required this.status,
     required this.summary,
@@ -61,12 +63,16 @@ class AnalysisRecord {
         json['calidadDelAire']?.toString() ??
         json['calidad_aire']?.toString();
     final source = (json['source'] ?? json['origen'] ?? 'camera').toString();
+    final analysisId = json['id_analisis'] is int
+        ? json['id_analisis'] as int
+        : int.tryParse(json['id_analisis']?.toString() ?? '');
     final filteredRaw = Map<String, dynamic>.from(json);
     filteredRaw.remove('imagen_base64');
     filteredRaw.remove('image_base64');
 
     return AnalysisRecord(
       id: json['id'] is int ? json['id'] as int : int.tryParse(json['id']?.toString() ?? ''),
+      analysisId: analysisId,
       title: title,
       status: status,
       summary: summary,

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../routes/route_names.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/lichen_scaffold.dart';
+import '../widgets/map_controls.dart';
 import '../services/navigation_service.dart';
 import '../state/map_state.dart';
 import '../state/auth_state.dart';
@@ -47,6 +48,9 @@ class _MapScreenState extends State<MapScreen> {
   bool _showMyAnalyses = true;
   bool _showCommunity = true;
   bool _showZones = true;
+  MapType _mapType = MapType.normal;
+  ScrollController? _scrollController;
+  bool _showBackToMap = false;
   Set<AirQualityLevel> _qualityFilters = {};
   Set<ContaminationLevel> _contaminationFilters = {};
   Set<ConfidenceLevel> _confidenceFilters = {};
@@ -55,6 +59,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    _scrollController?.dispose();
     super.dispose();
   }
 
@@ -103,6 +108,8 @@ class _MapScreenState extends State<MapScreen> {
   void initState() {
     super.initState();
     LichenNavigation.instance.sync(2);
+    _scrollController = ScrollController();
+    _scrollController!.addListener(_onScroll);
     _requestLocationPermission();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
@@ -141,6 +148,38 @@ class _MapScreenState extends State<MapScreen> {
         Navigator.pushNamed(context, AppRoutes.perfil);
         break;
     }
+  }
+
+  void _zoomIn() {
+    if (_mapController == null || !mounted) return;
+    _mapController!.animateCamera(CameraUpdate.zoomIn());
+  }
+
+  void _zoomOut() {
+    if (_mapController == null || !mounted) return;
+    _mapController!.animateCamera(CameraUpdate.zoomOut());
+  }
+
+  void _toggleMapType() {
+    setState(() {
+      _mapType = _mapType == MapType.normal ? MapType.satellite : MapType.normal;
+    });
+  }
+
+  void _onScroll() {
+    if (_scrollController == null || !mounted) return;
+    final offset = _scrollController!.offset;
+    final show = offset > 300;
+    if (_showBackToMap != show) {
+      setState(() {
+        _showBackToMap = show;
+      });
+    }
+  }
+
+  void _scrollToTop() {
+    if (_scrollController == null || !mounted) return;
+    _scrollController!.animateTo(0, duration: const Duration(milliseconds: 300), curve: Curves.easeInOut);
   }
 
   Set<Marker> _buildMarkers(List<MapAnalysisPoint> points) {
@@ -329,11 +368,13 @@ class _MapScreenState extends State<MapScreen> {
                     target: initialPosition,
                     zoom: zoom,
                   ),
+                  mapType: _mapType,
                   markers: markers,
                   circles: circles,
                   myLocationEnabled: _locationPermissionGranted && _locationServiceEnabled,
                   myLocationButtonEnabled: _locationPermissionGranted && _locationServiceEnabled,
                   zoomGesturesEnabled: true,
+                  zoomControlsEnabled: false,
                   scrollGesturesEnabled: true,
                   onMapCreated: (controller) {
                     _mapController = controller;
@@ -376,50 +417,71 @@ class _MapScreenState extends State<MapScreen> {
                       ],
                     ),
                   ),
-                 ),
-                Positioned(
-                  left: 12,
-                  right: 12,
-                  bottom: 60,
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 400),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppTheme.surfaceColor,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: TextButton.icon(
-                          onPressed: () {
-                            Navigator.pushNamed(context, AppRoutes.mapExplorer);
-                          },
-                          icon: Icon(Icons.explore_rounded, color: AppTheme.successColor),
-                          label: Text(
-                            'Explorar mapa',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.successColor,
-                            ),
+                ),
+              Positioned(
+                left: 12,
+                right: 12,
+                bottom: 60,
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.surfaceColor,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.06),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: TextButton.icon(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.mapExplorer);
+                        },
+                        icon: Icon(Icons.explore_rounded, color: AppTheme.successColor),
+                        label: Text(
+                          'Explorar mapa',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.successColor,
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-             ],
-           ),
-         );
-       },
-     );
+              ),
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Column(
+                  children: [
+                    MapZoomControls(
+                      onZoomIn: _zoomIn,
+                      onZoomOut: _zoomOut,
+                    ),
+                    const SizedBox(height: 8),
+                    MapControlButton(
+                      icon: _mapType == MapType.normal
+                          ? Icons.satellite_rounded
+                          : Icons.map_rounded,
+                      onTap: _toggleMapType,
+                      tooltip: 'Cambiar tipo de mapa',
+                      active: _mapType == MapType.satellite,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildInlineFilters() {
@@ -1095,10 +1157,15 @@ class _MapScreenState extends State<MapScreen> {
       bottomNavIndex: _selectedIndex,
       onBottomNavTap: _onBottomNavTap,
       showParticleBackground: false,
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        physics: const BouncingScrollPhysics(),
+      bodyIsScrollable: true,
+      body: Stack(
         children: [
+          Positioned.fill(
+            child: ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              physics: const BouncingScrollPhysics(),
+              children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1139,6 +1206,23 @@ class _MapScreenState extends State<MapScreen> {
               expandedGroups: expandedFilteredGroups,
             ),
         ],
+      ),
+    ),
+      if (_showBackToMap)
+        Positioned(
+          right: 16,
+          bottom: 24,
+          child: AnimatedOpacity(
+            opacity: _showBackToMap ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            child: MapControlButton(
+              icon: Icons.map_rounded,
+              onTap: _scrollToTop,
+              tooltip: 'Volver al mapa',
+            ),
+          ),
+        ),
+      ],
       ),
     );
   }

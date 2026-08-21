@@ -467,6 +467,18 @@ class _LichenDrawerState extends State<LichenDrawer> {
                 Navigator.pushNamed(context, AppRoutes.adminUsers);
               },
             ),
+          if (isAdmin)
+            ListTile(
+              leading: Icon(
+                Icons.notifications_rounded,
+                color: AppTheme.primaryGreen,
+              ),
+              title: Text('Notificaciones', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.adminNotifications);
+              },
+            ),
           if (isAdmin && devUnlocked)
             ListTile(
               leading: Icon(

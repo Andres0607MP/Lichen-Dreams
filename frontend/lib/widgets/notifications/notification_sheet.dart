@@ -38,10 +38,6 @@ class _NotificationSheetState extends State<NotificationSheet> {
     setState(() => _selectedFilter = filter);
   }
 
-  Future<void> _markAllAsRead(NotificationsState notificationsState) async {
-    await notificationsState.markAllAsRead();
-  }
-
   Future<void> _handleClear(NotificationsState notificationsState) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -164,7 +160,6 @@ class _NotificationSheetState extends State<NotificationSheet> {
         if (!context.mounted) return;
         final record = AnalysisRecord.fromJson(analysisJson);
         await notificationsState.markAsRead(notificationId);
-        await notificationsState.markAsReadBackend(notificationId, apiService: apiService);
         if (!context.mounted) return;
         Navigator.pushReplacement(
           context,
@@ -185,13 +180,14 @@ class _NotificationSheetState extends State<NotificationSheet> {
       );
     } else if (tipo == 'analysis' && estado == 'failed') {
       if (!context.mounted) return;
+      await notificationsState.markAsRead(notificationId);
+      if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('El análisis falló. Intenta nuevamente.')),
       );
     } else {
       if (!context.mounted) return;
       await notificationsState.markAsRead(notificationId);
-      await notificationsState.markAsReadBackend(notificationId, apiService: apiService);
     }
   }
 
@@ -204,7 +200,7 @@ class _NotificationSheetState extends State<NotificationSheet> {
     final filteredNotifications = _applyFilter(notificationsState.notifications);
     final sortedNotifications = _sortByDateDesc(filteredNotifications);
     final showActiveCard = _shouldShowActiveCard(analysisState);
-    final hasNotifications = notificationsState.notifications.isNotEmpty;
+    final hasNotifications = sortedNotifications.isNotEmpty;
 
     return Padding(
       padding: EdgeInsets.only(
@@ -237,35 +233,14 @@ class _NotificationSheetState extends State<NotificationSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: ActiveAnalysisCard(analysisState: analysisState),
               ),
-            if (sortedNotifications.isEmpty)
-              Expanded(
-                child: _selectedFilter == 'system'
-                    ? _buildSystemEmpty()
-                    : const NotificationEmpty(),
-              )
-            else
-              Expanded(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  itemCount: sortedNotifications.length,
-                  itemBuilder: (context, index) {
-                    final notification = sortedNotifications[index];
-                    return NotificationCard(
-                      notification: notification,
-                      index: index,
-                      isLast: index == sortedNotifications.length - 1,
-                      onTap: () => _handleNotificationTap(
-                        context: context,
-                        notification: notification,
-                        notificationsState: notificationsState,
-                        apiService: apiService,
-                        analysisState: analysisState,
-                      ),
-                    );
-                  },
-                ),
+            Expanded(
+              child: _buildBody(
+                notificationsState: notificationsState,
+                sortedNotifications: sortedNotifications,
+                apiService: apiService,
+                analysisState: analysisState,
               ),
+            ),
             const SizedBox(height: 16),
           ],
         ),
@@ -309,30 +284,151 @@ class _NotificationSheetState extends State<NotificationSheet> {
                   .fadeIn(duration: 500.ms)
                   .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1), duration: 500.ms),
               const SizedBox(height: 20),
-              Text(
-                'Sin novedades del sistema',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textDark,
-                ),
-              ).animate().fadeIn(duration: 400.ms, delay: 150.ms),
-              const SizedBox(height: 6),
-              Text(
-                'No hay avisos generales en este momento',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w400,
-                  color: AppTheme.textGray.withValues(alpha: 0.8),
-                  height: 1.4,
-                ),
-              ).animate().fadeIn(duration: 400.ms, delay: 220.ms),
+               Text(
+                 'Sin notificaciones del sistema',
+                 textAlign: TextAlign.center,
+                 style: GoogleFonts.poppins(
+                   fontSize: 16,
+                   fontWeight: FontWeight.w600,
+                   color: AppTheme.textDark,
+                 ),
+               ).animate().fadeIn(duration: 400.ms, delay: 150.ms),
+               const SizedBox(height: 6),
+               Text(
+                 'No hay avisos generales en este momento',
+                 textAlign: TextAlign.center,
+                 style: GoogleFonts.poppins(
+                   fontSize: 13,
+                   fontWeight: FontWeight.w400,
+                   color: AppTheme.textGray.withValues(alpha: 0.8),
+                   height: 1.4,
+                 ),
+               ).animate().fadeIn(duration: 400.ms, delay: 220.ms),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBody({
+    required NotificationsState notificationsState,
+    required List<Map<String, dynamic>> sortedNotifications,
+    required ApiService apiService,
+    required AnalysisState analysisState,
+  }) {
+    if (notificationsState.loading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(strokeWidth: 2.2, color: AppTheme.primaryGreen),
+            SizedBox(height: 14),
+            Text(
+              'Cargando notificaciones...',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppTheme.textGray,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final error = notificationsState.error;
+    if (error != null && !notificationsState.loading) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: AppTheme.errorColor.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  Icons.error_outline_rounded,
+                  size: 36,
+                  color: AppTheme.errorColor.withValues(alpha: 0.9),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No pudimos cargar tus notificaciones.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textDark,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Revisa tu conexión e intenta nuevamente.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.textGray,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 18),
+              ElevatedButton.icon(
+                onPressed: () => notificationsState.loadNotifications(force: true),
+                icon: Icon(Icons.refresh_rounded, size: 18, color: Colors.white),
+                label: Text(
+                  'Reintentar',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryGreen,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (sortedNotifications.isEmpty) {
+      return _selectedFilter == 'system'
+          ? _buildSystemEmpty()
+          : const NotificationEmpty();
+    }
+
+    return ListView.builder(
+      shrinkWrap: true,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      itemCount: sortedNotifications.length,
+      itemBuilder: (context, index) {
+        final notification = sortedNotifications[index];
+        return NotificationCard(
+          notification: notification,
+          index: index,
+          isLast: index == sortedNotifications.length - 1,
+          onTap: () => _handleNotificationTap(
+            context: context,
+            notification: notification,
+            notificationsState: notificationsState,
+            apiService: apiService,
+            analysisState: analysisState,
+          ),
+        );
+      },
     );
   }
 
@@ -430,40 +526,6 @@ class _NotificationSheetState extends State<NotificationSheet> {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: _clearing ? AppTheme.textGray.withValues(alpha: 0.4) : AppTheme.errorColor,
-                ),
-              ),
-            ),
-          if (unreadCount > 0 && !hasNotifications)
-            TextButton(
-              onPressed: () => _markAllAsRead(notificationsState),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                minimumSize: const Size(0, 0),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Marcar todas',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryGreen,
-                ),
-              ),
-            ),
-          if (unreadCount > 0 && hasNotifications)
-            TextButton(
-              onPressed: () => _markAllAsRead(notificationsState),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                minimumSize: const Size(0, 0),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                'Marcar todas',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.primaryGreen,
                 ),
               ),
             ),

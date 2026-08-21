@@ -851,6 +851,37 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> createSystemNotification({
+    required String titulo,
+    required String mensaje,
+    required String destino,
+    int? idUsuario,
+  }) async {
+    final payload = <String, dynamic>{
+      'titulo': titulo,
+      'mensaje': mensaje,
+      'tipo_notificacion': 'system',
+      'destino': destino,
+    };
+    if (idUsuario != null) {
+      payload['id_usuario'] = idUsuario;
+    }
+    final response = await _client.post(
+      AppConfig.buildUri('/admin/notifications'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(payload),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al crear notificación',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> saveLocation(Map<String, dynamic> locationData) async {
     final response = await _client.post(
       AppConfig.buildUri('/location/save'),

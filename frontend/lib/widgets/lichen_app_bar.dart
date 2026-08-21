@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'app_theme.dart';
+import 'notifications/notification_button.dart';
 
 class LichenAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onMenuPressed;
@@ -68,6 +69,7 @@ class LichenAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
       actions: [
+        const NotificationBellButton(),
         Builder(
           builder: (context) {
             return IconButton(

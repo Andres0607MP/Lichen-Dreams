@@ -4,6 +4,7 @@ class AppRoutes {
   static const loading = '/loading';
   static const dashboard = '/dashboard';
   static const adminUsers = '/admin-users';
+  static const adminNotifications = '/admin-notifications';
 
   static const analisis = '/analisis';
   static const historial = '/historial';

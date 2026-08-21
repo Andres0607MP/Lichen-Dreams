@@ -5,6 +5,7 @@ import '../screens/register_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/admin_users_screen.dart';
+import '../screens/admin_notifications_screen.dart';
 import '../screens/analysis_screen.dart';
 import '../screens/history_screen.dart';
 import '../screens/map_screen.dart';
@@ -24,6 +25,7 @@ class AppRouter {
     AppRoutes.loading: (_) => const LoadingScreen(),
     AppRoutes.dashboard: (_) => const DashboardScreen(),
     AppRoutes.adminUsers: (_) => const AdminUsersScreen(),
+    AppRoutes.adminNotifications: (_) => const AdminNotificationsScreen(),
     AppRoutes.analisis: (_) => const AnalysisScreen(),
     AppRoutes.historial: (_) => const HistoryScreen(),
     AppRoutes.mapa: (_) => const MapScreen(),

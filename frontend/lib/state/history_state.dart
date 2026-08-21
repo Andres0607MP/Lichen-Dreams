@@ -11,7 +11,8 @@ class HistoryState extends ChangeNotifier {
   bool _loaded = false;
   DateTime? _lastLoadedAt;
   static const Duration _cacheDuration = Duration(seconds: 30);
-  final Set<int> _sharedAnalysisIds = {};
+  Set<int> _sharedAnalysisIds = {};
+  int _version = 0;
 
   List<AnalysisRecord> get history => List.unmodifiable(_history);
   bool get loading => _loading;
@@ -19,6 +20,7 @@ class HistoryState extends ChangeNotifier {
   bool get hasData => _history.isNotEmpty;
   bool get hasLoaded => _loaded;
   bool get hasFreshData => _lastLoadedAt != null && DateTime.now().difference(_lastLoadedAt!) < _cacheDuration;
+  int get version => _version;
 
   Future<void> loadHistory({bool force = false}) async {
     if (_loading) return;
@@ -33,11 +35,12 @@ class HistoryState extends ChangeNotifier {
       _notify(() {
         _history = items.map((json) {
           final record = AnalysisRecord.fromJson(json);
-          if (_sharedAnalysisIds.contains(record.id)) {
+          if (record.analysisId != null && _sharedAnalysisIds.contains(record.analysisId)) {
             final updatedRaw = Map<String, dynamic>.from(record.raw);
             updatedRaw['visibilidad'] = 'shared';
             return AnalysisRecord(
               id: record.id,
+              analysisId: record.analysisId,
               title: record.title,
               status: record.status,
               summary: record.summary,
@@ -82,6 +85,7 @@ class HistoryState extends ChangeNotifier {
       _loading = false;
       _loaded = false;
       _lastLoadedAt = null;
+      _sharedAnalysisIds = {};
     });
     return Future.value();
   }
@@ -90,7 +94,10 @@ class HistoryState extends ChangeNotifier {
     if (id == null || id <= 0) return;
     try {
       await _apiService.deleteHistory(id);
-      await loadHistory();
+      _notify(() {
+        _history.removeWhere((r) => r.id == id);
+        _sharedAnalysisIds.remove(id);
+      });
     } catch (e) {
       _notify(() => _error = e.toString());
     }
@@ -98,38 +105,41 @@ class HistoryState extends ChangeNotifier {
 
   void markAnalysisAsShared(int analysisId) {
     _sharedAnalysisIds.add(analysisId);
-    final index = _history.indexWhere((r) => r.id == analysisId);
-    if (index < 0) return;
-    final old = _history[index];
-    final updatedRaw = Map<String, dynamic>.from(old.raw);
-    updatedRaw['visibilidad'] = 'shared';
-    _history[index] = AnalysisRecord(
-      id: old.id,
-      title: old.title,
-      status: old.status,
-      summary: old.summary,
-      imageUrl: old.imageUrl,
-      imageBase64: old.imageBase64,
-      createdAt: old.createdAt,
-      ubicacion: old.ubicacion,
-      humedad: old.humedad,
-      calidadDelAire: old.calidadDelAire,
-      source: old.source,
-      raw: updatedRaw,
-    );
-    notifyListeners();
+    final index = _history.indexWhere((r) => r.analysisId == analysisId);
+    if (index >= 0) {
+      final old = _history[index];
+      final updatedRaw = Map<String, dynamic>.from(old.raw);
+      updatedRaw['visibilidad'] = 'shared';
+      _history[index] = AnalysisRecord(
+        id: old.id,
+        analysisId: old.analysisId,
+        title: old.title,
+        status: old.status,
+        summary: old.summary,
+        imageUrl: old.imageUrl,
+        imageBase64: old.imageBase64,
+        createdAt: old.createdAt,
+        ubicacion: old.ubicacion,
+        humedad: old.humedad,
+        calidadDelAire: old.calidadDelAire,
+        source: old.source,
+        raw: updatedRaw,
+      );
+    }
+    _notify(() {});
   }
 
   bool isShared(int? analysisId) {
     if (analysisId == null || analysisId <= 0) return false;
     if (_sharedAnalysisIds.contains(analysisId)) return true;
-    final index = _history.indexWhere((r) => r.id == analysisId);
+    final index = _history.indexWhere((r) => r.analysisId == analysisId);
     if (index >= 0) return _history[index].isShared;
     return false;
   }
 
   void _notify(void Function() fn) {
     fn();
+    _version++;
     notifyListeners();
   }
 }

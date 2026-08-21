@@ -154,18 +154,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       }
     }
 
-    if (_selectedSource == ImageSource.gallery && locationId == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Las imágenes desde galería necesitan una ubicación para aparecer en el mapa.'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-      _isSubmitting = false;
-      return;
-    }
-
     try {
       await analysisState.startAnalysis(
         image: image,
@@ -547,7 +535,20 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: _showImageSourceOptions,
+            icon: Icon(Icons.swap_horiz_rounded, size: 18, color: _primaryGreen),
+            label: Text(
+              'Cambiar imagen',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: _primaryGreen,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
             height: 52,

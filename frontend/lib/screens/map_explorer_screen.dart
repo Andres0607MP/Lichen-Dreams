@@ -41,6 +41,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   bool _showOwn = true;
   bool _showCommunity = true;
   bool _showZones = true;
+  bool _showCircles = true;
 
   static const Color moderateYellow = Color(0xFFFFC107);
 
@@ -396,6 +397,20 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     });
   }
 
+  void _zoomIn() {
+    if (_mapController == null) return;
+    _mapController!.animateCamera(
+      CameraUpdate.zoomIn(),
+    );
+  }
+
+  void _zoomOut() {
+    if (_mapController == null) return;
+    _mapController!.animateCamera(
+      CameraUpdate.zoomOut(),
+    );
+  }
+
   Set<Marker> _buildMarkers(List<MapAnalysisPoint> points, List<EnvironmentalZone> zones, MapState mapState) {
     final Set<Marker> markers = {};
     final Set<int> seenIds = {};
@@ -554,10 +569,11 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             ),
             mapType: _mapType,
             markers: _buildMarkers(points, zones, mapState),
-            circles: {..._buildZoneCircles(zones), ..._buildIndividualCircles(points)},
+            circles: {..._buildZoneCircles(zones), if (_showCircles) ..._buildIndividualCircles(points)},
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
             zoomGesturesEnabled: true,
+            zoomControlsEnabled: false,
             scrollGesturesEnabled: true,
             rotateGesturesEnabled: true,
             tiltGesturesEnabled: true,
@@ -901,7 +917,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     );
   }
 
-  Widget _layerToggle(String label, bool active, Color color, ValueChanged<bool> onChanged) {
+  Widget _layerToggle(String label, bool active, Color color, ValueChanged<bool> onChanged, {IconData? icon}) {
     return GestureDetector(
       onTap: () => onChanged(!active),
       child: Container(
@@ -918,7 +934,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              active ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+              icon ?? (active ? Icons.visibility_rounded : Icons.visibility_off_rounded),
               size: 14,
               color: active ? color : AppTheme.textGray,
             ),
@@ -1048,13 +1064,22 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             tooltip: 'Tipo de mapa',
             active: _mapType == MapType.satellite,
           ),
+          const SizedBox(height: 8),
+          MapZoomControls(
+            onZoomIn: _zoomIn,
+            onZoomOut: _zoomOut,
+          ),
           if (_selectedPoint != null || _selectedZone != null) ...[
             const SizedBox(height: 8),
             MapControlButton(
-              icon: Icons.center_focus_strong_rounded,
-              onTap: _centerOnSelected,
-              tooltip: _selectedZone != null ? 'Centrar zona' : 'Centrar análisis',
-              iconColor: AppTheme.primaryGreen,
+              icon: Icons.close_rounded,
+              onTap: () {
+                setState(() {
+                  _selectedPoint = null;
+                  _selectedZone = null;
+                });
+              },
+              tooltip: 'Limpiar selección',
             ),
           ],
         ],

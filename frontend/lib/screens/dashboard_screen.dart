@@ -7,7 +7,6 @@ import '../widgets/app_theme.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/dashboard/lichen_carousel.dart';
 import '../widgets/dashboard/liquenpedia_carousel.dart';
-import '../widgets/notifications/notification_button.dart';
 import '../models/dashboard_stats.dart';
 import '../widgets/modern_widgets.dart';
 import '../routes/route_names.dart';
@@ -45,9 +44,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         if (!articlesState.hasFreshData && !articlesState.loading) {
           articlesState.loadArticles();
         }
-        if (!notificationsState.loading && notificationsState.notifications.isEmpty) {
-          notificationsState.loadNotifications();
-        }
+        notificationsState.loadNotifications();
       }
     });
   }
@@ -240,7 +237,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           const SizedBox(width: 8),
-          const NotificationBellButton(),
         ],
       ),
     );

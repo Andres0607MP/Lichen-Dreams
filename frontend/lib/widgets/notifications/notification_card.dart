@@ -123,9 +123,15 @@ class NotificationCard extends StatelessWidget {
               ? AppTheme.surfaceColor.withValues(alpha: 0.55)
               : AppTheme.surfaceColor,
           borderRadius: BorderRadius.circular(18),
+          border: Border(
+            left: BorderSide(
+              color: leida ? statusColor.withValues(alpha: 0.15) : statusColor,
+              width: 3,
+            ),
+          ),
           boxShadow: [
             BoxShadow(
-              color: statusColor.withValues(alpha: leida ? 0.03 : 0.08),
+              color: statusColor.withValues(alpha: leida ? 0.02 : 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -135,10 +141,6 @@ class NotificationCard extends StatelessWidget {
               offset: Offset(0, 1),
             ),
           ],
-          border: Border.all(
-            color: statusColor.withValues(alpha: leida ? 0.08 : 0.25),
-            width: 1,
-          ),
         ),
         child: Material(
           color: Colors.transparent,
@@ -167,45 +169,64 @@ class NotificationCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          titulo,
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight:
-                                leida ? FontWeight.w600 : FontWeight.w700,
-                            color: AppTheme.textDark,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                   Expanded(
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       children: [
+                         Row(
+                           children: [
+                             if (!leida)
+                               Container(
+                                 width: 8,
+                                 height: 8,
+                                 margin: const EdgeInsets.only(right: 8, top: 2),
+                                 decoration: BoxDecoration(
+                                   color: statusColor,
+                                   shape: BoxShape.circle,
+                                 ),
+                               ),
+                             Expanded(
+                               child: Text(
+                                 titulo,
+                                 style: GoogleFonts.poppins(
+                                   fontSize: 15,
+                                   fontWeight:
+                                       leida ? FontWeight.w500 : FontWeight.w700,
+                                   color: AppTheme.textDark,
+                                 ),
+                                 maxLines: 1,
+                                 overflow: TextOverflow.ellipsis,
+                               ),
+                             ),
+                           ],
+                         ),
                         if (mensaje.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                          Text(
-                            mensaje,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w400,
-                              color: AppTheme.textGray,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                           Text(
+                             mensaje,
+                             style: GoogleFonts.poppins(
+                               fontSize: 12,
+                               fontWeight: FontWeight.w400,
+                               color: leida
+                                   ? AppTheme.textGray.withValues(alpha: 0.7)
+                                   : AppTheme.textGray,
+                             ),
+                             maxLines: 2,
+                             overflow: TextOverflow.ellipsis,
+                           ),
                         ],
                         if (relativeTime.isNotEmpty) ...[
                           const SizedBox(height: 4),
-                          Text(
-                            relativeTime,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.textGray
-                                  .withValues(alpha: 0.7),
-                            ),
-                          ),
+                           Text(
+                             relativeTime,
+                             style: GoogleFonts.poppins(
+                               fontSize: 11,
+                               fontWeight: FontWeight.w500,
+                               color: leida
+                                   ? AppTheme.textGray.withValues(alpha: 0.55)
+                                   : AppTheme.textGray.withValues(alpha: 0.7),
+                             ),
+                           ),
                         ],
                       ],
                     ),

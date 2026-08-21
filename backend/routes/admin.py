@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 
 from config.db import get_db
-from models.core import Usuario, Role, Reporte, Sesion, Analisis
+from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion
 from auth.auth_service import get_current_user
 from auth.password_handler import hash_password
 
@@ -74,6 +74,20 @@ class ReportCreate(BaseModel):
     titulo: str
     descripcion: Optional[str] = None
     tipo_reporte: Optional[str] = None
+
+
+class NotificationCreate(BaseModel):
+    titulo: str
+    mensaje: str
+    tipo_notificacion: str = "system"
+    destino: str
+    id_usuario: Optional[int] = None
+
+
+class NotificationCreateResponse(BaseModel):
+    message: str
+    count: int
+    destino: str
 
 
 @router.get("/users", response_model=List[AdminUserResponse], summary="Obtener todos los usuarios (Admin)")
@@ -216,6 +230,54 @@ def delete_report(
     db.delete(reporte)
     db.commit()
     return None
+
+
+@router.post("/notifications", response_model=NotificationCreateResponse, status_code=status.HTTP_201_CREATED, summary="Crear notificación de sistema (Admin)")
+def create_notification(
+    request: NotificationCreate,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Crea notificaciones de sistema para uno o todos los usuarios."""
+    if request.destino == "user":
+        if request.id_usuario is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_usuario es requerido cuando destino es 'user'")
+        user = db.query(Usuario).filter(Usuario.id_usuario == request.id_usuario).first()
+        if not user:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+        notif = Notificacion(
+            id_usuario=request.id_usuario,
+            titulo=request.titulo,
+            mensaje=request.mensaje,
+            tipo_notificacion=request.tipo_notificacion,
+            estado_notificacion="pendiente",
+        )
+        db.add(notif)
+        db.commit()
+        db.refresh(notif)
+        return NotificationCreateResponse(
+            message="Notificación creada correctamente",
+            count=1,
+            destino="user",
+        )
+    elif request.destino == "all":
+        users = db.query(Usuario).filter(Usuario.estado_cuenta != 'eliminado').all()
+        for user in users:
+            notif = Notificacion(
+                id_usuario=user.id_usuario,
+                titulo=request.titulo,
+                mensaje=request.mensaje,
+                tipo_notificacion=request.tipo_notificacion,
+                estado_notificacion="pendiente",
+            )
+            db.add(notif)
+        db.commit()
+        return NotificationCreateResponse(
+            message="Notificaciones creadas correctamente",
+            count=len(users),
+            destino="all",
+        )
+    raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destino debe ser 'user' o 'all'")
 
 
 # ---------- Reportes ----------

@@ -158,6 +158,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_rounded, color: AppTheme.primaryGreen),
+            tooltip: 'Enviar notificación',
+            onPressed: () {
+              Navigator.pushNamed(context, '/admin-notifications');
+            },
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: Container(

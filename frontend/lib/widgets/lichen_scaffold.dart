@@ -21,6 +21,7 @@ class LichenScaffold extends StatefulWidget {
   final bool showParticleBackground;
   final bool isFullScreen;
   final PreferredSizeWidget? appBar;
+  final bool bodyIsScrollable;
 
   const LichenScaffold({
     super.key,
@@ -34,6 +35,7 @@ class LichenScaffold extends StatefulWidget {
     this.showParticleBackground = false,
     this.isFullScreen = false,
     this.appBar,
+    this.bodyIsScrollable = false,
   });
 
   @override
@@ -119,7 +121,7 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
     Widget bodyContent;
     if (widget.isFullScreen) {
       bodyContent = SizedBox.expand(child: widget.body);
-    } else if (!isScrollable) {
+    } else if (!isScrollable && !widget.bodyIsScrollable) {
       bodyContent = SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         child: widget.body,

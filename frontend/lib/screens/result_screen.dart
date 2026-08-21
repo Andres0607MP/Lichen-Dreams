@@ -11,7 +11,6 @@ import '../widgets/modern_widgets.dart';
 import '../widgets/app_theme.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
-import '../state/map_state.dart';
 import '../state/history_state.dart';
 import '../state/analysis_state.dart';
 import '../state/notifications_state.dart';
@@ -31,11 +30,13 @@ class _ResultScreenState extends State<ResultScreen> {
   bool _hasLocation = false;
   bool _loadingLocation = true;
   bool _isShared = false;
+  bool _canBeSaved = false;
   Uint8List? _cachedImageBytes;
 
   @override
   void initState() {
     super.initState();
+    _canBeSaved = _computeCanBeSaved();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_notificationMarked && widget.analysis.id != null && widget.analysis.id != 0) {
         _notificationMarked = true;
@@ -45,13 +46,22 @@ class _ResultScreenState extends State<ResultScreen> {
     _checkLocationAndShareStatus();
   }
 
+  bool _computeCanBeSaved() {
+    final rejected = widget.analysis.raw['rechazado'] == true || widget.analysis.id == 0;
+    final isGallery = widget.analysis.source == 'gallery';
+    final analysisId = widget.analysis.raw['id_analisis'] is int
+        ? widget.analysis.raw['id_analisis'] as int
+        : (widget.analysis.id ?? 0);
+    return analysisId != 0 && !rejected && !isGallery;
+  }
+
   Future<void> _checkLocationAndShareStatus() async {
     final apiService = Provider.of<ApiService>(context, listen: false);
+    final historyState = Provider.of<HistoryState>(context, listen: false);
     final rejected = widget.analysis.raw['rechazado'] == true;
     final analysisId = widget.analysis.raw['id_analisis'] is int
         ? widget.analysis.raw['id_analisis'] as int
         : (widget.analysis.id ?? 0);
-    final raw = widget.analysis.raw;
 
     if (analysisId == 0 || rejected) {
       if (mounted) setState(() {
@@ -66,8 +76,8 @@ class _ResultScreenState extends State<ResultScreen> {
       await apiService.getAnalysisLocation(analysisId);
       if (mounted) {
         setState(() => _hasLocation = true);
-        final visibilidad = raw['visibilidad']?.toString().toLowerCase();
-        setState(() => _isShared = visibilidad == 'shared');
+        final isShared = historyState.isShared(analysisId) || widget.analysis.isShared;
+        setState(() => _isShared = isShared);
       }
     } on ApiException catch (_) {
       if (mounted) {
@@ -332,7 +342,7 @@ class _ResultScreenState extends State<ResultScreen> {
           color.withValues(alpha: 0.06),
           AppTheme.lightGreen.withValues(alpha: 0.02),
         ],
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -346,7 +356,7 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
               child: Icon(icon, size: 40, color: color),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               title,
               style: GoogleFonts.poppins(
@@ -367,13 +377,13 @@ class _ResultScreenState extends State<ResultScreen> {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Container(
               height: 1,
               width: double.infinity,
               color: AppTheme.borderColor.withValues(alpha: 0.2),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             _buildResultSection(
               title: '¿Qué significa?',
               content: whatItMeans,
@@ -485,10 +495,7 @@ class _ResultScreenState extends State<ResultScreen> {
           context.read<AnalysisState>().markLastAsShared();
         } catch (_) {}
         try {
-          await context.read<HistoryState>().refresh();
-          try {
-            context.read<HistoryState>().markAnalysisAsShared(analysisId);
-          } catch (_) {}
+          context.read<HistoryState>().markAnalysisAsShared(analysisId);
         } catch (_) {}
       }
     } catch (error) {
@@ -528,6 +535,131 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
+  Widget _buildSavedConfirmation() {
+    if (!_canBeSaved) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.successColor.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.18), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'Análisis guardado correctamente',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tu análisis se guardó en tu historial y puedes consultarlo en tu mapa personal.',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textGray,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '¿Quieres compartirlo con la comunidad?',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Al compartirlo, otros usuarios podrán verlo en el mapa.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textGray,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotSavedMessage() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceColor.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.info_outline_rounded, color: AppTheme.textGray, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'Resultado de consulta',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Este resultado no se guardó en tu historial.',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textGray,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Los análisis no identificados o realizados desde una imagen de galería no se publican en el mapa.',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textGray.withValues(alpha: 0.8),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildShareButton() {
     if (_loadingLocation) {
       return const SizedBox.shrink();
@@ -535,7 +667,74 @@ class _ResultScreenState extends State<ResultScreen> {
     final rejected = widget.analysis.raw['rechazado'] == true || widget.analysis.id == 0;
     final isGallery = widget.analysis.source == 'gallery';
     if (rejected || isGallery) {
-      return const SizedBox.shrink();
+      return _buildNotSavedMessage();
+    }
+
+    if (_isShared) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.successColor.withValues(alpha: 0.07),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.successColor.withValues(alpha: 0.18), width: 1),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.check_circle_rounded, color: AppTheme.successColor, size: 20),
+                const SizedBox(width: 10),
+                Text(
+                  'Análisis compartido',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton.icon(
+              onPressed: _isSharing ? null : _openMap,
+              icon: Icon(Icons.map_rounded, size: 20, color: Colors.white),
+              label: Text(
+                'Ver en el mapa',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryGreen,
+                foregroundColor: Colors.white,
+                disabledBackgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Este análisis ahora es visible para otros usuarios en el mapa de la comunidad.',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textGray,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
     }
 
     final isShared = _isShared;
@@ -572,16 +771,27 @@ class _ResultScreenState extends State<ResultScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: Colors.white, size: 20),
+              Icon(_isSharing ? Icons.hourglass_empty_rounded : icon, color: Colors.white, size: 20),
               const SizedBox(width: 10),
               Text(
-                label,
+                _isSharing ? 'Compartiendo...' : label,
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
                 ),
               ),
+              if (_isSharing) ...[
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+              ]
             ],
           ),
         ),
@@ -634,18 +844,20 @@ class _ResultScreenState extends State<ResultScreen> {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeroImage(),
-            _buildResultCard(),
-            const SizedBox(height: 24),
-            _buildShareButton(),
-            const SizedBox(height: 12),
-            _buildBackButton(),
-            const SizedBox(height: 20),
-          ],
-        ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeroImage(),
+              _buildResultCard(),
+              const SizedBox(height: 18),
+              _buildSavedConfirmation(),
+              const SizedBox(height: 14),
+              _buildShareButton(),
+              const SizedBox(height: 12),
+              _buildBackButton(),
+              const SizedBox(height: 20),
+            ],
+          ),
       ),
     );
   }

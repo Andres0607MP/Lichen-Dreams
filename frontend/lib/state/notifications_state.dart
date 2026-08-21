@@ -7,13 +7,18 @@ class NotificationsState extends ChangeNotifier {
   final List<Map<String, dynamic>> _notifications = [];
   bool _loading = false;
   String? _error;
+  DateTime? _lastLoadedAt;
+  static const Duration _cacheDuration = Duration(seconds: 30);
 
   List<Map<String, dynamic>> get notifications => List.unmodifiable(_notifications);
   bool get loading => _loading;
   String? get error => _error;
-  int get unreadCount => _notifications.where((n) => (n['estado']?.toString() ?? 'leida') != 'leida').length;
+  int get unreadCount => _notifications.where((n) => n['leida'] != true).length;
+  bool get hasFreshData => _lastLoadedAt != null && DateTime.now().difference(_lastLoadedAt!) < _cacheDuration;
 
-  Future<void> loadNotifications({ApiService? apiService}) async {
+  Future<void> loadNotifications({ApiService? apiService, bool force = false}) async {
+    if (_loading) return;
+    if (!force && hasFreshData) return;
     _loading = true;
     _error = null;
     notifyListeners();
@@ -33,6 +38,7 @@ class NotificationsState extends ChangeNotifier {
         final dateB = DateTime.tryParse(b['fecha']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
         return dateB.compareTo(dateA);
       });
+      _lastLoadedAt = DateTime.now();
       debugPrint('NOTIFICATIONS: procesadas, total=${_notifications.length}, unreadCount=$unreadCount');
     } catch (e) {
       _error = e.toString();
@@ -48,17 +54,27 @@ class NotificationsState extends ChangeNotifier {
     final tipo = (item['tipo_notificacion']?.toString() ?? 'general').toLowerCase();
     final estado = (item['estado_notificacion']?.toString() ?? 'pendiente').toLowerCase();
     String mappedEstado = 'general';
-    if (tipo == 'analysis') {
+    if (estado == 'leida') {
+      mappedEstado = 'leida';
+    } else if (tipo == 'analysis') {
       if (estado == 'completada' || estado == 'completed') {
         mappedEstado = 'completed';
       } else if (estado == 'procesando' || estado == 'processing' || estado == 'pendiente') {
         mappedEstado = 'processing';
       } else if (estado == 'fallida' || estado == 'failed' || estado == 'error') {
         mappedEstado = 'failed';
-      } else if (estado == 'leida') {
-        mappedEstado = 'leida';
       } else {
         mappedEstado = estado;
+      }
+    }
+
+    final mensajeRaw = item['mensaje']?.toString() ?? '';
+    final analysisId = _extractAnalysisIdFromMensaje(mensajeRaw);
+    var mensaje = mensajeRaw;
+    if (analysisId != null) {
+      final prefix = 'analysis_id=$analysisId|';
+      if (mensaje.startsWith(prefix)) {
+        mensaje = mensaje.substring(prefix.length);
       }
     }
 
@@ -67,24 +83,50 @@ class NotificationsState extends ChangeNotifier {
       'id_notificacion': item['id'],
       'id_usuario': item['id_usuario'],
       'titulo': item['titulo'] ?? 'Notificación',
-      'mensaje': item['mensaje'] ?? '',
+      'mensaje': mensaje,
       'tipo': tipo,
       'estado': mappedEstado,
       'tipo_notificacion': item['tipo_notificacion'],
       'estado_notificacion': item['estado_notificacion'],
       'fecha': item['fecha']?.toString() ?? DateTime.now().toIso8601String(),
-      'leida': mappedEstado == 'completed' || estado == 'leida',
+      'leida': mappedEstado == 'leida',
+      'analysis_id': analysisId,
     };
   }
 
+  int? _extractAnalysisIdFromMensaje(dynamic mensaje) {
+    if (mensaje is! String) return null;
+    final prefix = 'analysis_id=';
+    final start = mensaje.indexOf(prefix);
+    if (start < 0) return null;
+    final rawStart = start + prefix.length;
+    final end = mensaje.indexOf('|', rawStart);
+    final numberPart = end >= 0 ? mensaje.substring(rawStart, end) : mensaje.substring(rawStart);
+    return int.tryParse(numberPart.trim());
+  }
+
   Future<void> markAsRead(String id) async {
-    final index = _notifications.indexWhere((n) => n['id'] == id);
+    var index = _notifications.indexWhere((n) => n['id'] == id);
+    if (index < 0 && id.startsWith('analysis_')) {
+      final analysisId = int.tryParse(id.substring('analysis_'.length));
+      if (analysisId != null) {
+        index = _notifications.indexWhere((n) => n['analysis_id'] == analysisId);
+      }
+    }
+
     if (index >= 0) {
       _notifications[index] = Map<String, dynamic>.from(_notifications[index]);
       _notifications[index]['leida'] = true;
+      _notifications[index]['estado'] = 'leida';
       notifyListeners();
     }
-    await markAsReadBackend(id);
+
+    final backendId = index >= 0 ? _notifications[index]['id_notificacion'] : null;
+    final effectiveId = backendId is int ? backendId.toString() : id;
+    final intId = int.tryParse(effectiveId);
+    if (intId != null) {
+      await markAsReadBackend(intId.toString());
+    }
   }
 
   Future<void> markAsReadBackend(String id, {ApiService? apiService}) async {
@@ -141,11 +183,12 @@ class NotificationsState extends ChangeNotifier {
   }
 
   Future<void> reset() {
-    _notifications.clear();
-    _error = null;
-    _loading = false;
-    notifyListeners();
-    return Future.value();
+      _notifications.clear();
+      _error = null;
+      _loading = false;
+      _lastLoadedAt = null;
+      notifyListeners();
+      return Future.value();
   }
 
   void trackAnalysis(int analysisId, String title) {
