@@ -45,6 +45,7 @@ dependencies:
   google_maps_flutter: ^2.7.0
   geolocator: ^12.0.0
   provider: ^6.0.0
+  audioplayers: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -77,6 +78,7 @@ flutter:
     - assets/background/bioindicadores.png
     - assets/logo/saludo.png
     - assets/logo/mapa.png
+    - assets/audio/notification.mp3
 
   # To add assets to your application, add an assets section, like this:
   # assets:

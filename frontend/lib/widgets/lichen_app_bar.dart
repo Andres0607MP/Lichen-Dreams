@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app_theme.dart';
 import 'notifications/notification_button.dart';
@@ -14,76 +13,74 @@ class LichenAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.transparent,
       surfaceTintColor: Colors.transparent,
       leading: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppTheme.spaceSM,
+          vertical: AppTheme.spaceXS,
+        ),
         child: Container(
           decoration: BoxDecoration(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
+            color: AppTheme.primaryGreen10,
+            borderRadius: AppTheme.radiusMDBorder,
           ),
           child: Center(
             child: Image.asset(
               'assets/logo/logo.png',
-              width: 64,
-              height: 64,
+              width: 36,
+              height: 36,
               fit: BoxFit.contain,
+              semanticLabel: 'Lichen Dreams logo',
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.eco_rounded,
+                  color: AppTheme.primaryGreen,
+                  size: AppTheme.iconLG,
+                );
+              },
             ),
           ),
         ),
       ),
       title: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Lichen Dreams',
-            style: GoogleFonts.poppins(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
-            ),
+            style: textTheme.titleLarge,
           ),
           Text(
             'Lee el aire, entiende tu entorno',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w400,
-              color: AppTheme.textGray,
-            ),
+            style: textTheme.bodySmall,
           ),
         ],
       ),
-      flexibleSpace: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.primaryGreen.withValues(alpha: 0.05),
-              Colors.transparent,
-            ],
-          ),
-        ),
-      ),
       actions: [
         const NotificationBellButton(),
-        Builder(
-          builder: (context) {
-            return IconButton(
-              icon: const Icon(
-                Icons.menu_rounded,
-                color: AppTheme.primaryGreen,
-              ),
-              tooltip: 'Menú',
-              onPressed: onMenuPressed ??
-                  () {
-                    Scaffold.of(context).openEndDrawer();
-                  },
-            );
-          },
+        const SizedBox(width: AppTheme.spaceSM),
+        Semantics(
+          label: 'Menú',
+          button: true,
+          child: Builder(
+            builder: (context) {
+              return IconButton(
+                icon: const Icon(
+                  Icons.menu_rounded,
+                  color: AppTheme.primaryGreen,
+                ),
+                tooltip: 'Menú',
+                onPressed: onMenuPressed ??
+                    () {
+                      Scaffold.of(context).openEndDrawer();
+                    },
+              );
+            },
+          ),
         ),
       ],
     );

@@ -869,18 +869,18 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   void _navigateToSection(int index) {
     switch (index) {
       case 0:
-        Navigator.pushNamed(context, AppRoutes.dashboard);
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
         break;
       case 1:
         break;
       case 2:
-        Navigator.pushNamed(context, AppRoutes.mapa);
+        Navigator.pushReplacementNamed(context, AppRoutes.mapa);
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.historial);
+        Navigator.pushReplacementNamed(context, AppRoutes.historial);
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.perfil);
+        Navigator.pushReplacementNamed(context, AppRoutes.perfil);
         break;
     }
   }

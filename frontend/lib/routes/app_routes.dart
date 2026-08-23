@@ -16,6 +16,12 @@ import '../screens/profile_screen.dart';
 import '../screens/location_screen.dart';
 import '../screens/species_screen.dart';
 import '../screens/settings_screen.dart';
+import '../screens/settings/account_settings_screen.dart';
+import '../screens/settings/privacy_settings_screen.dart';
+import '../screens/settings/notification_settings_screen.dart';
+import '../screens/settings/appearance_settings_screen.dart';
+import '../screens/settings/information_settings_screen.dart';
+import '../screens/settings/legal_settings_screen.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -40,6 +46,12 @@ class AppRouter {
     AppRoutes.location: (_) => const LocationScreen(),
     AppRoutes.species: (_) => const SpeciesScreen(),
     AppRoutes.configuracion: (_) => const SettingsScreen(),
+    AppRoutes.accountSettings: (_) => const AccountSettingsScreen(),
+    AppRoutes.privacySettings: (_) => const PrivacySettingsScreen(),
+    AppRoutes.notificationSettings: (_) => const NotificationSettingsScreen(),
+    AppRoutes.appearanceSettings: (_) => const AppearanceSettingsScreen(),
+    AppRoutes.informationSettings: (_) => const InformationSettingsScreen(),
+    AppRoutes.legalSettings: (_) => const LegalSettingsScreen(),
   };
 
   static Route<dynamic> generateRoute(RouteSettings settings) {

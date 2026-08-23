@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import '../models/analysis_record.dart';
+import '../models/environmental_quality.dart';
 import '../routes/route_names.dart';
 import '../screens/result_screen.dart';
 import '../services/api_service.dart';
@@ -190,16 +191,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
         LichenNavigation.instance.navigateTo(index);
         switch (index) {
           case 0:
-            Navigator.pushNamed(context, AppRoutes.dashboard);
+            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
             break;
           case 1:
-            Navigator.pushNamed(context, AppRoutes.analisis);
+            Navigator.pushReplacementNamed(context, AppRoutes.analisis);
             break;
           case 2:
-            Navigator.pushNamed(context, AppRoutes.mapa);
+            Navigator.pushReplacementNamed(context, AppRoutes.mapa);
             break;
           case 4:
-            Navigator.pushNamed(context, AppRoutes.perfil);
+            Navigator.pushReplacementNamed(context, AppRoutes.perfil);
             break;
         }
       },
@@ -1141,36 +1142,30 @@ class _HistoryScreenState extends State<HistoryScreen> {
     ];
   }
 
+  EnvironmentalQuality _getQuality(AnalysisRecord record) {
+    return record.environmentalQuality;
+  }
+
   bool _isStatusHealthy(AnalysisRecord record) {
-    return record.envResult == 'saludable';
+    final q = _getQuality(record);
+    return q.level == EnvironmentalQualityLevel.excellent || q.level == EnvironmentalQualityLevel.good;
   }
 
   bool _isStatusModerate(AnalysisRecord record) {
-    return record.envResult == 'moderado';
+    return _getQuality(record).level == EnvironmentalQualityLevel.moderate;
   }
 
   bool _isStatusCritical(AnalysisRecord record) {
-    return record.envResult == 'crítico';
+    final q = _getQuality(record);
+    return q.level == EnvironmentalQualityLevel.poor || q.level == EnvironmentalQualityLevel.critical;
   }
 
   Color _getStatusColor(AnalysisRecord record) {
-    if (_isStatusHealthy(record)) {
-      return AppTheme.successColor;
-    }
-    if (_isStatusModerate(record)) {
-      return AppTheme.warningColor;
-    }
-    if (_isStatusCritical(record)) {
-      return AppTheme.errorColor;
-    }
-    return AppTheme.accentGreen;
+    return _getQuality(record).primaryColor;
   }
 
   String _getStatusLabel(AnalysisRecord record) {
-    if (_isStatusHealthy(record)) return 'Saludable';
-    if (_isStatusModerate(record)) return 'Moderado';
-    if (_isStatusCritical(record)) return 'Crítico';
-    return 'Moderado';
+    return _getQuality(record).label;
   }
 
   List<AnalysisRecord> _applyFilter(List<AnalysisRecord> records) {
@@ -1194,6 +1189,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     int moderados = 0;
     int criticos = 0;
     for (final r in records) {
+      final q = r.environmentalQuality;
+      print('[ANALYSIS FLOW] HistoryScreen: id=${r.id}, quality=${q.label}, level=${q.level.name}');
       if (_isStatusHealthy(r)) {
         saludables++;
       } else if (_isStatusModerate(r)) {
@@ -1402,24 +1399,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   IconData _statusIcon(String status) {
+    return _statusIconFromQuality(status);
+  }
+
+  IconData _statusIconFromQuality(String status) {
     final normalized = status.toLowerCase().trim();
+    final quality = EnvironmentalQuality.fromStrings(result: status);
+    if (quality.level != EnvironmentalQualityLevel.unknown) {
+      return quality.icon;
+    }
     if (normalized.contains('completado') ||
         normalized.contains('finalizado') ||
-        normalized.contains('success') ||
-        normalized.contains('saludable')) {
+        normalized.contains('success')) {
       return Icons.eco_rounded;
     }
     if (normalized.contains('procesando') ||
         normalized.contains('pendiente') ||
-        normalized.contains('processing') ||
-        normalized.contains('moderado')) {
+        normalized.contains('processing')) {
       return Icons.show_chart_rounded;
     }
     if (normalized.contains('error') ||
         normalized.contains('fallido') ||
-        normalized.contains('failed') ||
-        normalized.contains('crítico') ||
-        normalized.contains('critico')) {
+        normalized.contains('failed')) {
       return Icons.warning_rounded;
     }
     return Icons.account_tree_rounded;

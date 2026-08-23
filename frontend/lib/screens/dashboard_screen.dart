@@ -12,6 +12,7 @@ import '../widgets/modern_widgets.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
 import '../services/navigation_service.dart';
+import '../state/app_settings_state.dart';
 import '../state/dashboard_state.dart';
 import '../state/auth_state.dart';
 import '../state/articles_state.dart';
@@ -27,7 +28,9 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
+class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+  bool _hasAnimated = false;
+  bool _isHoveringPrimary = false;
 
   @override
   void initState() {
@@ -38,6 +41,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         final dashboardState = context.read<DashboardState>();
         final articlesState = context.read<ArticlesState>();
         final notificationsState = context.read<NotificationsState>();
+        final appSettings = context.read<AppSettingsState>();
+        notificationsState.setSoundEnabled(appSettings.soundEnabled);
         if (!dashboardState.hasFreshData && !dashboardState.loading) {
           dashboardState.loadStats();
         }
@@ -45,6 +50,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           articlesState.loadArticles();
         }
         notificationsState.loadNotifications();
+      }
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() => _hasAnimated = true);
       }
     });
   }
@@ -55,6 +65,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final userName = context.select<AuthState, String?>((a) => a.userName);
     final selectedIndex = 0;
     final apiService = Provider.of<ApiService>(context, listen: false);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 600;
+    final horizontalPadding = isLargeScreen ? 24.0 : 16.0;
+    final sectionSpacing = isLargeScreen ? 28.0 : 20.0;
+    final shouldAnimate = !_hasAnimated;
 
     return LichenScaffold(
       userRole: userRole,
@@ -65,140 +80,143 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _navigateToSection(context, index);
       },
       showParticleBackground: true,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildWelcomeHeader(context, userName).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 16),
-          LichenCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 24),
-
-          Row(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1100),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 3,
-                height: 20,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppTheme.primaryGreen, AppTheme.lightGreen],
-                  ),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+              if (shouldAnimate)
+                _buildWelcomeHeader(context, userName, horizontalPadding).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+              else
+                _buildWelcomeHeader(context, userName, horizontalPadding),
+              SizedBox(height: isLargeScreen ? 20 : 16),
+              if (shouldAnimate)
+                LichenCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+              else
+                LichenCarousel(),
+              SizedBox(height: isLargeScreen ? 16 : 12),
+              if (shouldAnimate)
+                LiquenpediaCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+              else
+                LiquenpediaCarousel(),
+              SizedBox(height: sectionSpacing),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: _buildSectionDivider(),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: SectionHeader(
-                  title: 'Lichenpedia',
-                  subtitle: 'Explora el conocimiento de los líquenes',
-                ),
+              SizedBox(height: sectionSpacing),
+              if (shouldAnimate)
+                _buildPrimaryAction(context, horizontalPadding, isLargeScreen).animate().fadeIn(duration: 500.ms).scaleXY(begin: 0.96, end: 1.0, duration: 500.ms)
+              else
+                _buildPrimaryAction(context, horizontalPadding, isLargeScreen),
+              SizedBox(height: sectionSpacing),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: shouldAnimate
+                    ? _buildSectionHeader(
+                        title: 'Acciones rápidas',
+                        subtitle: 'Comienza tu análisis',
+                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+                    : _buildSectionHeader(
+                        title: 'Acciones rápidas',
+                        subtitle: 'Comienza tu análisis',
+                      ),
               ),
+              SizedBox(height: isLargeScreen ? 16 : 12),
+              Selector<NotificationsState, int>(
+                selector: (context, state) => state.unreadCount,
+                builder: (context, unreadCount, child) {
+                  final quickActions = _buildQuickActions(context, unreadCount);
+                  return shouldAnimate
+                      ? quickActions.animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+                      : quickActions;
+                },
+              ),
+              SizedBox(height: sectionSpacing),
+              Selector<DashboardState, DashboardStats?>(
+                selector: (context, state) => state.stats,
+                builder: (context, stats, child) {
+                  final statsSection = _buildStatsSection(context, stats ?? DashboardStats(
+                    analysisCount: 0,
+                    zoneCount: 0,
+                    airQuality: '---',
+                  ), horizontalPadding, isLargeScreen);
+                  return shouldAnimate
+                      ? statsSection.animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+                      : statsSection;
+                },
+                child: const SizedBox.shrink(),
+              ),
+              SizedBox(height: sectionSpacing),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: _buildSectionDivider(),
+              ),
+              SizedBox(height: sectionSpacing),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: shouldAnimate
+                    ? _buildSectionHeader(
+                        title: 'Capacidades',
+                        subtitle: 'Descubre lo que puedes hacer',
+                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+                    : _buildSectionHeader(
+                        title: 'Capacidades',
+                        subtitle: 'Descubre lo que puedes hacer',
+                      ),
+              ),
+              SizedBox(height: isLargeScreen ? 16 : 12),
+              if (shouldAnimate)
+                _buildCapabilities(context, horizontalPadding).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+              else
+                _buildCapabilities(context, horizontalPadding),
+              const SizedBox(height: 24),
             ],
-          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 12),
-          LiquenpediaCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 24),
-
-          Container(
-            height: 1,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppTheme.borderColor.withValues(alpha: 0.2),
-                  AppTheme.borderColor.withValues(alpha: 0.05),
-                  AppTheme.borderColor.withValues(alpha: 0.2),
-                ],
-              ),
-            ),
           ),
-          const SizedBox(height: 24),
-
-          Selector<DashboardState, DashboardStats?>(
-            selector: (context, state) => state.stats,
-            builder: (context, stats, child) {
-              return _buildStatsSection(context, stats ?? DashboardStats(
-                analysisCount: 0,
-                zoneCount: 0,
-                airQuality: '---',
-              )).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms);
-            },
-            child: const SizedBox.shrink(),
-          ),
-          const SizedBox(height: 24),
-          _buildPrimaryAction(context).animate().fadeIn(duration: 500.ms).scale(begin: const Offset(0.96, 0.96), end: const Offset(1, 1), duration: 500.ms),
-          const SizedBox(height: 24),
-
-          SectionHeader(
-            title: 'Acciones rápidas',
-            subtitle: 'Comienza tu análisis',
-          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 12),
-          _buildQuickActions(context).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 24),
-
-          SectionHeader(
-            title: 'Capacidades',
-            subtitle: 'Descubre lo que puedes hacer',
-          ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 12),
-          _buildCapabilities(context).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms),
-          const SizedBox(height: 20),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildWelcomeHeader(BuildContext context, String? userName) {
-    final analysisState = context.watch<AnalysisState>();
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryGreen.withValues(alpha: 0.06),
-            AppTheme.lightGreen.withValues(alpha: 0.03),
-          ],
-        ),
-        borderRadius: AppTheme.cardRadius,
-        border: Border.all(
-          color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-        ),
-      ),
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.asset(
-              profileImagePath,
-              width: 48,
-              height: 48,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(
-                  Icons.eco_rounded,
-                  color: AppTheme.primaryGreen,
-                  size: 48,
-                );
-              },
+  Widget _buildSectionHeader({
+    required String title,
+    String? subtitle,
+    bool accent = false,
+  }) {
+    return Row(
+      children: [
+        if (accent)
+          Container(
+            width: 4,
+            height: 22,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [AppTheme.primaryGreen, AppTheme.lightGreen],
+              ),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  userName != null ? 'Hola, $userName' : 'Lichen Dreams',
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
-                  ),
+        if (accent) const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                  letterSpacing: -0.2,
                 ),
+              ),
+              if (subtitle != null) ...[
                 const SizedBox(height: 2),
                 Text(
-                  'Explora el estado del aire mediante los líquenes',
+                  subtitle,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
@@ -206,25 +224,120 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
               ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeHeader(BuildContext context, String? userName, double horizontalPadding) {
+    final analysisState = context.watch<AnalysisState>();
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isLargeScreen(context) ? 20 : 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.primaryGreen.withValues(alpha: 0.08),
+            AppTheme.lightGreen.withValues(alpha: 0.04),
+          ],
+        ),
+        borderRadius: AppTheme.radiusXLBorder,
+        border: Border.all(
+          color: AppTheme.primaryGreen.withValues(alpha: 0.15),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.asset(
+                profileImagePath,
+                width: isLargeScreen(context) ? 56 : 48,
+                height: isLargeScreen(context) ? 56 : 48,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: isLargeScreen(context) ? 56 : 48,
+                    height: isLargeScreen(context) ? 56 : 48,
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(
+                      Icons.eco_rounded,
+                      color: AppTheme.primaryGreen,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  userName != null ? 'Hola, $userName' : 'Lichen Dreams',
+                  style: GoogleFonts.poppins(
+                    fontSize: isLargeScreen(context) ? 22 : 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppTheme.textDark,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Explora el estado del aire mediante los líquenes',
+                  style: GoogleFonts.poppins(
+                    fontSize: isLargeScreen(context) ? 13 : 12,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.textGray,
+                  ),
+                ),
+              ],
+            ),
+          ),
           if (analysisState.hasActiveAnalysis)
             Container(
               decoration: BoxDecoration(
                 color: AppTheme.warningColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: AppTheme.warningColor.withValues(alpha: 0.2),
+                ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const SizedBox(
-                    width: 12,
-                    height: 12,
+                    width: 14,
+                    height: 14,
                     child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.warningColor),
                   ),
-                  const SizedBox(width: 6),
+                  const SizedBox(width: 8),
                   Text(
                     'Analizando...',
                     style: GoogleFonts.poppins(
@@ -236,141 +349,290 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
             ),
-          const SizedBox(width: 8),
         ],
       ),
     );
   }
 
-  Widget _buildStatsSection(BuildContext context, DashboardStats stats) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: StatsCard(
-                title: 'Análisis',
-                value: stats.analysisCount.toString(),
-                icon: Icons.analytics_rounded,
-                color: AppTheme.primaryGreen,
-                backgroundColor: AppTheme.primaryGreen,
-              ).animate().fadeIn(duration: 400.ms),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: StatsCard(
-                title: 'Zonas',
-                value: stats.zoneCount.toString(),
-                icon: Icons.location_on_rounded,
-                color: AppTheme.accentGreen,
-                backgroundColor: AppTheme.accentGreen,
-              ).animate().fadeIn(duration: 400.ms),
-            ),
+  bool isLargeScreen(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 600;
+  }
+
+  Widget _buildSectionDivider() {
+    return Container(
+      height: 1,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            AppTheme.borderColor.withValues(alpha: 0.4),
+            Colors.transparent,
           ],
         ),
-        const SizedBox(height: 12),
-        ModernCard(
-          gradient: [
-            AppTheme.primaryGreen.withValues(alpha: 0.12),
-            AppTheme.lightGreen.withValues(alpha: 0.06),
-          ],
-          padding: const EdgeInsets.all(20),
-          child: Column(
+      ),
+    );
+  }
+
+  Widget _buildStatsSection(BuildContext context, DashboardStats stats, double horizontalPadding, bool isLargeScreen) {
+    final quality = stats.environmentalQuality;
+    print('[ANALYSIS FLOW] DashboardScreen: quality=${quality.label}, level=${quality.level.name}');
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Text(
+                'Estadísticas',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textGray,
+                ),
+              ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.air_rounded,
-                      color: AppTheme.primaryGreen,
-                      size: 28,
-                    ),
+                  Icon(
+                    Icons.access_time_rounded,
+                    size: 12,
+                    color: AppTheme.textGray.withValues(alpha: 0.6),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Calidad ambiental',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: AppTheme.textGray,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          stats.airQuality,
-                          style: GoogleFonts.poppins(
-                            fontSize: 28,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primaryGreen,
-                          ),
-                        ),
-                      ],
+                  const SizedBox(width: 4),
+                  Text(
+                    'Actualizado recientemente',
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w400,
+                      color: AppTheme.textGray.withValues(alpha: 0.6),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Basado en el último análisis de líquenes',
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w400,
-                  color: AppTheme.textGray,
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: stats.analysisCount),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return _buildStatCard(
+                      title: 'Análisis',
+                      value: value.toString(),
+                      icon: Icons.analytics_rounded,
+                      color: AppTheme.primaryGreen,
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TweenAnimationBuilder<int>(
+                  tween: IntTween(begin: 0, end: stats.zoneCount),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, child) {
+                    return _buildStatCard(
+                      title: 'Zonas',
+                      value: value.toString(),
+                      icon: Icons.location_on_rounded,
+                      color: AppTheme.accentGreen,
+                    );
+                  },
                 ),
               ),
             ],
           ),
-        ).animate().fadeIn(duration: 500.ms),
-      ],
+          const SizedBox(height: 12),
+          ModernCard(
+            gradient: [
+              quality.primaryColor.withValues(alpha: 0.15),
+              quality.secondaryColor.withValues(alpha: 0.08),
+            ],
+            padding: EdgeInsets.all(isLargeScreen ? 24 : 20),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: quality.primaryColor,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: quality.primaryColor.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        quality.icon,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            quality.label,
+                            style: GoogleFonts.poppins(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.textGray,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: Text(
+                              stats.airQuality,
+                              key: ValueKey(stats.airQuality),
+                              style: GoogleFonts.poppins(
+                                fontSize: isLargeScreen ? 32 : 28,
+                                fontWeight: FontWeight.w800,
+                                color: quality.primaryColor,
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Basado en el último análisis de líquenes',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: AppTheme.textGray,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildQuickActions(BuildContext context) {
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.15),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(10),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.poppins(
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textDark,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppTheme.textGray,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions(BuildContext context, int unreadCount) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth > 400 ? 3 : 2;
+        final width = constraints.maxWidth;
+        final crossAxisCount = _getCrossAxisCount(width);
+        final aspectRatio = _getAspectRatio(width, crossAxisCount);
         return GridView.count(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: crossAxisCount,
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          childAspectRatio: 0.85,
+          childAspectRatio: aspectRatio,
           children: [
             QuickActionCard(
               title: 'Historial',
+              subtitle: 'Análisis previos',
               icon: Icons.history_rounded,
-              backgroundIcon: Icons.history_rounded,
               color: AppTheme.accentGreen,
+              badge: unreadCount > 0 ? _buildBadge('$unreadCount') : null,
               onTap: () => Navigator.pushNamed(context, AppRoutes.historial),
             ),
             QuickActionCard(
               title: 'Mapa',
+              subtitle: 'Ubicaciones registradas',
               icon: Icons.map_rounded,
-              backgroundIcon: Icons.map_rounded,
               color: Colors.blueAccent,
               onTap: () => Navigator.pushNamed(context, AppRoutes.mapa),
             ),
             QuickActionCard(
               title: 'Liquenpedia',
+              subtitle: 'Artículos y educación',
               icon: Icons.school_rounded,
-              backgroundIcon: Icons.school_rounded,
               color: AppTheme.lightGreen,
               onTap: () => Navigator.pushNamed(context, AppRoutes.liquenpedia),
             ),
             QuickActionCard(
               title: 'Especies',
+              subtitle: 'Catálogo de especies',
               icon: Icons.eco_rounded,
-              backgroundIcon: Icons.eco_rounded,
               color: Colors.deepOrange,
               onTap: () => Navigator.pushNamed(context, AppRoutes.species),
             ),
@@ -380,106 +642,271 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildPrimaryAction(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, AppRoutes.analisis),
-      child: ModernCard(
-        gradient: [
-          AppTheme.primaryGreen.withValues(alpha: 0.15),
-          AppTheme.lightGreen.withValues(alpha: 0.08),
-        ],
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
+  Widget _buildBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppTheme.errorColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+
+  int _getCrossAxisCount(double width) {
+    if (width < 600) return 2;
+    if (width < 900) return 3;
+    return 4;
+  }
+
+  double _getAspectRatio(double width, int crossAxisCount) {
+    if (crossAxisCount == 4) {
+      return width >= 1100 ? 1.1 : 0.85;
+    }
+    if (crossAxisCount == 3) {
+      return 0.9;
+    }
+    if (width < 360) return 0.9;
+    return 1.0;
+  }
+
+  Widget _buildPrimaryAction(BuildContext context, double horizontalPadding, bool isLargeScreen) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHoveringPrimary = true),
+        onExit: (_) => setState(() => _isHoveringPrimary = false),
+        child: GestureDetector(
+          onTap: () => Navigator.pushNamed(context, AppRoutes.analisis),
+          child: Transform.scale(
+            scale: _isHoveringPrimary && isLargeScreen ? 1.02 : 1.0,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutCubic,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
-                color: AppTheme.primaryGreen,
-                borderRadius: BorderRadius.circular(14),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.2 : 0.15),
+                    AppTheme.lightGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.12 : 0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.3 : 0.2),
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.15 : 0.08),
+                    blurRadius: _isHoveringPrimary && isLargeScreen ? 20 : 12,
+                    offset: Offset(0, _isHoveringPrimary && isLargeScreen ? 6 : 4),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.camera_alt_rounded,
-                color: Colors.white,
-                size: 24,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryGreen,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.5 : 0.3),
+                          blurRadius: _isHoveringPrimary && isLargeScreen ? 16 : 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Analizar liquen',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textDark,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Identifica especies con IA',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: AppTheme.textGray,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isLargeScreen) ...[
+                    const SizedBox(width: 12),
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 200),
+                      opacity: _isHoveringPrimary ? 1.0 : 0.0,
+                      child: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: AppTheme.primaryGreen,
+                        size: 20,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(width: 16),
-            Column(
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCapabilities(BuildContext context, double horizontalPadding) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Column(
+        children: [
+          _buildCapabilityCard(
+            title: 'Identificación con IA',
+            description: 'Reconocimiento automático de especies de líquenes mediante inteligencia artificial.',
+            icon: Icons.smart_toy_rounded,
+            color: AppTheme.primaryGreen,
+          ),
+          const SizedBox(height: 14),
+          _buildCapabilityCard(
+            title: 'Bioindicadores ambientales',
+            description: 'Los líquenes como indicadores de calidad del aire y estado del ecosistema.',
+            icon: Icons.air_rounded,
+            color: AppTheme.accentGreen,
+          ),
+          const SizedBox(height: 14),
+          _buildCapabilityCard(
+            title: 'Comunidad científica',
+            description: 'Accede a artículos, estudios y el conocimiento colectivo sobre líquenes.',
+            icon: Icons.people_rounded,
+            color: AppTheme.lightGreen,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCapabilityCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color.withValues(alpha: 0.1),
+            color.withValues(alpha: 0.04),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: color.withValues(alpha: 0.15),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: color.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: color.withValues(alpha: 0.3),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(12),
+            child: Icon(icon, color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Analizar liquen',
+                  title,
                   style: GoogleFonts.poppins(
-                    fontSize: 18,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppTheme.textDark,
+                    letterSpacing: -0.2,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 6),
                 Text(
-                  'Identifica especies con IA',
+                  description,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
                     color: AppTheme.textGray,
+                    height: 1.4,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
-          ],
-        ),
-      ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.96, 0.96), duration: 600.ms),
-    );
-  }
-
-  Widget _buildCapabilities(BuildContext context) {
-    return Column(
-      children: [
-        FeatureCard(
-          title: 'Identificación con IA',
-          description: 'Reconocimiento automático de especies de líquenes mediante inteligencia artificial.',
-          icon: Icons.smart_toy_rounded,
-          color: AppTheme.primaryGreen,
-        ),
-        const SizedBox(height: 12),
-        FeatureCard(
-          title: 'Bioindicadores ambientales',
-          description: 'Los líquenes como indicadores de calidad del aire y estado del ecosistema.',
-          icon: Icons.air_rounded,
-          color: AppTheme.accentGreen,
-        ),
-        const SizedBox(height: 12),
-        FeatureCard(
-          title: 'Comunidad científica',
-          description: 'Accede a artículos, estudios y el conocimiento colectivo sobre líquenes.',
-          icon: Icons.people_rounded,
-          color: AppTheme.lightGreen,
-        ),
-      ],
+          ),
+        ],
+      ),
     );
   }
 
   void _navigateToSection(BuildContext context, int index) {
     switch (index) {
       case 1:
-        Navigator.pushNamed(context, AppRoutes.analisis);
+        Navigator.pushReplacementNamed(context, AppRoutes.analisis);
         break;
       case 2:
-        Navigator.pushNamed(context, AppRoutes.mapa);
+        Navigator.pushReplacementNamed(context, AppRoutes.mapa);
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.historial);
+        Navigator.pushReplacementNamed(context, AppRoutes.historial);
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.perfil);
+        Navigator.pushReplacementNamed(context, AppRoutes.perfil);
         break;
     }
   }

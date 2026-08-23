@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import 'app_theme.dart';
@@ -24,38 +24,50 @@ class MapControlButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = iconColor ?? AppTheme.primaryGreen;
-    return Material(
+    final hasTooltip = tooltip != null && tooltip!.isNotEmpty;
+
+    Widget button = Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        onTap: onTap == null ? null : () {
+          HapticFeedback.lightImpact();
+          onTap!();
+        },
+        borderRadius: AppTheme.radiusMDBorder,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppTheme.animationNormal,
           width: 44,
           height: 44,
           decoration: BoxDecoration(
             color: AppTheme.surfaceColor,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppTheme.radiusMDBorder,
             border: Border.all(
               color: active ? color : AppTheme.borderColor,
               width: active ? 2 : 1,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.08),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
+            boxShadow: [AppTheme.shadowMedium],
           ),
           child: Icon(
             icon,
             color: active ? color : AppTheme.textDark,
-            size: 22,
+            size: AppTheme.iconLG,
           ),
         ),
       ),
     );
+
+    if (hasTooltip) {
+      button = Tooltip(
+        message: tooltip!,
+        child: Semantics(
+          label: tooltip!,
+          button: true,
+          child: button,
+        ),
+      );
+    }
+
+    return button;
   }
 }
 
@@ -79,7 +91,7 @@ class MapZoomControls extends StatelessWidget {
           onTap: onZoomIn,
           tooltip: 'Acercar',
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppTheme.spaceSM),
         MapControlButton(
           icon: Icons.remove_rounded,
           onTap: onZoomOut,
@@ -108,30 +120,38 @@ class MapCompass extends StatelessWidget {
 
     final rotation = math.pi / 180 * heading;
 
-    return GestureDetector(
-      onTap: onResetNorth,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
-          shape: BoxShape.circle,
-          border: Border.all(color: AppTheme.borderColor, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+    return Tooltip(
+      message: 'Restablecer norte',
+      child: Semantics(
+        label: 'Restablecer norte',
+        button: true,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              HapticFeedback.lightImpact();
+              onResetNorth();
+            },
+            borderRadius: AppTheme.radiusFullBorder,
+            child: AnimatedContainer(
+              duration: AppTheme.animationFast,
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.borderColor, width: 1),
+                boxShadow: [AppTheme.shadowMedium],
+              ),
+              child: Transform.rotate(
+                angle: rotation,
+                child: Icon(
+                  Icons.navigation_rounded,
+                  color: AppTheme.primaryGreen,
+                  size: AppTheme.iconLG,
+                ),
+              ),
             ),
-          ],
-        ),
-        child: Transform.rotate(
-          angle: rotation,
-          child: Icon(
-            Icons.navigation_rounded,
-            color: AppTheme.primaryGreen,
-            size: 22,
           ),
         ),
       ),
@@ -151,13 +171,14 @@ class MapTypeSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     final options = <_MapTypeOption>[
-      _MapTypeOption(
+      const _MapTypeOption(
         label: 'Normal',
         icon: Icons.map_rounded,
         type: MapType.normal,
       ),
-      _MapTypeOption(
+      const _MapTypeOption(
         label: 'Satélite',
         icon: Icons.satellite_rounded,
         type: MapType.satellite,
@@ -165,52 +186,57 @@ class MapTypeSelector extends StatelessWidget {
     ];
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceSM, vertical: AppTheme.spaceXS),
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppTheme.radiusMDBorder,
         border: Border.all(color: AppTheme.borderColor, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+          boxShadow: [AppTheme.shadowMedium],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: options.map((option) {
           final selected = currentType == option.type;
-          return GestureDetector(
-            onTap: () => onChanged(option.type),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: selected
-                    ? AppTheme.primaryGreen.withValues(alpha: 0.12)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    option.icon,
-                    size: 18,
-                    color: selected ? AppTheme.primaryGreen : AppTheme.textGray,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    option.label,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                      color: selected ? AppTheme.primaryGreen : AppTheme.textGray,
+          return Tooltip(
+            message: option.label,
+            child: Semantics(
+              label: option.label,
+              button: true,
+              selected: selected,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    onChanged(option.type);
+                  },
+                  borderRadius: AppTheme.radiusXSBorder,
+                  child: AnimatedContainer(
+                    duration: AppTheme.animationNormal,
+                    padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceSM, vertical: AppTheme.spaceXS),
+                    decoration: BoxDecoration(
+                      color: selected ? AppTheme.primaryGreen12 : Colors.transparent,
+                      borderRadius: AppTheme.radiusXSBorder,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          option.icon,
+                          size: AppTheme.iconSM,
+                          color: selected ? AppTheme.primaryGreen : AppTheme.textGray,
+                        ),
+                        const SizedBox(width: AppTheme.spaceXS),
+                        Text(
+                          option.label,
+                          style: (selected ? textTheme.labelMedium : textTheme.bodySmall)?.copyWith(
+                            color: selected ? AppTheme.primaryGreen : AppTheme.textGray,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
             ),
           );
@@ -246,38 +272,32 @@ class MapInfoPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceMD, vertical: AppTheme.spaceXS),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppTheme.surface95,
+        borderRadius: AppTheme.radiusSMBorder,
+        border: Border.all(color: AppTheme.border40),
+        boxShadow: [AppTheme.shadowSmall],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             gpsEnabled ? Icons.gps_fixed_rounded : Icons.gps_off_rounded,
-            size: 16,
+            size: AppTheme.iconSM,
             color: gpsEnabled ? AppTheme.successColor : AppTheme.textGray,
           ),
-          const SizedBox(width: 6),
+          const SizedBox(width: AppTheme.spaceXS),
           Text(
             'Zoom: ${zoom.toStringAsFixed(1)}',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
+            style: textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
               color: AppTheme.textDark,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppTheme.spaceSM),
           Container(
             width: 4,
             height: 12,
@@ -286,11 +306,10 @@ class MapInfoPanel extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: AppTheme.spaceSM),
           Text(
             '$pointsCount puntos',
-            style: GoogleFonts.poppins(
-              fontSize: 11,
+            style: textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
               color: AppTheme.textDark,
             ),

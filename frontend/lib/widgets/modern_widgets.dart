@@ -262,9 +262,9 @@ class StatsCard extends StatelessWidget {
           Text(
             value,
             style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: color,
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: AppTheme.textDark,
             ),
           ),
         ],
@@ -346,10 +346,12 @@ class FeatureCard extends StatelessWidget {
 
 class QuickActionCard extends StatefulWidget {
   final String title;
+  final String? subtitle;
   final IconData icon;
   final VoidCallback? onTap;
   final Color? color;
-  final IconData? backgroundIcon;
+  final Widget? badge;
+  final bool showTopIndicator;
 
   const QuickActionCard({
     Key? key,
@@ -357,81 +359,149 @@ class QuickActionCard extends StatefulWidget {
     required this.icon,
     this.onTap,
     this.color,
-    this.backgroundIcon,
+    this.subtitle,
+    this.badge,
+    this.showTopIndicator = true,
   }) : super(key: key);
 
   @override
   State<QuickActionCard> createState() => _QuickActionCardState();
 }
 
-class _QuickActionCardState extends State<QuickActionCard> {
+class _QuickActionCardState extends State<QuickActionCard> with SingleTickerProviderStateMixin {
   bool _pressed = false;
+  bool _isHovering = false;
 
   @override
   Widget build(BuildContext context) {
     final effectiveColor = widget.color ?? AppTheme.primaryGreen;
 
-    return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
-      onTap: widget.onTap,
-      child: AnimatedScale(
-        scale: _pressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        child: Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                effectiveColor.withValues(alpha: 0.08),
-                effectiveColor.withValues(alpha: 0.02),
-              ],
-            ),
+    final double scale = _pressed ? 0.96 : (_isHovering ? 1.03 : 1.0);
+    final double iconRotation = _pressed ? -0.05 : (_isHovering ? 0.0 : -0.09);
+    final double indicatorHeight = _isHovering ? 4.0 : 3.0;
+
+    return AnimatedScale(
+      scale: scale,
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOutCubic,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovering = true),
+        onExit: (_) => setState(() => _isHovering = false),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapUp: (_) => setState(() => _pressed = false),
+            onTapCancel: () => setState(() => _pressed = false),
+            onTap: widget.onTap,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: effectiveColor.withValues(alpha: 0.12),
-              width: 1,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: effectiveColor.withValues(alpha: 0.06),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Transform.rotate(
-                angle: -18 * 3.141592653589793 / 180,
-                child: Icon(
-                  widget.backgroundIcon ?? widget.icon,
-                  size: 140,
-                  color: effectiveColor.withValues(alpha: 0.07),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              curve: Curves.easeOutCubic,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: AppTheme.surfaceColor,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: _isHovering
+                      ? effectiveColor.withValues(alpha: 0.3)
+                      : AppTheme.borderColor,
+                  width: 1,
                 ),
-              ),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    widget.title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
-                    ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                boxShadow: [
+                  BoxShadow(
+                    color: _isHovering
+                        ? Colors.black.withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.04),
+                    blurRadius: _isHovering ? 20 : 12,
+                    offset: Offset(0, _isHovering ? 8 : 4),
                   ),
                 ],
               ),
-            ],
+              child: Column(
+                children: [
+                  if (widget.showTopIndicator)
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeOutCubic,
+                      height: indicatorHeight,
+                      decoration: BoxDecoration(
+                        color: effectiveColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(18),
+                          topRight: Radius.circular(18),
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: 16,
+                      left: 16,
+                      right: 16,
+                      bottom: widget.badge != null ? 8 : 16,
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        AnimatedRotation(
+                          turns: iconRotation,
+                          duration: const Duration(milliseconds: 250),
+                          curve: Curves.easeOutCubic,
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: effectiveColor.withValues(alpha: _isHovering ? 0.18 : 0.12),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              widget.icon,
+                              size: 24,
+                              color: effectiveColor,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          widget.title,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textDark,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (widget.subtitle != null) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.subtitle!,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w400,
+                              color: AppTheme.textGray,
+                            ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  if (widget.badge != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: widget.badge,
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'environmental_quality.dart';
 
 enum AirQualityLevel { good, moderate, poor }
 
@@ -167,6 +168,14 @@ class MapAnalysisPoint {
     return AirQualityLevel.moderate;
   }
 
+  EnvironmentalQuality get environmentalQuality {
+    final quality = EnvironmentalQuality.fromStrings(
+      airQuality: airQuality,
+      contamination: contaminationLevel,
+    );
+    return quality;
+  }
+
   Color get _circleFillColor {
     switch (qualityLevel) {
       case AirQualityLevel.good:
@@ -186,6 +195,28 @@ class MapAnalysisPoint {
         return const Color(0xFFFFC107).withValues(alpha: 0.6);
       case AirQualityLevel.poor:
         return const Color(0xFFF44336).withValues(alpha: 0.6);
+    }
+  }
+
+  Color get _lightFillColor {
+    switch (qualityLevel) {
+      case AirQualityLevel.good:
+        return const Color(0xFF81C784).withValues(alpha: 0.12);
+      case AirQualityLevel.moderate:
+        return const Color(0xFFFFD54F).withValues(alpha: 0.12);
+      case AirQualityLevel.poor:
+        return const Color(0xFFE57373).withValues(alpha: 0.12);
+    }
+  }
+
+  Color get _lightStrokeColor {
+    switch (qualityLevel) {
+      case AirQualityLevel.good:
+        return const Color(0xFF81C784).withValues(alpha: 0.5);
+      case AirQualityLevel.moderate:
+        return const Color(0xFFFFD54F).withValues(alpha: 0.5);
+      case AirQualityLevel.poor:
+        return const Color(0xFFE57373).withValues(alpha: 0.5);
     }
   }
 
@@ -242,29 +273,12 @@ class MapAnalysisPoint {
   }
 
   Circle toEnvironmentalCircle() {
-    final level = qualityLevel;
-    Color fillColor;
-    Color strokeColor;
-    switch (level) {
-      case AirQualityLevel.good:
-        fillColor = const Color(0xFF4CAF50).withValues(alpha: 0.12);
-        strokeColor = const Color(0xFF4CAF50).withValues(alpha: 0.5);
-        break;
-      case AirQualityLevel.moderate:
-        fillColor = const Color(0xFFFFC107).withValues(alpha: 0.12);
-        strokeColor = const Color(0xFFFFC107).withValues(alpha: 0.5);
-        break;
-      case AirQualityLevel.poor:
-        fillColor = const Color(0xFFF44336).withValues(alpha: 0.12);
-        strokeColor = const Color(0xFFF44336).withValues(alpha: 0.5);
-        break;
-    }
     return Circle(
       circleId: CircleId('analysis_${id}_env_circle'),
       center: latLng,
       radius: environmentalCircleRadius,
-      fillColor: fillColor,
-      strokeColor: strokeColor,
+      fillColor: _lightFillColor,
+      strokeColor: _lightStrokeColor,
       strokeWidth: 2,
     );
   }

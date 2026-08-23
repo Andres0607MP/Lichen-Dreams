@@ -117,6 +117,8 @@ class AnalysisService:
             "humidity": humidity,
             "calidad_del_aire": analysis.calidad_aire or "",
             "air_quality": analysis.calidad_aire or "",
+            "nivel_contaminacion": analysis.nivel_contaminacion or "",
+            "contamination_level": analysis.nivel_contaminacion or "",
             "recomendacion": recommendation,
             "recommendation": recommendation,
             "fecha_creacion": analysis.fecha or datetime.utcnow(),

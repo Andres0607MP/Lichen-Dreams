@@ -16,4 +16,11 @@ class AppRoutes {
   static const species = '/species';
   static const configuracion = '/configuracion';
   static const developerMap = '/developer-map';
+
+  static const accountSettings = '/settings/account';
+  static const privacySettings = '/settings/privacy';
+  static const notificationSettings = '/settings/notifications';
+  static const appearanceSettings = '/settings/appearance';
+  static const informationSettings = '/settings/information';
+  static const legalSettings = '/settings/legal';
 }

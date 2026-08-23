@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../state/auth_state.dart';
 import '../state/profile_state.dart';
-import '../state/app_settings_state.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/app_theme.dart';
 import '../services/navigation_service.dart';
@@ -22,10 +21,6 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = true;
-  bool _soundEnabled = false;
-  bool _analysisAlertsEnabled = true;
-  bool _darkMode = false;
   bool _loadingLogout = false;
 
   @override
@@ -54,21 +49,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
         (profile['correo'] as String?)?.trim().isNotEmpty == true
             ? (profile['correo'] as String).trim()
             : null;
-    String? profileRole =
-        (profile['rol'] as String?)?.trim().isNotEmpty == true
-            ? (profile['rol'] as String).trim()
-            : null;
 
     final userName = profileName ??
         (authState.userName?.trim().isNotEmpty == true
             ? authState.userName!.trim()
             : 'Usuario');
-    final userEmail = profileEmail ??
-        (authState.token != null && authState.token!.isNotEmpty
-            ? 'usuario@lichendreams.app'
-            : '');
-    final userRole =
-        (profileRole ?? authState.role ?? 'usuario').toUpperCase();
+    final userEmail = profileEmail ?? '';
     final initial = userName.isNotEmpty ? userName[0].toUpperCase() : 'U';
 
     return LichenScaffold(
@@ -95,706 +81,119 @@ class _SettingsScreenState extends State<SettingsScreen> {
         title: Text(
           'Configuración',
           style: GoogleFonts.poppins(
-            fontSize: 22,
+            fontSize: 20,
             fontWeight: FontWeight.w700,
             color: AppTheme.textDark,
           ),
         ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                AppTheme.primaryGreen.withValues(alpha: 0.05),
-                Colors.transparent,
-              ],
-            ),
-          ),
-        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Configuración',
-              style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
-              ),
-            ).animate().fadeIn(duration: 300.ms, delay: 100.ms).slideY(begin: -0.1),
-            const SizedBox(height: 20),
-
-            _buildProfileHeader(
+            _SettingsUserHeader(
               initial: initial,
               name: userName,
               email: userEmail,
-              role: userRole,
               profile: profile,
-            ).animate().fadeIn(duration: 400.ms, delay: 150.ms).slideY(begin: 0.05),
+            ).animate().fadeIn(duration: 250.ms).slideY(begin: -0.03),
+
+            const SizedBox(height: 20),
+
+            Text(
+              'Categorías',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textGray,
+                letterSpacing: 0.5,
+              ),
+            ).animate().fadeIn(duration: 250.ms, delay: 50.ms),
+
+            const SizedBox(height: 12),
+
+            _SettingsCategoryTile(
+              icon: Icons.person_rounded,
+              iconColor: const Color(0xFF4F7A45),
+              title: 'Cuenta',
+              subtitle: 'Información personal, foto de perfil, rol',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.accountSettings),
+            ).animate().fadeIn(duration: 300.ms, delay: 100.ms).slideX(begin: 0.05),
+
+            const SizedBox(height: 10),
+
+            _SettingsCategoryTile(
+              icon: Icons.shield_rounded,
+              iconColor: const Color(0xFF1976D2),
+              title: 'Privacidad y seguridad',
+              subtitle: 'Análisis compartidos, contraseña, eliminar cuenta',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.privacySettings),
+            ).animate().fadeIn(duration: 300.ms, delay: 150.ms).slideX(begin: 0.05),
+
+            const SizedBox(height: 10),
+
+            _SettingsCategoryTile(
+              icon: Icons.notifications_rounded,
+              iconColor: const Color(0xFFFF8F00),
+              title: 'Notificaciones',
+              subtitle: 'Alertas push, sonido, avisos de análisis',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.notificationSettings),
+            ).animate().fadeIn(duration: 300.ms, delay: 200.ms).slideX(begin: 0.05),
+
+            const SizedBox(height: 10),
+
+            _SettingsCategoryTile(
+              icon: Icons.palette_rounded,
+              iconColor: const Color(0xFF7B1FA2),
+              title: 'Apariencia',
+              subtitle: 'Modo oscuro, tamaño de texto, tema',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.appearanceSettings),
+            ).animate().fadeIn(duration: 300.ms, delay: 250.ms).slideX(begin: 0.05),
+
+            const SizedBox(height: 10),
+
+            _SettingsCategoryTile(
+              icon: Icons.info_outline_rounded,
+              iconColor: const Color(0xFF00897B),
+              title: 'Información',
+              subtitle: 'Sobre Lichen Dreams, ayuda, versión',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.informationSettings),
+            ).animate().fadeIn(duration: 300.ms, delay: 300.ms).slideX(begin: 0.05),
+
+            const SizedBox(height: 10),
+
+            _SettingsCategoryTile(
+              icon: Icons.description_outlined,
+              iconColor: const Color(0xFF5D4037),
+              title: 'Legal',
+              subtitle: 'Términos, privacidad, tratamiento de datos',
+              onTap: () => Navigator.pushNamed(context, AppRoutes.legalSettings),
+            ).animate().fadeIn(duration: 300.ms, delay: 350.ms).slideX(begin: 0.05),
 
             const SizedBox(height: 24),
 
-            _buildSectionCard(
-              title: 'Cuenta',
-              icon: Icons.person_rounded,
-              children: [
-                _buildSettingsTile(
-                  icon: Icons.edit_rounded,
-                  title: 'Editar perfil',
-                  subtitle: 'Actualiza tu información personal',
-                  onTap: () {
-                    Navigator.pushNamed(context, AppRoutes.perfil);
-                  },
-                ),
-                const SizedBox(height: 12),
-                _buildSettingsTile(
-                  icon: Icons.badge_rounded,
-                  title: 'Rol',
-                  subtitle: userRole,
-                  trailing: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      userRole,
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryGreen,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ).animate().fadeIn(duration: 400.ms, delay: 200.ms).slideY(begin: 0.05),
+            Text(
+              'Sesión',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textGray,
+                letterSpacing: 0.5,
+              ),
+            ).animate().fadeIn(duration: 300.ms, delay: 400.ms),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
-            _buildSectionCard(
-              title: 'Apariencia',
-              icon: Icons.palette_rounded,
-              children: [
-                SwitchListTile(
-                  value: _darkMode,
-                  onChanged: (value) {
-                    setState(() => _darkMode = value);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          _darkMode
-                              ? 'Modo oscuro disponible próximamente'
-                              : 'Modo claro activado',
-                        ),
-                        backgroundColor: AppTheme.primaryGreen,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
-                  },
-                  title: Text(
-                    'Modo oscuro',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  subtitle: Text(
-                    _darkMode ? 'Activado (próximamente)' : 'Desactivado',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.textGray,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  activeThumbColor: AppTheme.primaryGreen,
-                  activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                ),
-              ],
-            ).animate().fadeIn(duration: 400.ms, delay: 250.ms).slideY(begin: 0.05),
-
-            const SizedBox(height: 20),
-
-            _buildSectionCard(
-              title: 'Apariencia del texto',
-              icon: Icons.text_fields_rounded,
-              children: [
-                _buildTextScaleSelector(),
-              ],
-            ).animate().fadeIn(duration: 400.ms, delay: 260.ms).slideY(begin: 0.05),
-
-            const SizedBox(height: 20),
-
-            _buildSectionCard(
-              title: 'Notificaciones',
-              icon: Icons.notifications_rounded,
-              children: [
-                SwitchListTile(
-                  value: _notificationsEnabled,
-                  onChanged: (value) {
-                    setState(() => _notificationsEnabled = value);
-                    if (!value) {
-                      setState(() {
-                        _soundEnabled = false;
-                        _analysisAlertsEnabled = false;
-                      });
-                    }
-                  },
-                  title: Text(
-                    'Notificaciones push',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Recibir alertas generales de la aplicación',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.textGray,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  activeThumbColor: AppTheme.primaryGreen,
-                  activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  value: _soundEnabled,
-                  onChanged: _notificationsEnabled
-                      ? (value) {
-                          setState(() => _soundEnabled = value);
-                        }
-                      : null,
-                  title: Text(
-                    'Sonido',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Reproducir sonido al recibir notificaciones',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.textGray,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  activeThumbColor: AppTheme.primaryGreen,
-                  activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                ),
-                const SizedBox(height: 8),
-                SwitchListTile(
-                  value: _analysisAlertsEnabled,
-                  onChanged: _notificationsEnabled
-                      ? (value) {
-                          setState(() => _analysisAlertsEnabled = value);
-                        }
-                      : null,
-                  title: Text(
-                    'Alertas de análisis',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
-                    ),
-                  ),
-                  subtitle: Text(
-                    'Notificar cuando un análisis esté listo',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.textGray,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.zero,
-                  activeThumbColor: AppTheme.primaryGreen,
-                  activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.3),
-                ),
-              ],
-            ).animate().fadeIn(duration: 400.ms, delay: 300.ms).slideY(begin: 0.05),
-
-            const SizedBox(height: 20),
-
-            _buildSectionCard(
-              title: 'Privacidad y seguridad',
-              icon: Icons.security_rounded,
-              children: [
-                _buildSettingsTile(
-                  icon: Icons.lock_rounded,
-                  title: 'Cambiar contraseña',
-                  subtitle: 'Actualiza tu credencial de acceso',
-                  onTap: _handleChangePassword,
-                ),
-                const SizedBox(height: 12),
-                _buildSettingsTile(
-                  icon: Icons.verified_user_rounded,
-                  title: 'Sesión actual',
-                  subtitle: authState.token != null && authState.token!.isNotEmpty
-                      ? 'Activa'
-                      : 'Inactiva',
-                  trailing: Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: authState.token != null && authState.token!.isNotEmpty
-                          ? AppTheme.successColor
-                          : AppTheme.textGray,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildSettingsTile(
-                  icon: Icons.delete_outline_rounded,
-                  title: 'Eliminar cuenta',
-                  subtitle: 'Borra tu cuenta y datos permanentemente',
-                  titleColor: AppTheme.errorColor,
-                  iconColor: AppTheme.errorColor,
-                  onTap: _handleDeleteAccount,
-                ),
-              ],
-            ).animate().fadeIn(duration: 400.ms, delay: 350.ms).slideY(begin: 0.05),
-
-            const SizedBox(height: 20),
-
-            _buildSectionCard(
-              title: 'Aplicación',
-              icon: Icons.info_rounded,
-              children: [
-                _buildInfoRow('Aplicación', 'Lichen Dreams'),
-                const SizedBox(height: 12),
-                _buildInfoRow('Versión', '1.0.0'),
-                const SizedBox(height: 12),
-                _buildInfoRow('Desarrollado con', 'Flutter'),
-                const SizedBox(height: 12),
-                _buildInfoRow('Tema actual', 'Claro'),
-              ],
-            ).animate().fadeIn(duration: 400.ms, delay: 400.ms).slideY(begin: 0.05),
+            _SettingsLogoutTile(
+              loading: _loadingLogout,
+              onTap: _loadingLogout ? null : _handleLogout,
+            ).animate().fadeIn(duration: 300.ms, delay: 450.ms),
 
             const SizedBox(height: 32),
-
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _loadingLogout ? null : _handleLogout,
-                icon: _loadingLogout
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.logout_rounded, color: Colors.white),
-                label: Text(
-                  _loadingLogout ? 'Cerrando sesión...' : 'Cerrar sesión',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.errorColor,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                ),
-              ),
-            ).animate().fadeIn(duration: 400.ms, delay: 450.ms).slideY(begin: 0.05),
-
-            const SizedBox(height: 24),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildProfileHeader({
-    required String initial,
-    required String name,
-    required String email,
-    required String role,
-    required Map<String, dynamic> profile,
-  }) {
-    final fotoPerfil = profile['foto_perfil']?.toString();
-
-    Widget avatarChild;
-    if (fotoPerfil != null && fotoPerfil.isNotEmpty) {
-      final apiService = Provider.of<ApiService>(context, listen: false);
-      avatarChild = FutureBuilder<Uint8List>(
-        future: apiService.downloadPrivateImageBytes(fotoPerfil),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-            );
-          }
-          final data = snapshot.data;
-          if (snapshot.hasError || data == null) {
-            return Text(
-              initial,
-              style: GoogleFonts.poppins(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
-            );
-          }
-          return ClipOval(
-            child: Image.memory(
-              data,
-              fit: BoxFit.cover,
-              width: 64,
-              height: 64,
-            ),
-          );
-        },
-      );
-    } else {
-      avatarChild = Text(
-        initial,
-        style: GoogleFonts.poppins(
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          color: Colors.white,
-        ),
-      );
-    }
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryGreen.withValues(alpha: 0.12),
-            AppTheme.lightGreen.withValues(alpha: 0.06),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.35),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(child: avatarChild),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  email,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: AppTheme.textGray,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    role,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.primaryGreen,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.perfil);
-            },
-            icon: Icon(
-              Icons.edit_rounded,
-              color: AppTheme.primaryGreen,
-              size: 20,
-            ),
-            tooltip: 'Editar perfil',
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: 1.2,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(
-                  icon,
-                  color: AppTheme.primaryGreen,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  title,
-                  style: GoogleFonts.poppins(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingsTile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    VoidCallback? onTap,
-    Color? titleColor,
-    Color? iconColor,
-    Widget? trailing,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              color: iconColor ?? AppTheme.primaryGreen,
-              size: 22,
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: titleColor ?? AppTheme.textDark,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      color: AppTheme.textGray,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            if (trailing != null) ...[
-              const SizedBox(width: 12),
-              Flexible(
-                fit: FlexFit.loose,
-                child: trailing,
-              ),
-            ] else if (onTap != null) ...[
-              Icon(
-                Icons.chevron_right_rounded,
-                color: AppTheme.textGray,
-                size: 20,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Flexible(
-          fit: FlexFit.loose,
-          child: Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Flexible(
-          fit: FlexFit.loose,
-          child: Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textDark,
-            ),
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTextScaleSelector() {
-    final appSettings = context.watch<AppSettingsState>();
-    final currentScale = appSettings.textScaleFactor;
-
-    final options = [
-      {'label': 'Pequeña', 'value': 0.85},
-      {'label': 'Normal', 'value': 1.0},
-      {'label': 'Grande', 'value': 1.15},
-      {'label': 'Muy grande', 'value': 1.30},
-    ];
-
-    return Column(
-      children: options.map((option) {
-        return RadioListTile<double>(
-          value: option['value'] as double,
-          groupValue: currentScale,
-          onChanged: (value) {
-            if (value != null) {
-              appSettings.setTextScaleFactor(value);
-            }
-          },
-          title: Flexible(
-            fit: FlexFit.loose,
-            child: Text(
-              option['label'] as String,
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          subtitle: Flexible(
-            fit: FlexFit.loose,
-            child: Text(
-              '${option['value']}x',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: AppTheme.textGray,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          activeColor: AppTheme.primaryGreen,
-          contentPadding: EdgeInsets.zero,
-        );
-      }).toList(),
     );
   }
 
@@ -877,102 +276,328 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
   }
+}
 
-  Future<void> _handleChangePassword() async {
-    await showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'Cambiar contraseña',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
-          ),
-        ),
-        content: Text(
-          'Esta funcionalidad no está disponible en este momento.',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppTheme.textGray,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Entendido',
-              style: GoogleFonts.poppins(
-                color: AppTheme.textGray,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+class _SettingsUserHeader extends StatelessWidget {
+  final String initial;
+  final String name;
+  final String email;
+  final Map<String, dynamic> profile;
 
-  Future<void> _handleDeleteAccount() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'Eliminar cuenta',
-          style: GoogleFonts.poppins(
-            fontWeight: FontWeight.w700,
-            color: AppTheme.errorColor,
-          ),
-        ),
-        content: Text(
-          'Esta acción eliminará tu cuenta y todos tus datos de forma permanente. Esta funcionalidad no está disponible en este momento.',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppTheme.textGray,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text(
-              'Cancelar',
+  const _SettingsUserHeader({
+    required this.initial,
+    required this.name,
+    required this.email,
+    required this.profile,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fotoPerfil = profile['foto_perfil']?.toString();
+
+    Widget avatarChild;
+    if (fotoPerfil != null && fotoPerfil.isNotEmpty) {
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      avatarChild = FutureBuilder<Uint8List>(
+        future: apiService.downloadPrivateImageBytes(fotoPerfil),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+            );
+          }
+          final data = snapshot.data;
+          if (snapshot.hasError || data == null) {
+            return Text(
+              initial,
               style: GoogleFonts.poppins(
-                color: AppTheme.textGray,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
-            ),
-            child: Text(
-              'Entendido',
-              style: GoogleFonts.poppins(
+                fontSize: 22,
+                fontWeight: FontWeight.w700,
                 color: Colors.white,
               ),
+            );
+          }
+          return ClipOval(
+            child: Image.memory(
+              data,
+              fit: BoxFit.cover,
+              width: 50,
+              height: 50,
             ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-              'La eliminación de cuenta no está disponible actualmente'),
-          backgroundColor: AppTheme.warningColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          );
+        },
+      );
+    } else {
+      avatarChild = Text(
+        initial,
+        style: GoogleFonts.poppins(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
         ),
       );
     }
+
+    return InkWell(
+      onTap: () => Navigator.pushNamed(context, AppRoutes.perfil),
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.primaryGreen.withValues(alpha: 0.08),
+              AppTheme.primaryGreen.withValues(alpha: 0.03),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderColor, width: 1),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Center(child: avatarChild),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (email.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      email,
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppTheme.textGray,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  const SizedBox(height: 4),
+                  Text(
+                    'Toca para ver perfil',
+                    style: GoogleFonts.poppins(
+                      fontSize: 11,
+                      color: AppTheme.primaryGreen,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textGray,
+              size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsCategoryTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SettingsCategoryTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.borderColor, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: iconColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textDark,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.textGray,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: AppTheme.textGray,
+              size: 22,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsLogoutTile extends StatelessWidget {
+  final bool loading;
+  final VoidCallback? onTap;
+
+  const _SettingsLogoutTile({
+    required this.loading,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: AppTheme.errorColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppTheme.errorColor,
+                      ),
+                    )
+                  : const Icon(
+                      Icons.logout_rounded,
+                      color: AppTheme.errorColor,
+                      size: 22,
+                    ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    loading ? 'Cerrando sesión...' : 'Cerrar sesión',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.errorColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Salir de tu cuenta',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.textGray,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

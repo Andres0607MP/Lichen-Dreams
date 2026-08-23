@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../services/notification_sound_service.dart';
 
 class NotificationsState extends ChangeNotifier {
   NotificationsState._();
@@ -9,12 +10,43 @@ class NotificationsState extends ChangeNotifier {
   String? _error;
   DateTime? _lastLoadedAt;
   static const Duration _cacheDuration = Duration(seconds: 30);
+  int _previousNotificationCount = 0;
+  final Set<String> _soundedEventIds = {};
+  bool _isOnNotificationsScreen = false;
+  bool _soundEnabled = true;
 
   List<Map<String, dynamic>> get notifications => List.unmodifiable(_notifications);
   bool get loading => _loading;
   String? get error => _error;
   int get unreadCount => _notifications.where((n) => n['leida'] != true).length;
   bool get hasFreshData => _lastLoadedAt != null && DateTime.now().difference(_lastLoadedAt!) < _cacheDuration;
+  bool get soundEnabled => _soundEnabled;
+
+  void setSoundEnabled(bool value) {
+    _soundEnabled = value;
+  }
+
+  void setOnNotificationsScreen(bool value) {
+    _isOnNotificationsScreen = value;
+  }
+
+  bool _shouldPlaySound() {
+    if (!_soundEnabled) return false;
+    if (_isOnNotificationsScreen) return false;
+    return true;
+  }
+
+  void _playSoundForEvent(String eventId, Future<void> Function(bool) playFn) {
+    if (_soundedEventIds.contains(eventId)) return;
+    _soundedEventIds.add(eventId);
+    if (_soundedEventIds.length > 50) {
+      final toRemove = _soundedEventIds.take(20).toList();
+      for (final id in toRemove) {
+        _soundedEventIds.remove(id);
+      }
+    }
+    playFn(_shouldPlaySound());
+  }
 
   Future<void> loadNotifications({ApiService? apiService, bool force = false}) async {
     if (_loading) return;
@@ -25,10 +57,11 @@ class NotificationsState extends ChangeNotifier {
 
     try {
       final service = apiService ?? ApiService();
-      debugPrint('NOTIFICATIONS: cargando notificaciones...');
+      if (kDebugMode) debugPrint('NOTIFICATIONS: cargando notificaciones...');
       final remote = await service.getNotifications();
-      debugPrint('NOTIFICATIONS: respuesta recibida, cantidad=${remote.length}');
+      if (kDebugMode) debugPrint('NOTIFICATIONS: respuesta recibida, cantidad=${remote.length}');
 
+      final previousCount = _previousNotificationCount;
       _notifications.clear();
       for (final item in remote) {
         _notifications.add(_mapBackendNotification(item));
@@ -38,15 +71,22 @@ class NotificationsState extends ChangeNotifier {
         final dateB = DateTime.tryParse(b['fecha']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
         return dateB.compareTo(dateA);
       });
+
+      if (previousCount > 0 && _notifications.length > previousCount) {
+        final newCount = _notifications.length - previousCount;
+        if (kDebugMode) debugPrint('NOTIFICATIONS: $newCount nuevas detectadas');
+        _playSoundForEvent('new_batch_${DateTime.now().millisecondsSinceEpoch}', NotificationSoundService.instance.playNotificationSound);
+      }
+      _previousNotificationCount = _notifications.length;
       _lastLoadedAt = DateTime.now();
-      debugPrint('NOTIFICATIONS: procesadas, total=${_notifications.length}, unreadCount=$unreadCount');
+      if (kDebugMode) debugPrint('NOTIFICATIONS: procesadas, total=${_notifications.length}, unreadCount=$unreadCount');
     } catch (e) {
       _error = e.toString();
-      debugPrint('NOTIFICATIONS ERROR: $e');
+      if (kDebugMode) debugPrint('NOTIFICATIONS ERROR: $e');
     } finally {
       _loading = false;
       notifyListeners();
-      debugPrint('NOTIFICATIONS: notifyListeners ejecutado');
+      if (kDebugMode) debugPrint('NOTIFICATIONS: notifyListeners ejecutado');
     }
   }
 
@@ -136,7 +176,6 @@ class NotificationsState extends ChangeNotifier {
       final service = apiService ?? ApiService();
       await service.markNotificationRead(intId);
     } catch (_) {
-      // no bloquear UI por error de sync
     }
   }
 
@@ -157,7 +196,6 @@ class NotificationsState extends ChangeNotifier {
           try {
             await service.markNotificationRead(intId);
           } catch (_) {
-            // no bloquear UI por error de sync
           }
         }
       }
@@ -183,12 +221,15 @@ class NotificationsState extends ChangeNotifier {
   }
 
   Future<void> reset() {
-      _notifications.clear();
-      _error = null;
-      _loading = false;
-      _lastLoadedAt = null;
-      notifyListeners();
-      return Future.value();
+    _notifications.clear();
+    _error = null;
+    _loading = false;
+    _lastLoadedAt = null;
+    _previousNotificationCount = 0;
+    _soundedEventIds.clear();
+    _isOnNotificationsScreen = false;
+    notifyListeners();
+    return Future.value();
   }
 
   void trackAnalysis(int analysisId, String title) {
@@ -220,17 +261,22 @@ class NotificationsState extends ChangeNotifier {
       'leida': false,
       'fecha': DateTime.now().toIso8601String(),
     });
+    _playSoundForEvent('track_$analysisId', NotificationSoundService.instance.playNotificationSound);
     notifyListeners();
   }
 
   void completeAnalysis(int analysisId, String resultTitle) {
     final index = _notifications.indexWhere((n) => n['analysis_id'] == analysisId);
     if (index >= 0) {
+      final wasCompleted = _notifications[index]['estado'] == 'completed';
       _notifications[index] = Map<String, dynamic>.from(_notifications[index]);
       _notifications[index]['titulo'] = 'Tu análisis está listo';
       _notifications[index]['mensaje'] = resultTitle;
       _notifications[index]['estado'] = 'completed';
       _notifications[index]['leida'] = false;
+      if (!wasCompleted) {
+        _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
+      }
       notifyListeners();
       return;
     }
@@ -239,11 +285,28 @@ class NotificationsState extends ChangeNotifier {
       (n) => (n['mensaje']?.toString() ?? '').startsWith('analysis_id=$analysisId|'),
     );
     if (indexByMessage >= 0) {
+      final wasCompleted = _notifications[indexByMessage]['estado'] == 'completed';
       _notifications[indexByMessage] = Map<String, dynamic>.from(_notifications[indexByMessage]);
       _notifications[indexByMessage]['titulo'] = 'Tu análisis está listo';
       _notifications[indexByMessage]['mensaje'] = resultTitle;
       _notifications[indexByMessage]['estado'] = 'completed';
       _notifications[indexByMessage]['leida'] = false;
+      if (!wasCompleted) {
+        _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
+      }
+      notifyListeners();
+    } else {
+      _notifications.insert(0, {
+        'id': 'analysis_$analysisId',
+        'analysis_id': analysisId,
+        'titulo': 'Tu análisis está listo',
+        'mensaje': resultTitle,
+        'tipo': 'analysis',
+        'estado': 'completed',
+        'leida': false,
+        'fecha': DateTime.now().toIso8601String(),
+      });
+      _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
       notifyListeners();
     }
   }
@@ -251,11 +314,15 @@ class NotificationsState extends ChangeNotifier {
   void failAnalysis(int analysisId) {
     final index = _notifications.indexWhere((n) => n['analysis_id'] == analysisId);
     if (index >= 0) {
+      final wasFailed = _notifications[index]['estado'] == 'failed';
       _notifications[index] = Map<String, dynamic>.from(_notifications[index]);
       _notifications[index]['titulo'] = 'Análisis fallido';
       _notifications[index]['mensaje'] = 'No se pudo completar el análisis. Intenta nuevamente.';
       _notifications[index]['estado'] = 'failed';
       _notifications[index]['leida'] = false;
+      if (!wasFailed) {
+        _playSoundForEvent('fail_$analysisId', NotificationSoundService.instance.playAnalysisFailedSound);
+      }
       notifyListeners();
       return;
     }
@@ -264,11 +331,15 @@ class NotificationsState extends ChangeNotifier {
       (n) => (n['mensaje']?.toString() ?? '').startsWith('analysis_id=$analysisId|'),
     );
     if (indexByMessage >= 0) {
+      final wasFailed = _notifications[indexByMessage]['estado'] == 'failed';
       _notifications[indexByMessage] = Map<String, dynamic>.from(_notifications[indexByMessage]);
       _notifications[indexByMessage]['titulo'] = 'Análisis fallido';
       _notifications[indexByMessage]['mensaje'] = 'No se pudo completar el análisis. Intenta nuevamente.';
       _notifications[indexByMessage]['estado'] = 'failed';
       _notifications[indexByMessage]['leida'] = false;
+      if (!wasFailed) {
+        _playSoundForEvent('fail_$analysisId', NotificationSoundService.instance.playAnalysisFailedSound);
+      }
       notifyListeners();
     }
   }

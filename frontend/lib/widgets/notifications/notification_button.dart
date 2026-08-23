@@ -11,32 +11,40 @@ class NotificationBellButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notificationsState = context.watch<NotificationsState>();
-    final unreadCount = notificationsState.unreadCount;
-    final bool hasUnread = unreadCount > 0;
-    debugPrint('NotificationBellButton build: unreadCount=$unreadCount, hasUnread=$hasUnread, loading=${notificationsState.loading}, error=${notificationsState.error}, total=${notificationsState.notifications.length}');
+    final unreadCount = context.select<NotificationsState, int>(
+      (state) => state.unreadCount,
+    );
+    final hasUnread = unreadCount > 0;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: IconButton(
-        icon: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            _buildBellIcon(hasUnread),
-            if (hasUnread) _Badge(count: unreadCount),
-          ],
+    return Tooltip(
+      message: 'Notificaciones',
+      child: Semantics(
+        label: 'Notificaciones',
+        button: true,
+        child: IconButton(
+          style: IconButton.styleFrom(
+            backgroundColor: AppTheme.primaryGreen10,
+            foregroundColor: AppTheme.primaryGreen,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppTheme.radiusLGBorder,
+            ),
+          ),
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              _buildBellIcon(hasUnread),
+              if (hasUnread) _Badge(count: unreadCount),
+            ],
+          ),
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (_) => const NotificationSheet(),
+            );
+          },
         ),
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (_) => const NotificationSheet(),
-          );
-        },
       ),
     );
   }
@@ -45,7 +53,7 @@ class NotificationBellButton extends StatelessWidget {
     final bell = Icon(
       Icons.notifications_rounded,
       color: AppTheme.primaryGreen,
-      size: 22,
+      size: AppTheme.iconLG,
     );
     if (!hasUnread) return bell;
     return bell
@@ -66,15 +74,15 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayCount = count > 99 ? '99+' : count.toString();
-    final isDoubleDigit = displayCount.length > 1;
+    final width = displayCount.length > 2 ? 22.0 : (displayCount.length > 1 ? 20.0 : 18.0);
 
     return Positioned(
       right: -4,
       top: -4,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: AppTheme.animationSlow,
         curve: Curves.easeOutBack,
-        width: displayCount.length > 2 ? 22 : (isDoubleDigit ? 20 : 18),
+        width: width,
         height: 18,
         decoration: BoxDecoration(
           color: Colors.redAccent,
@@ -85,7 +93,7 @@ class _Badge extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.redAccent.withValues(alpha: 0.25),
+              color: AppTheme.redAccent25,
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),

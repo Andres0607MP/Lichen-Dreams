@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../services/api_service.dart';
 import '../services/navigation_service.dart';
+import '../widgets/ambient_background.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/lichen_app_bar.dart';
 import '../widgets/lichen_bottom_nav.dart';
@@ -42,13 +43,14 @@ class LichenScaffold extends StatefulWidget {
   State<LichenScaffold> createState() => _LichenScaffoldState();
 }
 
-class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStateMixin {
+class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStateMixin, WidgetsBindingObserver {
   bool _isBottomNavVisible = true;
   late AnimationController _bottomNavController;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _bottomNavController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -58,6 +60,18 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
     } else {
       _bottomNavController.value = 0.0;
     }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('LIFECYCLE STATE: $state');
+  }
+
+  @override
+  Future<bool> didPopRoute() async {
+    debugPrint('PLATFORM BACK BUTTON DETECTED via didPopRoute');
+    final shouldPop = await LichenNavigation.instance.handleBackNavigation(context);
+    return shouldPop;
   }
 
   @override
@@ -76,6 +90,7 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _bottomNavController.dispose();
     super.dispose();
   }
@@ -130,9 +145,20 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
       bodyContent = widget.body;
     }
 
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: widget.appBar ?? const LichenAppBar(),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        debugPrint('BACK EVENT RECEIVED - didPop: $didPop');
+        if (didPop) return;
+        final shouldPop = await LichenNavigation.instance.handleBackNavigation(context);
+        debugPrint('BACK EVENT - shouldPop: $shouldPop, mounted: ${context.mounted}');
+        if (shouldPop && context.mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: widget.appBar ?? const LichenAppBar(),
       endDrawer: widget.showDrawer
           ? ValueListenableBuilder<int>(
               valueListenable: LichenNavigation.instance.selectedIndex,
@@ -151,7 +177,7 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
           if (widget.showParticleBackground) ...[
             Positioned.fill(
               child: IgnorePointer(
-                child: ParticleBackground(),
+                child: AmbientBackground(showParticles: true),
               ),
             ),
           ],
@@ -203,6 +229,7 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
           ),
         ],
       ),
+    ),
     );
   }
 

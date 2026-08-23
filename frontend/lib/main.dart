@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 
 import 'routes/app_routes.dart';
 import 'routes/route_names.dart';
+import 'services/navigation_service.dart';
+import 'services/notification_sound_service.dart';
 import 'widgets/app_theme.dart';
 import 'state/auth_state.dart';
 import 'state/dashboard_state.dart';
@@ -19,9 +21,15 @@ import 'services/api_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('APP START');
+  await NotificationSoundService.instance.initialize();
   final apiService = ApiService();
   final authState = AuthState(apiService: apiService);
+  debugPrint('CHECKING STORED SESSION');
   await authState.initialize();
+  debugPrint('TOKEN FOUND: ${authState.token != null && authState.token!.isNotEmpty}');
+  debugPrint('USER RESTORED: ${authState.isAuthenticated}');
+  debugPrint('AUTH READY');
   runApp(LichenDreamsApp(authState: authState, apiService: apiService));
 }
 
@@ -32,6 +40,7 @@ class LichenDreamsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final initialRoute = authState.isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authState),
@@ -53,8 +62,9 @@ class LichenDreamsApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'Lichen Dreams',
             theme: AppTheme.lightTheme(),
-            initialRoute: AppRoutes.login,
+            initialRoute: initialRoute,
             onGenerateRoute: AppRouter.generateRoute,
+            navigatorObservers: [LichenRouteObserver()],
             builder: (context, child) {
               return MediaQuery(
                 data: MediaQuery.of(context).copyWith(

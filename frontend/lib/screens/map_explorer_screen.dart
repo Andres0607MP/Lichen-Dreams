@@ -453,13 +453,11 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
 
   Marker _buildAnalysisMarker(MapAnalysisPoint point, {required String role}) {
     final level = point.visualQualityLevel;
-    final hue = role == 'own-published'
-        ? BitmapDescriptor.hueAzure
-        : level.hue;
+    final hue = level.hue;
 
     return Marker(
       markerId: MarkerId('analysis_${point.id}'),
-      position: point.latLng,
+      position: point.markerLatLng,
       icon: BitmapDescriptor.defaultMarkerWithHue(hue),
       infoWindow: InfoWindow(
         title: point.zoneName,

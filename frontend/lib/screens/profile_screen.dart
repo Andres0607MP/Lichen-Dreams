@@ -49,16 +49,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _navigateToSection(int index) {
     switch (index) {
       case 0:
-        Navigator.pushNamed(context, AppRoutes.dashboard);
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
         break;
       case 1:
-        Navigator.pushNamed(context, AppRoutes.analisis);
+        Navigator.pushReplacementNamed(context, AppRoutes.analisis);
         break;
       case 2:
-        Navigator.pushNamed(context, AppRoutes.mapa);
+        Navigator.pushReplacementNamed(context, AppRoutes.mapa);
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.historial);
+        Navigator.pushReplacementNamed(context, AppRoutes.historial);
         break;
     }
   }

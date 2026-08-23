@@ -1,3 +1,5 @@
+import 'environmental_quality.dart';
+
 class DashboardStats {
   final int analysisCount;
   final int zoneCount;
@@ -8,6 +10,14 @@ class DashboardStats {
     required this.zoneCount,
     required this.airQuality,
   });
+
+  EnvironmentalQuality get environmentalQuality {
+    final quality = EnvironmentalQuality.fromStrings(
+      airQuality: airQuality,
+    );
+    print('[ANALYSIS FLOW] dashboard, quality: ${quality.label}, level: ${quality.level.name}');
+    return quality;
+  }
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
     int parseInt(Object? value) {

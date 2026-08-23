@@ -7,6 +7,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
 
 import '../models/analysis_record.dart';
+import '../models/environmental_quality.dart';
 import '../widgets/modern_widgets.dart';
 import '../widgets/app_theme.dart';
 import '../routes/route_names.dart';
@@ -238,59 +239,9 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 
-  _AnalysisCase _detectCase(String rawResult) {
-    final text = rawResult.toLowerCase();
-
-    if (text.contains('saludable') ||
-        text.contains('healthy') ||
-        text.contains('buen') ||
-        text.contains('good') ||
-        text.contains('limpio') ||
-        text.contains('clean')) {
-      return _AnalysisCase.healthy;
-    }
-
-    if (text.contains('contaminado') ||
-        text.contains('contaminated') ||
-        text.contains('polluted') ||
-        text.contains('afectado') ||
-        text.contains('dañado') ||
-        text.contains('mala calidad') ||
-        text.contains('bad air')) {
-      return _AnalysisCase.contaminated;
-    }
-
-    return _AnalysisCase.unknown;
-  }
-
-  String _getPrimaryResult() {
-    final raw = widget.analysis.raw;
-    final keys = [
-      'resultado',
-      'resultado_ia',
-      'ia_resultado',
-      'prediction',
-      'prediccion',
-      'clasificacion',
-      'classification',
-      'result',
-      'estado',
-      'status',
-    ];
-
-    for (final key in keys) {
-      final value = raw[key];
-      if (value != null && value.toString().trim().isNotEmpty) {
-        return value.toString().trim();
-      }
-    }
-
-    return widget.analysis.title;
-  }
-
   Widget _buildResultCard() {
-    final primaryResult = _getPrimaryResult();
-    final analysisCase = _detectCase(primaryResult);
+    final quality = widget.analysis.environmentalQuality;
+    print('[ANALYSIS FLOW] ResultScreen: id=${widget.analysis.id}, quality=${quality.label}, level=${quality.level.name}');
 
     IconData icon;
     Color color;
@@ -299,34 +250,53 @@ class _ResultScreenState extends State<ResultScreen> {
     String whatItMeans;
     String recommendation;
 
-    switch (analysisCase) {
-      case _AnalysisCase.healthy:
-        icon = Icons.eco_rounded;
-        color = AppTheme.successColor;
-        title = 'Líquen saludable';
-        description =
-            'Se identificó un líquen con características compatibles con un ambiente de buena calidad ambiental.';
+    switch (quality.level) {
+      case EnvironmentalQualityLevel.excellent:
+      case EnvironmentalQualityLevel.good:
+        icon = quality.icon;
+        color = quality.primaryColor;
+        title = 'Líquen ${quality.label.toLowerCase()}';
+        description = quality.description;
         whatItMeans =
             'Los líquenes saludables suelen encontrarse en zonas con menor contaminación atmosférica y mejores condiciones ambientales.';
         recommendation =
             'Continúa realizando análisis en otras zonas para contribuir al monitoreo ambiental.';
         break;
-      case _AnalysisCase.contaminated:
-        icon = Icons.warning_amber_rounded;
-        color = AppTheme.warningColor;
-        title = 'Líquen contaminado';
-        description =
-            'El modelo detectó características compatibles con un líquen afectado por contaminantes ambientales.';
+      case EnvironmentalQualityLevel.moderate:
+        icon = quality.icon;
+        color = quality.primaryColor;
+        title = 'Calidad ${quality.label.toLowerCase()}';
+        description = quality.description;
+        whatItMeans =
+            'Esto puede indicar que la zona presenta niveles moderados de contaminación o condiciones ambientales intermedias.';
+        recommendation =
+            'Realiza más análisis en la zona para monitorear cambios en la calidad ambiental.';
+        break;
+      case EnvironmentalQualityLevel.poor:
+        icon = quality.icon;
+        color = quality.primaryColor;
+        title = 'Líquen afectado';
+        description = quality.description;
         whatItMeans =
             'Esto puede indicar que la zona presenta una menor calidad del aire o condiciones ambientales desfavorables.';
         recommendation =
             'Realiza nuevos análisis en diferentes puntos cercanos y comparte el resultado para ayudar al monitoreo ambiental.';
         break;
-      case _AnalysisCase.unknown:
-        icon = Icons.help_outline_rounded;
-        color = AppTheme.textGray;
+      case EnvironmentalQualityLevel.critical:
+        icon = quality.icon;
+        color = quality.primaryColor;
+        title = 'Contaminación ${quality.label.toLowerCase()}';
+        description = quality.description;
+        whatItMeans =
+            'Esto indica que la zona presenta una calidad del aire peligrosa o condiciones ambientales muy desfavorables.';
+        recommendation =
+            'Evita exposiciones prolongadas en la zona y comparte el resultado para alertar a la comunidad.';
+        break;
+      case EnvironmentalQualityLevel.unknown:
+        icon = quality.icon;
+        color = quality.primaryColor;
         title = 'Líquen no identificado';
-        description = 'No fue posible clasificar el organismo observado.';
+        description = quality.description;
         whatItMeans =
             'Esto puede deberse a una imagen borrosa, poca iluminación, que el objeto no sea un líquen o que la especie aún no haga parte del modelo.';
         recommendation = widget.analysis.summary.isNotEmpty
@@ -340,7 +310,7 @@ class _ResultScreenState extends State<ResultScreen> {
       child: ModernCard(
         gradient: [
           color.withValues(alpha: 0.06),
-          AppTheme.lightGreen.withValues(alpha: 0.02),
+          quality.secondaryColor.withValues(alpha: 0.02),
         ],
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -350,7 +320,7 @@ class _ResultScreenState extends State<ResultScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: quality.backgroundColor,
                 shape: BoxShape.circle,
                 border: Border.all(color: color.withValues(alpha: 0.2), width: 2),
               ),
@@ -862,8 +832,6 @@ class _ResultScreenState extends State<ResultScreen> {
     );
   }
 }
-
-enum _AnalysisCase { healthy, contaminated, unknown }
 
 class _ImagePreviewDialog extends StatelessWidget {
   final Widget Function() imageBuilder;

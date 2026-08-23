@@ -1,3 +1,5 @@
+import 'environmental_quality.dart';
+
 class AnalysisRecord {
   final int? id;
   final int? analysisId;
@@ -35,7 +37,8 @@ class AnalysisRecord {
         json['state']?.toString() ??
         json['resultado']?.toString() ??
         'Desconocido').trim();
-    final title = (json['resultado']?.toString() ??
+    final title = (json['resultado_ia']?.toString() ??
+        json['resultado']?.toString() ??
         json['titulo']?.toString() ??
         json['nombre']?.toString() ??
         status).trim();
@@ -102,76 +105,21 @@ class AnalysisRecord {
     return false;
   }
 
-  String get envResult {
-    final result = (raw['resultado'] ?? title).toString().toLowerCase().trim();
-
-    if (result.contains('saludable') || result.contains('healthy')) {
-      return 'saludable';
+  EnvironmentalQuality get environmentalQuality {
+    final iaResult = raw['resultado_ia']?.toString() ?? raw['resultado']?.toString();
+    if (iaResult != null && iaResult.isNotEmpty) {
+      final quality = EnvironmentalQuality.fromIAResult(iaResult);
+      final confidence = raw['confianza'] ?? raw['confidence'] ?? raw['confianza_ia'];
+      print('[IA VALIDATION FLOW] resultado: $iaResult, level: ${quality.level.name}, label: ${quality.label}');
+      return quality;
     }
-    if (result.contains('contaminado') || result.contains('polluted')) {
-      return 'crítico';
-    }
-
-    final calidadAire = (calidadDelAire ??
-        raw['calidad_del_aire'] ??
-        raw['air_quality'] ??
-        '').toString().toLowerCase().trim();
-    if (calidadAire.isNotEmpty) {
-      if (calidadAire.contains('buena') ||
-          calidadAire.contains('good') ||
-          calidadAire.contains('excelente')) {
-        return 'saludable';
-      }
-      if (calidadAire.contains('mala') ||
-          calidadAire.contains('bad') ||
-          calidadAire.contains('poor')) {
-        return 'crítico';
-      }
-      if (calidadAire.contains('moderada') || calidadAire.contains('moderate')) {
-        return 'moderado';
-      }
-    }
-
-    final nivelContaminacion = (raw['nivel_contaminacion'] ?? '')
-        .toString()
-        .toLowerCase()
-        .trim();
-    if (nivelContaminacion.isNotEmpty) {
-      if (nivelContaminacion.contains('baja') ||
-          nivelContaminacion.contains('low') ||
-          nivelContaminacion.contains('clean')) {
-        return 'saludable';
-      }
-      if (nivelContaminacion.contains('alta') ||
-          nivelContaminacion.contains('high') ||
-          nivelContaminacion.contains('severe') ||
-          nivelContaminacion.contains('critical')) {
-        return 'crítico';
-      }
-      if (nivelContaminacion.contains('moderada') ||
-          nivelContaminacion.contains('moderate')) {
-        return 'moderado';
-      }
-    }
-
-    final state = status.toLowerCase().trim();
-    if (state.contains('error') ||
-        state.contains('fallido') ||
-        state.contains('failed')) {
-      return 'crítico';
-    }
-    if (state.contains('processing') ||
-        state.contains('procesando') ||
-        state.contains('pending') ||
-        state.contains('pendiente')) {
-      return 'moderado';
-    }
-    if (state.contains('completed') ||
-        state.contains('completado') ||
-        state.contains('success')) {
-      return 'saludable';
-    }
-
-    return 'moderado';
+    final quality = EnvironmentalQuality.fromStrings(
+      airQuality: calidadDelAire ?? raw['calidad_del_aire']?.toString() ?? raw['calidad_aire']?.toString() ?? raw['air_quality']?.toString(),
+      result: raw['resultado_ia']?.toString() ?? raw['resultado']?.toString(),
+      contamination: raw['nivel_contaminacion']?.toString() ?? raw['contamination_level']?.toString(),
+    );
+    final confidence = raw['confianza'] ?? raw['confidence'] ?? raw['confianza_ia'];
+    print('[IA VALIDATION FLOW] resultado: $iaResult, level: ${quality.level.name}, label: ${quality.label}');
+    return quality;
   }
 }

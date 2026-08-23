@@ -136,16 +136,16 @@ class _MapScreenState extends State<MapScreen> {
   void _navigateToSection(int index) {
     switch (index) {
       case 0:
-        Navigator.pushNamed(context, AppRoutes.dashboard);
+        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
         break;
       case 1:
-        Navigator.pushNamed(context, AppRoutes.analisis);
+        Navigator.pushReplacementNamed(context, AppRoutes.analisis);
         break;
       case 3:
-        Navigator.pushNamed(context, AppRoutes.historial);
+        Navigator.pushReplacementNamed(context, AppRoutes.historial);
         break;
       case 4:
-        Navigator.pushNamed(context, AppRoutes.perfil);
+        Navigator.pushReplacementNamed(context, AppRoutes.perfil);
         break;
     }
   }
@@ -204,7 +204,7 @@ class _MapScreenState extends State<MapScreen> {
       }
       return Marker(
         markerId: MarkerId('analysis_${point.id}'),
-        position: point.latLng,
+        position: point.markerLatLng,
         icon: hue,
         infoWindow: InfoWindow(
           title: point.zoneName,
