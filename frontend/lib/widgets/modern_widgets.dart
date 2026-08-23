@@ -368,9 +368,16 @@ class QuickActionCard extends StatefulWidget {
   State<QuickActionCard> createState() => _QuickActionCardState();
 }
 
-class _QuickActionCardState extends State<QuickActionCard> with SingleTickerProviderStateMixin {
+class _QuickActionCardState extends State<QuickActionCard> {
   bool _pressed = false;
   bool _isHovering = false;
+  int _shimmerKey = 0;
+
+  void _restartShimmer() {
+    setState(() {
+      _shimmerKey++;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -400,7 +407,14 @@ class _QuickActionCardState extends State<QuickActionCard> with SingleTickerProv
               curve: Curves.easeOutCubic,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    effectiveColor.withValues(alpha: _isHovering ? 0.14 : 0.08),
+                    AppTheme.surfaceColor,
+                  ],
+                ),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
                   color: _isHovering
@@ -418,87 +432,118 @@ class _QuickActionCardState extends State<QuickActionCard> with SingleTickerProv
                   ),
                 ],
               ),
-              child: Column(
+              child: Stack(
                 children: [
-                  if (widget.showTopIndicator)
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeOutCubic,
-                      height: indicatorHeight,
-                      decoration: BoxDecoration(
-                        color: effectiveColor,
-                        borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(18),
-                          topRight: Radius.circular(18),
-                        ),
-                      ),
-                    ),
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: 16,
-                      left: 16,
-                      right: 16,
-                      bottom: widget.badge != null ? 8 : 16,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        AnimatedRotation(
-                          turns: iconRotation,
+                  Column(
+                    children: [
+                      if (widget.showTopIndicator)
+                        AnimatedContainer(
                           duration: const Duration(milliseconds: 250),
                           curve: Curves.easeOutCubic,
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: effectiveColor.withValues(alpha: _isHovering ? 0.18 : 0.12),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              widget.icon,
-                              size: 24,
-                              color: effectiveColor,
+                          height: indicatorHeight,
+                          decoration: BoxDecoration(
+                            color: effectiveColor,
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(18),
+                              topRight: Radius.circular(18),
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10),
-                        Text(
-                          widget.title,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.textDark,
-                          ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Padding(
+                        padding: EdgeInsets.only(
+                          top: 16,
+                          left: 16,
+                          right: 16,
+                          bottom: widget.badge != null ? 8 : 16,
                         ),
-                        if (widget.subtitle != null) ...[
-                          const SizedBox(height: 4),
-                          Text(
-                            widget.subtitle!,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              color: AppTheme.textGray,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            AnimatedRotation(
+                              turns: iconRotation,
+                              duration: const Duration(milliseconds: 250),
+                              curve: Curves.easeOutCubic,
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: effectiveColor.withValues(alpha: _isHovering ? 0.18 : 0.12),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  widget.icon,
+                                  size: 24,
+                                  color: effectiveColor,
+                                ),
+                              ),
                             ),
-                            textAlign: TextAlign.center,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 10),
+                            Text(
+                              widget.title,
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppTheme.textDark,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (widget.subtitle != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                widget.subtitle!,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w400,
+                                  color: AppTheme.textGray,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (widget.badge != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: widget.badge,
                           ),
-                        ],
-                      ],
-                    ),
+                        ),
+                    ],
                   ),
-                  if (widget.badge != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: widget.badge,
+                  Positioned.fill(
+                    child: IgnorePointer(
+                      child: TweenAnimationBuilder<double>(
+                        key: ValueKey(_shimmerKey),
+                        tween: Tween<double>(begin: -3.5, end: 2.0),
+                        duration: const Duration(milliseconds: 2500),
+                        curve: Curves.easeInOut,
+                        onEnd: () => _restartShimmer(),
+                        builder: (context, shimmerValue, child) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment(shimmerValue, -0.3),
+                                end: Alignment(shimmerValue + 1.0, 0.1),
+                                colors: [
+                                  const Color.fromARGB(0, 255, 255, 255),
+                                  Colors.white.withValues(alpha: _isHovering ? 0.35 : 0.25),
+                                  const Color.fromARGB(0, 247, 246, 246),
+                                ],
+                                stops: const [0.0, 0.5, 1.5],
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
+                  ),
                 ],
               ),
             ),

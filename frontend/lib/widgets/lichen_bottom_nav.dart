@@ -91,8 +91,8 @@ class _LichenBottomNavState extends State<LichenBottomNav> {
             child: IgnorePointer(
               child: ExcludeSemantics(
                 child: AnimatedAlign(
-                  duration: AppTheme.animationNormal,
-                  curve: Curves.easeInOut,
+                  duration: const Duration(milliseconds: 120),
+                  curve: Curves.easeOutCubic,
                   widthFactor: 1.0,
                   alignment: Alignment(
                     ((activeIndex * 2) - (_tabCount - 1)) / (_tabCount - 1),
