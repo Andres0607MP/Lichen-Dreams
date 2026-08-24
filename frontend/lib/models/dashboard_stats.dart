@@ -12,11 +12,9 @@ class DashboardStats {
   });
 
   EnvironmentalQuality get environmentalQuality {
-    final quality = EnvironmentalQuality.fromStrings(
+    return EnvironmentalQuality.fromStrings(
       airQuality: airQuality,
     );
-    print('[ANALYSIS FLOW] dashboard, quality: ${quality.label}, level: ${quality.level.name}');
-    return quality;
   }
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {

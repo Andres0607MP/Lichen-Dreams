@@ -17,6 +17,31 @@ class AppTheme {
   static const Color alertColor = Color(0xFFC25E3F);
   static const Color healthyColor = Color(0xFF4F7A45);
 
+  static const Color historialPrimary = Color(0xFF6B8E5A);
+  static const Color historialSecondary = Color(0xFF8FA878);
+  static const Color historialIcon = Color(0xFF4A6B3A);
+
+  static const Color mapaPrimary = Color(0xFF4A6FA5);
+  static const Color mapaSecondary = Color(0xFF6B8FC5);
+  static const Color mapaIcon = Color(0xFF3A5A8D);
+
+  static const Color liquenpediaPrimary = Color(0xFF2E6B4F);
+  static const Color liquenpediaSecondary = Color(0xFF4A8B6A);
+  static const Color liquenpediaIcon = Color(0xFF1E5A3F);
+
+  static const Color especiesPrimary = Color(0xFFB86A5A);
+  static const Color especiesSecondary = Color(0xFFD48A7A);
+  static const Color especiesIcon = Color(0xFF8A4A3A);
+
+  static const Color infoColor = Color(0xFF5A6B7A);
+  static const Color warningEnvironmental = Color(0xFFB8A43E);
+  static const Color dangerEnvironmental = Color(0xFFA85A4A);
+
+  static const Color articleHealthy = Color(0xFF2E6B4F);
+  static const Color articleModerate = Color(0xFFB8A43E);
+  static const Color articleCritical = Color(0xFFA85A4A);
+  static const Color articleDefault = Color(0xFF6B8E5A);
+
   static final Color primaryGreen10 = primaryGreen.withValues(alpha: 0.1);
   static final Color primaryGreen12 = primaryGreen.withValues(alpha: 0.12);
   static final Color primaryGreen30 = primaryGreen.withValues(alpha: 0.3);

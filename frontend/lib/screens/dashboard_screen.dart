@@ -8,6 +8,7 @@ import '../widgets/lichen_scaffold.dart';
 import '../widgets/dashboard/lichen_carousel.dart';
 import '../widgets/dashboard/liquenpedia_carousel.dart';
 import '../models/dashboard_stats.dart';
+import '../models/environmental_quality.dart';
 import '../widgets/modern_widgets.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
@@ -18,6 +19,7 @@ import '../state/auth_state.dart';
 import '../state/articles_state.dart';
 import '../state/analysis_state.dart';
 import '../state/notifications_state.dart';
+import '../screens/dashboard_stats_detail_sheet.dart';
 
 const String profileImagePath = 'assets/logo/saludo.png';
 
@@ -39,22 +41,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     Future.microtask(() {
       if (mounted) {
         final dashboardState = context.read<DashboardState>();
-        final articlesState = context.read<ArticlesState>();
-        final notificationsState = context.read<NotificationsState>();
         final appSettings = context.read<AppSettingsState>();
+        final notificationsState = context.read<NotificationsState>();
         notificationsState.setSoundEnabled(appSettings.soundEnabled);
         if (!dashboardState.hasFreshData && !dashboardState.loading) {
           dashboardState.loadStats();
         }
-        if (!articlesState.hasFreshData && !articlesState.loading) {
-          articlesState.loadArticles();
-        }
-        notificationsState.loadNotifications();
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         setState(() => _hasAnimated = true);
+        precacheImage(const AssetImage(profileImagePath), context);
+        final articlesState = context.read<ArticlesState>();
+        final notificationsState = context.read<NotificationsState>();
+        if (!articlesState.hasFreshData && !articlesState.loading) {
+          articlesState.loadArticles();
+        }
+        notificationsState.loadNotifications();
       }
     });
   }
@@ -91,15 +95,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               else
                 _buildWelcomeHeader(context, userName, horizontalPadding),
               SizedBox(height: isLargeScreen ? 20 : 16),
-              if (shouldAnimate)
-                LichenCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
-              else
-                LichenCarousel(),
+              LichenCarousel(),
               SizedBox(height: isLargeScreen ? 16 : 12),
-              if (shouldAnimate)
-                LiquenpediaCarousel().animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
-              else
-                LiquenpediaCarousel(),
+              LiquenpediaCarousel(),
               SizedBox(height: sectionSpacing),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -113,38 +111,27 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               SizedBox(height: sectionSpacing),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: shouldAnimate
-                    ? _buildSectionHeader(
-                        title: 'Acciones rápidas',
-                        subtitle: 'Comienza tu análisis',
-                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
-                    : _buildSectionHeader(
-                        title: 'Acciones rápidas',
-                        subtitle: 'Comienza tu análisis',
-                      ),
+                child: _buildSectionHeader(
+                  title: 'Acciones rápidas',
+                  subtitle: 'Comienza tu análisis',
+                ),
               ),
               SizedBox(height: isLargeScreen ? 16 : 12),
               Selector<NotificationsState, int>(
                 selector: (context, state) => state.unreadCount,
                 builder: (context, unreadCount, child) {
-                  final quickActions = _buildQuickActions(context, unreadCount);
-                  return shouldAnimate
-                      ? quickActions.animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
-                      : quickActions;
+                  return _buildQuickActions(context, unreadCount);
                 },
               ),
               SizedBox(height: sectionSpacing),
               Selector<DashboardState, DashboardStats?>(
                 selector: (context, state) => state.stats,
                 builder: (context, stats, child) {
-                  final statsSection = _buildStatsSection(context, stats ?? DashboardStats(
+                  return _buildStatsSection(context, stats ?? DashboardStats(
                     analysisCount: 0,
                     zoneCount: 0,
                     airQuality: '---',
                   ), horizontalPadding, isLargeScreen);
-                  return shouldAnimate
-                      ? statsSection.animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
-                      : statsSection;
                 },
                 child: const SizedBox.shrink(),
               ),
@@ -156,21 +143,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               SizedBox(height: sectionSpacing),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                child: shouldAnimate
-                    ? _buildSectionHeader(
-                        title: 'Capacidades',
-                        subtitle: 'Descubre lo que puedes hacer',
-                      ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
-                    : _buildSectionHeader(
-                        title: 'Capacidades',
-                        subtitle: 'Descubre lo que puedes hacer',
-                      ),
+                child: _buildSectionHeader(
+                  title: 'Capacidades',
+                  subtitle: 'Descubre lo que puedes hacer',
+                ),
               ),
               SizedBox(height: isLargeScreen ? 16 : 12),
-              if (shouldAnimate)
-                _buildCapabilities(context, horizontalPadding).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
-              else
-                _buildCapabilities(context, horizontalPadding),
+              _buildCapabilities(context, horizontalPadding),
               const SizedBox(height: 24),
             ],
           ),
@@ -375,7 +354,6 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildStatsSection(BuildContext context, DashboardStats stats, double horizontalPadding, bool isLargeScreen) {
     final quality = stats.environmentalQuality;
-    print('[ANALYSIS FLOW] DashboardScreen: quality=${quality.label}, level=${quality.level.name}');
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
@@ -392,24 +370,25 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   color: AppTheme.textGray,
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    size: 12,
-                    color: AppTheme.textGray.withValues(alpha: 0.6),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Actualizado recientemente',
-                    style: GoogleFonts.poppins(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                      color: AppTheme.textGray.withValues(alpha: 0.6),
+              Tooltip(
+                message: 'Métricas basadas en tus análisis y zonas registradas. Los datos se actualizan automáticamente.',
+                child: Semantics(
+                  label: 'Ver estadísticas detalladas',
+                  button: true,
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: AppTheme.infoColor.withValues(alpha: 0.7),
+                    ),
+                    onPressed: () => DashboardStatsDetailSheet.show(context),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 24,
+                      minHeight: 24,
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           ),
@@ -426,7 +405,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       title: 'Análisis',
                       value: value.toString(),
                       icon: Icons.analytics_rounded,
-                      color: AppTheme.primaryGreen,
+                      color: AppTheme.historialPrimary,
+                      trendText: 'Total registrado',
                     );
                   },
                 ),
@@ -442,7 +422,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       title: 'Zonas',
                       value: value.toString(),
                       icon: Icons.location_on_rounded,
-                      color: AppTheme.accentGreen,
+                      color: AppTheme.mapaPrimary,
+                      trendText: 'Ubicaciones exploradas',
                     );
                   },
                 ),
@@ -511,6 +492,16 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     ),
                   ],
                 ),
+                const SizedBox(height: 16),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: _getQualityProgress(quality.level),
+                    backgroundColor: quality.secondaryColor.withValues(alpha: 0.2),
+                    valueColor: AlwaysStoppedAnimation<Color>(quality.primaryColor),
+                    minHeight: 6,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   'Basado en el último análisis de líquenes',
@@ -528,11 +519,29 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
   }
 
+  double _getQualityProgress(EnvironmentalQualityLevel level) {
+    switch (level) {
+      case EnvironmentalQualityLevel.excellent:
+        return 1.0;
+      case EnvironmentalQualityLevel.good:
+        return 0.8;
+      case EnvironmentalQualityLevel.moderate:
+        return 0.6;
+      case EnvironmentalQualityLevel.poor:
+        return 0.4;
+      case EnvironmentalQualityLevel.critical:
+        return 0.2;
+      case EnvironmentalQualityLevel.unknown:
+        return 0.0;
+    }
+  }
+
   Widget _buildStatCard({
     required String title,
     required String value,
     required IconData icon,
     required Color color,
+    String? trendText,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -553,6 +562,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             decoration: BoxDecoration(
@@ -570,24 +580,44 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             child: Icon(icon, color: Colors.white, size: 22),
           ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: GoogleFonts.poppins(
-              fontSize: 28,
-              fontWeight: FontWeight.w800,
-              color: AppTheme.textDark,
-              letterSpacing: -0.5,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: AppTheme.textDark,
+                letterSpacing: -0.5,
+              ),
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              title,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textGray,
+              ),
             ),
           ),
+          if (trendText != null) ...[
+            const SizedBox(height: 4),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                trendText,
+                style: GoogleFonts.poppins(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                  color: AppTheme.textGray.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -603,37 +633,41 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
           childAspectRatio: aspectRatio,
           children: [
             QuickActionCard(
+              entranceDelay: 0,
               title: 'Historial',
               subtitle: 'Análisis previos',
               icon: Icons.history_rounded,
-              color: AppTheme.accentGreen,
+              color: AppTheme.historialPrimary,
               badge: unreadCount > 0 ? _buildBadge('$unreadCount') : null,
               onTap: () => Navigator.pushNamed(context, AppRoutes.historial),
             ),
             QuickActionCard(
+              entranceDelay: 50,
               title: 'Mapa',
               subtitle: 'Ubicaciones registradas',
               icon: Icons.map_rounded,
-              color: Colors.blueAccent,
+              color: AppTheme.mapaPrimary,
               onTap: () => Navigator.pushNamed(context, AppRoutes.mapa),
             ),
             QuickActionCard(
+              entranceDelay: 100,
               title: 'Liquenpedia',
               subtitle: 'Artículos y educación',
               icon: Icons.school_rounded,
-              color: AppTheme.lightGreen,
+              color: AppTheme.liquenpediaPrimary,
               onTap: () => Navigator.pushNamed(context, AppRoutes.liquenpedia),
             ),
             QuickActionCard(
+              entranceDelay: 150,
               title: 'Especies',
               subtitle: 'Catálogo de especies',
               icon: Icons.eco_rounded,
-              color: Colors.deepOrange,
+              color: AppTheme.especiesPrimary,
               onTap: () => Navigator.pushNamed(context, AppRoutes.species),
             ),
           ],
@@ -668,13 +702,13 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   double _getAspectRatio(double width, int crossAxisCount) {
     if (crossAxisCount == 4) {
-      return width >= 1100 ? 1.1 : 0.85;
+      return width >= 1100 ? 0.85 : 0.75;
     }
     if (crossAxisCount == 3) {
-      return 0.9;
+      return 0.75;
     }
-    if (width < 360) return 0.9;
-    return 1.0;
+    if (width < 360) return 0.7;
+    return 0.8;
   }
 
   Widget _buildPrimaryAction(BuildContext context, double horizontalPadding, bool isLargeScreen) {

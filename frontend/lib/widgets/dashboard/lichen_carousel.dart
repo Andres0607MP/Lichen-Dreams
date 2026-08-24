@@ -59,22 +59,33 @@ class _LichenCarouselState extends State<LichenCarousel> {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          height: 240,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: _slides.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: 220,
+            maxHeight: 280,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final carouselHeight = constraints.maxHeight.clamp(220.0, 280.0);
+              return Container(
+                height: carouselHeight,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: _slides.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final slide = _slides[index];
+                    return _buildSlide(slide, index);
+                  },
+                ).animate().fadeIn(duration: 600.ms).scale(duration: 600.ms),
+              );
             },
-            itemBuilder: (context, index) {
-              final slide = _slides[index];
-              return _buildSlide(slide, index);
-            },
-          ).animate().fadeIn(duration: 600.ms).scale(duration: 600.ms),
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -148,7 +159,7 @@ class _LichenCarouselState extends State<LichenCarousel> {
                       color.withValues(alpha: 0.3),
                       color.withValues(alpha: 0.85),
                     ],
-                    stops: const [0.0, 0.5, 0.7, 1.0],
+                    stops: const [0.0, 0.4, 0.7, 1.0],
                   ),
                 ),
               ),
@@ -157,32 +168,36 @@ class _LichenCarouselState extends State<LichenCarousel> {
               bottom: 0,
               left: 0,
               right: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      color.withValues(alpha: 0.0),
-                      color.withValues(alpha: 0.25),
-                    ],
+              child: SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
                   ),
-                ),
-                child: Text(
-                  slide['description'] as String,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
-                    height: 1.5,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        color.withValues(alpha: 0.0),
+                        color.withValues(alpha: 0.3),
+                      ],
+                    ),
                   ),
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
+                  child: Text(
+                    slide['description'] as String,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                      height: 1.4,
+                    ),
+                    maxLines: 4,
+                    softWrap: true,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ),

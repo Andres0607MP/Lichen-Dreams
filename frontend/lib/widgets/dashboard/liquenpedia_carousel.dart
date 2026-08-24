@@ -7,8 +7,39 @@ import 'package:provider/provider.dart';
 
 import '../../models/liquenpedia_article.dart';
 import '../../state/articles_state.dart';
+import '../../state/auth_state.dart';
 import '../../config/app_config.dart';
+import '../../screens/liquenpedia_detail_screen.dart';
+import '../../routes/route_names.dart';
 import '../app_theme.dart';
+
+Color _getCategoryColor(String categoria) {
+  final normalized = categoria.toLowerCase().trim();
+  if (normalized.contains('saludable') ||
+      normalized.contains('healthy') ||
+      normalized.contains('buena') ||
+      normalized.contains('good') ||
+      normalized.contains('excelente') ||
+      normalized.contains('excellent')) {
+    return AppTheme.articleHealthy;
+  }
+  if (normalized.contains('moderada') ||
+      normalized.contains('moderate') ||
+      normalized.contains('regular') ||
+      normalized.contains('media')) {
+    return AppTheme.articleModerate;
+  }
+  if (normalized.contains('crítica') ||
+      normalized.contains('critical') ||
+      normalized.contains('mala') ||
+      normalized.contains('bad') ||
+      normalized.contains('poor') ||
+      normalized.contains('afectada') ||
+      normalized.contains('affected')) {
+    return AppTheme.articleCritical;
+  }
+  return AppTheme.articleDefault;
+}
 
 class LiquenpediaCarousel extends StatefulWidget {
   const LiquenpediaCarousel({super.key});
@@ -55,6 +86,23 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
     });
   }
 
+  void _navigateToArticle(LiquenpediaArticle article) {
+    final authState = context.read<AuthState>();
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LiquenpediaDetailScreen(
+          article: article,
+          isAdmin: authState.isAdmin,
+        ),
+      ),
+    );
+  }
+
+  void _navigateToAllArticles() {
+    Navigator.pushNamed(context, AppRoutes.liquenpedia);
+  }
+
   @override
   Widget build(BuildContext context) {
     final articlesState = context.watch<ArticlesState>();
@@ -69,7 +117,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
 
     if (articlesState.loading && published.isEmpty) {
       return Container(
-        height: 240,
+        height: 200,
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           color: AppTheme.surfaceColor,
@@ -83,15 +131,15 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
 
     if (published.isEmpty) {
       return Container(
-        height: 240,
+        padding: const EdgeInsets.all(32),
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppTheme.primaryGreen.withValues(alpha: 0.06),
-              AppTheme.lightGreen.withValues(alpha: 0.03),
+              AppTheme.articleDefault.withValues(alpha: 0.06),
+              AppTheme.articleHealthy.withValues(alpha: 0.03),
             ],
           ),
           borderRadius: BorderRadius.circular(24),
@@ -99,47 +147,57 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
             color: AppTheme.borderColor.withValues(alpha: 0.5),
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.school_rounded,
-                size: 40,
-                color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.school_rounded,
+              size: 40,
+              color: AppTheme.articleDefault.withValues(alpha: 0.3),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No hay artículos publicados',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.textGray,
               ),
-              const SizedBox(height: 12),
-              Text(
-                'No hay artículos publicados',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textGray,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       );
     }
 
     return Column(
       children: [
-        Container(
-          height: 240,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
-          child: PageView.builder(
-            controller: _pageController,
-            itemCount: published.length,
-            onPageChanged: (index) {
-              setState(() {
-                _currentPage = index;
-              });
+        ConstrainedBox(
+          constraints: const BoxConstraints(
+            minHeight: 240,
+            maxHeight: 300,
+          ),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final carouselHeight = constraints.maxHeight.clamp(240.0, 300.0);
+              return Container(
+                height: carouselHeight,
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: published.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    return _buildArticleCard(published[index], index);
+                  },
+                ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.96, 0.96), duration: 600.ms),
+              );
             },
-            itemBuilder: (context, index) {
-              return _buildArticleCard(published[index], index);
-            },
-          ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.96, 0.96), duration: 600.ms),
+          ),
         ),
         const SizedBox(height: 16),
         Row(
@@ -148,6 +206,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
             published.length,
             (index) {
               final isActive = _currentPage == index;
+              final categoryColor = _getCategoryColor(published[index].categoria);
               return AnimatedContainer(
                 duration: 300.ms,
                 margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -155,14 +214,40 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
                 height: isActive ? 10 : 7,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isActive ? AppTheme.primaryGreen : Colors.transparent,
+                  color: isActive ? categoryColor : Colors.transparent,
                   border: Border.all(
-                    color: isActive ? AppTheme.primaryGreen : AppTheme.borderColor,
+                    color: isActive ? categoryColor : AppTheme.borderColor,
                     width: isActive ? 0 : 1.5,
                   ),
                 ),
               );
             },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Semantics(
+          button: true,
+          label: 'Ver todos los artículos',
+          child: TextButton(
+            onPressed: _navigateToAllArticles,
+            style: TextButton.styleFrom(
+              foregroundColor: AppTheme.articleDefault,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Ver todos los artículos',
+                  style: GoogleFonts.poppins(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.arrow_forward_rounded, size: 16),
+              ],
+            ),
           ),
         ),
         const SizedBox(height: 4),
@@ -171,135 +256,155 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
   }
 
   Widget _buildArticleCard(LiquenpediaArticle article, int index) {
+    final categoryColor = _getCategoryColor(article.categoria);
     final imageUrl = article.imagenArticulo;
     final imageUrlResolved = imageUrl != null && imageUrl.isNotEmpty ? AppConfig.getImageUrl(imageUrl) : null;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.primaryGreen.withValues(alpha: 0.10),
-            AppTheme.lightGreen.withValues(alpha: 0.05),
-            AppTheme.accentGreen.withValues(alpha: 0.02),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: AppTheme.primaryGreen.withValues(alpha: 0.15),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
+    return Semantics(
+      button: true,
+      label: 'Artículo ${index + 1}: ${article.titulo}. Categoría: ${article.categoria}',
+      child: GestureDetector(
+        onTap: () => _navigateToArticle(article),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                categoryColor.withValues(alpha: 0.08),
+                categoryColor.withValues(alpha: 0.04),
+                AppTheme.surfaceColor,
+              ],
+            ),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: categoryColor.withValues(alpha: 0.4),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: categoryColor.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (imageUrl != null && imageUrl.isNotEmpty)
+                  AspectRatio(
+                    aspectRatio: 16 / 6,
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: categoryColor.withValues(alpha: 0.05),
+                      ),
+                      child: imageUrlResolved != null
+                          ? Image.network(
+                              imageUrlResolved,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildPlaceholderCover(categoryColor);
+                              },
+                            )
+                          : _buildPlaceholderCover(categoryColor),
+                    ),
+                  )
+                else
+                  AspectRatio(
+                    aspectRatio: 16 / 6,
+                    child: _buildPlaceholderCover(categoryColor),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        article.titulo,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textDark,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: categoryColor.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              article.categoria,
+                              style: GoogleFonts.poppins(
+                                fontSize: 9,
+                                fontWeight: FontWeight.w600,
+                                color: categoryColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        article.contenido.length > 80
+                            ? '${article.contenido.substring(0, 80)}...'
+                            : article.contenido,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w400,
+                          color: AppTheme.textGray,
+                          height: 1.3,
+                        ),
+                        maxLines: 2,
+                        softWrap: true,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Por ${article.autor}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w400,
+                          color: AppTheme.textGray.withValues(alpha: 0.7),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ).animate().fadeIn(duration: 500.ms, delay: (index * 80).ms),
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-             if (imageUrl != null && imageUrl.isNotEmpty)
-               Container(
-                 height: 110,
-                 width: double.infinity,
-                 decoration: BoxDecoration(
-                   color: AppTheme.primaryGreen.withValues(alpha: 0.05),
-                 ),
-                 child: imageUrlResolved != null
-                     ? Image.network(
-                         imageUrlResolved,
-                         fit: BoxFit.cover,
-                         errorBuilder: (context, error, stackTrace) {
-                           print('[Image.network error] liquenpedia_carousel: $imageUrl\n$error');
-                           return _buildPlaceholderCover();
-                         },
-                       )
-                     : _buildPlaceholderCover(),
-             )
-             else
-               _buildPlaceholderCover(),
-             Expanded(
-               child: Container(
-                 padding: const EdgeInsets.symmetric(
-                   horizontal: 16,
-                   vertical: 10,
-                 ),
-                 child: Column(
-                   crossAxisAlignment: CrossAxisAlignment.start,
-                   children: [
-                     Text(
-                       article.titulo,
-                       style: GoogleFonts.poppins(
-                         fontSize: 15,
-                         fontWeight: FontWeight.w700,
-                         color: AppTheme.textDark,
-                         height: 1.3,
-                       ),
-                       maxLines: 2,
-                       overflow: TextOverflow.ellipsis,
-                     ),
-                     const SizedBox(height: 4),
-                     Text(
-                       article.categoria,
-                       style: GoogleFonts.poppins(
-                         fontSize: 9,
-                         fontWeight: FontWeight.w600,
-                         color: AppTheme.primaryGreen,
-                       ),
-                       maxLines: 1,
-                       overflow: TextOverflow.ellipsis,
-                     ),
-                     const SizedBox(height: 4),
-                     Text(
-                       article.contenido.length > 60
-                           ? '${article.contenido.substring(0, 60)}...'
-                           : article.contenido,
-                       style: GoogleFonts.poppins(
-                         fontSize: 10,
-                         fontWeight: FontWeight.w400,
-                         color: AppTheme.textGray,
-                         height: 1.3,
-                       ),
-                       maxLines: 2,
-                       overflow: TextOverflow.ellipsis,
-                     ),
-                     const SizedBox(height: 4),
-                     Text(
-                       'Por ${article.autor}',
-                       style: GoogleFonts.poppins(
-                         fontSize: 9,
-                         fontWeight: FontWeight.w400,
-                         color: AppTheme.textGray.withValues(alpha: 0.7),
-                       ),
-                       maxLines: 1,
-                       overflow: TextOverflow.ellipsis,
-                     ),
-                   ],
-                 ),
-               ),
-             ),
-          ],
-        ),
-      ),
-    ).animate().fadeIn(duration: 500.ms, delay: (index * 80).ms);
+    );
   }
 
-  Widget _buildPlaceholderCover() {
+  Widget _buildPlaceholderCover(Color color) {
     return Container(
-      height: 110,
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.primaryGreen.withValues(alpha: 0.15),
-            AppTheme.lightGreen.withValues(alpha: 0.08),
+            color.withValues(alpha: 0.15),
+            color.withValues(alpha: 0.08),
           ],
         ),
       ),
@@ -307,7 +412,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
         child: Icon(
           Icons.eco_rounded,
           size: 36,
-          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+          color: color.withValues(alpha: 0.3),
         ),
       ),
     );
