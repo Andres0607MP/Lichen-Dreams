@@ -4,7 +4,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 
 from config.db import get_db
-from models.core import Usuario
+from models.core import Usuario, Sesion
 from auth.auth_service import require_admin
 
 router = APIRouter()
@@ -61,7 +61,13 @@ def update_user(user_id: int, request: UserUpdate, current_user: Usuario = Depen
     if request.phone is not None:
         user.telefono = request.phone
     if request.activo is not None:
+        estado_anterior = user.estado_cuenta
         user.estado_cuenta = 'active' if request.activo else 'inactive'
+        if estado_anterior == "active" and user.estado_cuenta != "active":
+            db.query(Sesion).filter(
+                Sesion.id_usuario == user.id_usuario,
+                Sesion.estado_sesion == "active"
+            ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
     db.commit()
     db.refresh(user)
     return user_to_response(user)

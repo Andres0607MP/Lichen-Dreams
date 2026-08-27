@@ -15,9 +15,11 @@ def authenticate_user(db: Session, email: str, password: str):
     user = db.query(Usuario).filter(Usuario.correo == email).first()
     if not user:
         return None
+    if user.estado_cuenta != "active":
+        return None
     if verify_password(password, getattr(user, 'contrasena')):
         return user
-    
+
     return None
 
 
@@ -34,7 +36,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(Usuario).filter(Usuario.correo == sub).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuario no encontrado")
-    # If token includes session id, verify session active
+    if user.estado_cuenta != "active":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta desactivada. Contacta al administrador.")
     if sid:
         ses = db.query(Sesion).filter(Sesion.token_sesion == sid, Sesion.id_usuario == user.id_usuario).first()
         if not ses or ses.estado_sesion != 'active':
@@ -54,6 +57,8 @@ def get_current_user_optional(token: str = Depends(oauth2_scheme), db: Session =
         if not sub:
             return None
         user = db.query(Usuario).options(joinedload(Usuario.rol)).filter(Usuario.correo == sub).first()
+        if not user or user.estado_cuenta != "active":
+            return None
         return user
     except Exception:
         return None

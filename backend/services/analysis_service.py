@@ -11,56 +11,12 @@ from sqlalchemy import or_
 from config.db import SessionLocal
 from config.settings import normalize_image_path
 from services.upload_service import resolve_file_path
-from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen, Notificacion
+from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen, Notificacion, ProcesamientoIA
 
 
 class AnalysisService:
     def __init__(self, provider: Optional[object] = None):
         self.provider = provider
-
-    def _ensure_default_analysis(self, analysis_id: int) -> Optional[Analisis]:
-        if analysis_id != 1:
-            return None
-
-        with SessionLocal() as db:
-            analysis = db.query(Analisis).options(joinedload(Analisis.imagenes), joinedload(Analisis.especie)).filter(Analisis.id_analisis == 1).first()
-            if analysis:
-                return analysis
-
-            admin_user = db.query(Usuario).filter(Usuario.correo == 'admin@gmail.com').first()
-            modelo = db.query(ModeloIA).filter(ModeloIA.id_modelo == 1).first()
-            dataset = db.query(Dataset).filter(Dataset.id_dataset == 1).first()
-
-            analysis = Analisis(
-                id_analisis=1,
-                id_usuario=admin_user.id_usuario if admin_user else 1,
-                id_modelo=modelo.id_modelo if modelo else 1,
-                id_dataset=dataset.id_dataset if dataset else 1,
-                resultado_ia='liquen saludable',
-                porcentaje_confianza=0.93,
-                nivel_contaminacion='baja',
-                calidad_aire='moderada',
-                estado_liquen='completado',
-                tiempo_procesamiento=1.2,
-                observaciones='Buena calidad de aire en la zona',
-                estado_validacion='completed',
-                temperatura_ambiente=22.0,
-                humedad_relativa=65.5,
-                fecha=datetime.utcnow(),
-            )
-            db.add(analysis)
-            db.flush()
-
-            historial = HistorialActividad(
-                accion_realizada='analisis_guardado',
-                descripcion_accion=f'analysis_id={analysis.id_analisis}; location=',
-                id_usuario=analysis.id_usuario,
-            )
-            db.add(historial)
-
-            db.commit()
-            db.refresh(analysis)
-            return analysis
 
     def _ensure_owner_or_admin(self, analysis: Analisis, user_id: int) -> bool:
         with SessionLocal() as db:
@@ -127,7 +83,7 @@ class AnalysisService:
             "visibilidad": analysis.visibilidad or "private",
         }
 
-    def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1, id_ubicacion: Optional[int] = None) -> Dict[str, Any]:
+    def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1, id_ubicacion: Optional[int] = None, image_source: str = 'upload') -> Dict[str, Any]:
         try:
             from ia.modelos.lichen_classifier import predict
 
@@ -150,6 +106,19 @@ class AnalysisService:
             calidad_aire = "desconocida"
             estado_liquen = "error"
             estado_validacion = "error"
+
+        print(f"[PROCESS] ia_result={ia_result}")
+        print(f"[PROCESS] resultado_ia={resultado_ia}")
+        print(f"[PROCESS] image_source={image_source}")
+
+        if resultado_ia == "liquen saludable":
+            observaciones = "Calidad del aire buena. El liquen se encuentra en condiciones saludables."
+        elif resultado_ia == "liquen contaminado":
+            observaciones = "Calidad del aire comprometida. El liquen muestra signos de contaminación."
+        elif resultado_ia == "liquen desconocido":
+            observaciones = "No fue posible determinar la calidad del aire. Intenta con otra imagen."
+        else:
+            observaciones = f"Análisis completado: {resultado_ia}"
 
         if resultado_ia == "liquen desconocido":
             return {
@@ -179,6 +148,7 @@ class AnalysisService:
             }
 
         with SessionLocal() as db:
+            print(f"[PROCESS] GUARDANDO resultado_ia={resultado_ia} image_source={image_source}")
             analysis = Analisis(
                 id_usuario=id_usuario,
                 id_modelo=id_modelo,
@@ -189,7 +159,7 @@ class AnalysisService:
                 calidad_aire=calidad_aire,
                 estado_liquen=estado_liquen,
                 tiempo_procesamiento=1.2,
-                observaciones="Buena calidad de aire en la zona",
+                observaciones=observaciones,
                 estado_validacion=estado_validacion,
                 visibilidad="private",
                 temperatura_ambiente=22.0,
@@ -223,18 +193,39 @@ class AnalysisService:
                 imagen_original=None,
                 imagen_procesada=None,
                 estado_imagen="subida",
-                tipo_captura="upload",
+                tipo_captura=image_source,
                 descripcion="Imagen analizada",
             )
             db.add(image)
             db.flush()
 
-            historial = HistorialActividad(
-                accion_realizada='analisis_guardado',
-                descripcion_accion=f'analysis_id={analysis.id_analisis}; location=',
-                id_usuario=analysis.id_usuario,
+            modelo_ia = db.query(ModeloIA).filter(ModeloIA.id_modelo == id_modelo).first()
+            precision_modelo = float(modelo_ia.precision_modelo) if modelo_ia and modelo_ia.precision_modelo is not None else None
+
+            procesamiento = ProcesamientoIA(
+                id_analisis=analysis.id_analisis,
+                tiempo_ejecucion=1.2,
+                porcentaje_precision=porcentaje_confianza,
+                precision_modelo=precision_modelo,
+                cantidad_objetos_detectados=None,
+                resultado_segmentacion=None,
+                observaciones=f"Clasificación IA: {resultado_ia}",
             )
-            db.add(historial)
+            db.add(procesamiento)
+            db.flush()
+            print(f"[PROCESAMIENTO_IA] creado para analysis_id={analysis.id_analisis}")
+
+            should_save_history = (
+                estado_validacion != "error"
+                and not (image_source == "gallery" and resultado_ia == "liquen saludable")
+            )
+            if should_save_history:
+                historial = HistorialActividad(
+                    accion_realizada='analisis_guardado',
+                    descripcion_accion=f'analysis_id={analysis.id_analisis}; source={image_source}',
+                    id_usuario=analysis.id_usuario,
+                )
+                db.add(historial)
 
             if estado_validacion == "completed":
                 db.query(Notificacion).filter(
@@ -277,10 +268,8 @@ class AnalysisService:
         return self._analysis_to_contract(analysis)
 
     def get_status(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
-        analysis = self._ensure_default_analysis(analysis_id)
-        if analysis is None:
-            with SessionLocal() as db:
-                analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+        with SessionLocal() as db:
+            analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
         if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
@@ -294,10 +283,8 @@ class AnalysisService:
         }
 
     def get_humidity(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
-        analysis = self._ensure_default_analysis(analysis_id)
-        if analysis is None:
-            with SessionLocal() as db:
-                analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+        with SessionLocal() as db:
+            analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
         if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
@@ -311,10 +298,8 @@ class AnalysisService:
         }
 
     def get_air_quality(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
-        analysis = self._ensure_default_analysis(analysis_id)
-        if analysis is None:
-            with SessionLocal() as db:
-                analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+        with SessionLocal() as db:
+            analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
         if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
@@ -329,10 +314,8 @@ class AnalysisService:
         }
 
     def get_recommendation(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
-        analysis = self._ensure_default_analysis(analysis_id)
-        if analysis is None:
-            with SessionLocal() as db:
-                analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+        with SessionLocal() as db:
+            analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:
             raise HTTPException(status_code=404, detail="Análisis no encontrado")
         if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
@@ -347,7 +330,6 @@ class AnalysisService:
         }
 
     def get_results(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
-        self._ensure_default_analysis(analysis_id)
         with SessionLocal() as db:
             analysis = db.query(Analisis).options(joinedload(Analisis.imagenes), joinedload(Analisis.especie)).filter(Analisis.id_analisis == analysis_id).first()
         if not analysis:

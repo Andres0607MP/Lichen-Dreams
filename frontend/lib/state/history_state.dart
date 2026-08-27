@@ -11,7 +11,6 @@ class HistoryState extends ChangeNotifier {
   bool _loaded = false;
   DateTime? _lastLoadedAt;
   static const Duration _cacheDuration = Duration(seconds: 30);
-  Set<int> _sharedAnalysisIds = {};
   int _version = 0;
 
   List<AnalysisRecord> get history => List.unmodifiable(_history);
@@ -21,6 +20,11 @@ class HistoryState extends ChangeNotifier {
   bool get hasLoaded => _loaded;
   bool get hasFreshData => _lastLoadedAt != null && DateTime.now().difference(_lastLoadedAt!) < _cacheDuration;
   int get version => _version;
+
+  void invalidate() {
+    _loaded = false;
+    _lastLoadedAt = null;
+  }
 
   Future<void> loadHistory({bool force = false}) async {
     if (_loading) return;
@@ -33,29 +37,7 @@ class HistoryState extends ChangeNotifier {
     try {
       final items = await _apiService.getAnalysisHistory();
       _notify(() {
-        _history = items.map((json) {
-          final record = AnalysisRecord.fromJson(json);
-          if (record.analysisId != null && _sharedAnalysisIds.contains(record.analysisId)) {
-            final updatedRaw = Map<String, dynamic>.from(record.raw);
-            updatedRaw['visibilidad'] = 'shared';
-            return AnalysisRecord(
-              id: record.id,
-              analysisId: record.analysisId,
-              title: record.title,
-              status: record.status,
-              summary: record.summary,
-              imageUrl: record.imageUrl,
-              imageBase64: record.imageBase64,
-              createdAt: record.createdAt,
-              ubicacion: record.ubicacion,
-              humedad: record.humedad,
-              calidadDelAire: record.calidadDelAire,
-              source: record.source,
-              raw: updatedRaw,
-            );
-          }
-          return record;
-        }).toList();
+        _history = items.map((json) => AnalysisRecord.fromJson(json)).toList();
         _loaded = true;
         _lastLoadedAt = DateTime.now();
       });
@@ -85,56 +67,20 @@ class HistoryState extends ChangeNotifier {
       _loading = false;
       _loaded = false;
       _lastLoadedAt = null;
-      _sharedAnalysisIds = {};
     });
     return Future.value();
   }
 
-  Future<void> deleteRecord(int? id) async {
-    if (id == null || id <= 0) return;
+  Future<void> deleteRecord(int? analysisId) async {
+    if (analysisId == null || analysisId <= 0) return;
     try {
-      await _apiService.deleteHistory(id);
+      await _apiService.deleteAnalysis(analysisId);
       _notify(() {
-        _history.removeWhere((r) => r.id == id);
-        _sharedAnalysisIds.remove(id);
+        _history.removeWhere((r) => r.analysisId == analysisId);
       });
     } catch (e) {
       _notify(() => _error = e.toString());
     }
-  }
-
-  void markAnalysisAsShared(int analysisId) {
-    _sharedAnalysisIds.add(analysisId);
-    final index = _history.indexWhere((r) => r.analysisId == analysisId);
-    if (index >= 0) {
-      final old = _history[index];
-      final updatedRaw = Map<String, dynamic>.from(old.raw);
-      updatedRaw['visibilidad'] = 'shared';
-      _history[index] = AnalysisRecord(
-        id: old.id,
-        analysisId: old.analysisId,
-        title: old.title,
-        status: old.status,
-        summary: old.summary,
-        imageUrl: old.imageUrl,
-        imageBase64: old.imageBase64,
-        createdAt: old.createdAt,
-        ubicacion: old.ubicacion,
-        humedad: old.humedad,
-        calidadDelAire: old.calidadDelAire,
-        source: old.source,
-        raw: updatedRaw,
-      );
-    }
-    _notify(() {});
-  }
-
-  bool isShared(int? analysisId) {
-    if (analysisId == null || analysisId <= 0) return false;
-    if (_sharedAnalysisIds.contains(analysisId)) return true;
-    final index = _history.indexWhere((r) => r.analysisId == analysisId);
-    if (index >= 0) return _history[index].isShared;
-    return false;
   }
 
   void _notify(void Function() fn) {

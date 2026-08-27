@@ -67,12 +67,21 @@ def _haversine_distance(lat1: float, lng1: float, lat2: float, lng2: float) -> f
     return R * c
 
 
+def _clean_direccion(direccion: Optional[str]) -> Optional[str]:
+    if direccion is None:
+        return None
+    cleaned = direccion.strip()
+    if cleaned.lower() == 'unnamed road':
+        return None
+    return cleaned if cleaned else None
+
+
 @router.post("/save", response_model=LocationResponse, summary="Guardar ubicación")
 def save_location(request: LocationCreate, db: Session = Depends(get_db)):
     ub = Ubicacion(
         latitud=request.latitude,
         longitud=request.longitude,
-        direccion=request.direccion,
+        direccion=_clean_direccion(request.direccion),
         municipio=request.municipio,
         departamento=request.departamento,
         pais=request.pais
@@ -102,6 +111,19 @@ def find_or_create_location(request: LocationFindOrCreateRequest, db: Session = 
             best_match = ub
 
     if best_match is not None:
+        if not best_match.municipio and request.municipio:
+            best_match.municipio = request.municipio
+        if not best_match.departamento and request.departamento:
+            best_match.departamento = request.departamento
+        existing_direccion = (best_match.direccion or '').strip()
+        new_direccion = (request.direccion or '').strip()
+        if (not existing_direccion or existing_direccion.lower() == 'unnamed road'):
+            if new_direccion and new_direccion.lower() != 'unnamed road':
+                best_match.direccion = new_direccion
+        if not best_match.pais and request.pais:
+            best_match.pais = request.pais
+        db.commit()
+        db.refresh(best_match)
         return LocationFindOrCreateResponse(
             id_ubicacion=best_match.id_ubicacion,
             latitud=float(best_match.latitud),
@@ -113,7 +135,7 @@ def find_or_create_location(request: LocationFindOrCreateRequest, db: Session = 
     ub = Ubicacion(
         latitud=request.latitude,
         longitud=request.longitude,
-        direccion=request.direccion,
+        direccion=_clean_direccion(request.direccion),
         municipio=request.municipio,
         departamento=request.departamento,
         pais=request.pais,

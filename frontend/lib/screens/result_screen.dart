@@ -12,7 +12,6 @@ import '../widgets/modern_widgets.dart';
 import '../widgets/app_theme.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
-import '../state/history_state.dart';
 import '../state/analysis_state.dart';
 import '../state/notifications_state.dart';
 
@@ -58,7 +57,6 @@ class _ResultScreenState extends State<ResultScreen> {
 
   Future<void> _checkLocationAndShareStatus() async {
     final apiService = Provider.of<ApiService>(context, listen: false);
-    final historyState = Provider.of<HistoryState>(context, listen: false);
     final rejected = widget.analysis.raw['rechazado'] == true;
     final analysisId = widget.analysis.raw['id_analisis'] is int
         ? widget.analysis.raw['id_analisis'] as int
@@ -77,7 +75,7 @@ class _ResultScreenState extends State<ResultScreen> {
       await apiService.getAnalysisLocation(analysisId);
       if (mounted) {
         setState(() => _hasLocation = true);
-        final isShared = historyState.isShared(analysisId) || widget.analysis.isShared;
+        final isShared = widget.analysis.isShared;
         setState(() => _isShared = isShared);
       }
     } on ApiException catch (_) {
@@ -463,9 +461,6 @@ class _ResultScreenState extends State<ResultScreen> {
         setState(() => _isShared = true);
         try {
           context.read<AnalysisState>().markLastAsShared();
-        } catch (_) {}
-        try {
-          context.read<HistoryState>().markAnalysisAsShared(analysisId);
         } catch (_) {}
       }
     } catch (error) {

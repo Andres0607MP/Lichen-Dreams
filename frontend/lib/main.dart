@@ -12,7 +12,7 @@ import 'state/articles_state.dart';
 import 'state/history_state.dart';
 import 'state/profile_state.dart';
 import 'state/map_state.dart';
-import 'state/species_state.dart';
+import 'state/catalog_state.dart';
 import 'state/users_state.dart';
 import 'state/notifications_state.dart';
 import 'state/analysis_state.dart';
@@ -40,7 +40,7 @@ class LichenDreamsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initialRoute = authState.isAuthenticated ? AppRoutes.dashboard : AppRoutes.login;
+    final initialRoute = authState.isAuthenticated ? AppRoutes.loading : AppRoutes.login;
     return MultiProvider(
       providers: [
         ChangeNotifierProvider.value(value: authState),
@@ -50,7 +50,7 @@ class LichenDreamsApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => HistoryState(apiService: apiService)),
         ChangeNotifierProvider(create: (_) => ProfileState(apiService: apiService)),
         ChangeNotifierProvider(create: (_) => MapState(apiService: apiService)),
-        ChangeNotifierProvider(create: (_) => SpeciesState(apiService: apiService)),
+        ChangeNotifierProvider(create: (_) => CatalogState(apiService: apiService)),
         ChangeNotifierProvider(create: (_) => UsersState(apiService: apiService)),
         ChangeNotifierProvider(create: (_) => AnalysisState(apiService: apiService)),
         ChangeNotifierProvider.value(value: NotificationsState.instance),
@@ -62,6 +62,8 @@ class LichenDreamsApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             title: 'Lichen Dreams',
             theme: AppTheme.lightTheme(),
+            darkTheme: AppTheme.darkTheme(),
+            themeMode: appSettings.darkMode ? ThemeMode.dark : ThemeMode.light,
             initialRoute: initialRoute,
             onGenerateRoute: AppRouter.generateRoute,
             navigatorObservers: [LichenRouteObserver()],

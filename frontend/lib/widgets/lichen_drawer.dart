@@ -64,13 +64,14 @@ class _LichenDrawerState extends State<LichenDrawer> {
       context: context,
       barrierDismissible: false,
       builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
         return StatefulBuilder(
           builder: (context, setModalState) {
             return AlertDialog(
-              backgroundColor: AppTheme.surfaceColor,
+              backgroundColor: colorScheme.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: BorderSide(color: AppTheme.borderColor.withValues(alpha: 0.4)),
+                side: BorderSide(color: colorScheme.outlineVariant),
               ),
               title: Row(
                 children: [
@@ -82,7 +83,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -97,7 +98,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textGray,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -130,19 +131,19 @@ class _LichenDrawerState extends State<LichenDrawer> {
                           decoration: BoxDecoration(
                             color: entered
                                 ? AppTheme.primaryGreen.withValues(alpha: 0.15)
-                                : AppTheme.backgroundColor.withValues(alpha: 0.5),
+                                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(8),
                             border: Border.all(
                               color: entered
                                   ? AppTheme.primaryGreen
-                                  : AppTheme.borderColor.withValues(alpha: 0.4),
+                                  : colorScheme.outlineVariant,
                               width: 1.2,
                             ),
                           ),
                           child: Icon(
                             icon,
                             size: 20,
-                            color: entered ? AppTheme.primaryGreen : AppTheme.textGray,
+                            color: entered ? AppTheme.primaryGreen : colorScheme.onSurfaceVariant,
                           ),
                         ),
                       );
@@ -181,7 +182,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                   child: Text(
                     'Cancelar',
                     style: GoogleFonts.poppins(
-                      color: AppTheme.textGray,
+                      color: colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -198,6 +199,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -205,15 +207,15 @@ class _LichenDrawerState extends State<LichenDrawer> {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: AppTheme.backgroundColor.withValues(alpha: 0.6),
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppTheme.borderColor.withValues(alpha: 0.5),
+            color: colorScheme.outlineVariant,
             width: 1.2,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: colorScheme.shadow.withValues(alpha: 0.06),
               blurRadius: 4,
               offset: const Offset(0, 2),
             ),
@@ -222,7 +224,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
         child: Icon(
           icon,
           size: 28,
-          color: AppTheme.textDark,
+          color: colorScheme.onSurface,
         ),
       ),
     );
@@ -256,12 +258,13 @@ class _LichenDrawerState extends State<LichenDrawer> {
   }
 
   void _showSuccessDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
+          backgroundColor: colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: AppTheme.primaryGreen.withValues(alpha: 0.3), width: 1.5),
@@ -291,7 +294,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -300,7 +303,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                 'Ya puedes acceder a las herramientas de desarrollador.',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppTheme.textGray,
+                  color: colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -319,11 +322,12 @@ class _LichenDrawerState extends State<LichenDrawer> {
   }
 
   void _showErrorDialog() {
+    final colorScheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: AppTheme.surfaceColor,
+          backgroundColor: colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: BorderSide(color: AppTheme.errorColor.withValues(alpha: 0.3), width: 1.5),
@@ -342,7 +346,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -351,7 +355,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                 'Intenta nuevamente.',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppTheme.textGray,
+                  color: colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -373,9 +377,10 @@ class _LichenDrawerState extends State<LichenDrawer> {
   Widget build(BuildContext context) {
     final isAdmin = widget.userRole == 'admin';
     final devUnlocked = DevToolsSession.instance.isUnlocked;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Drawer(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: colorScheme.surfaceContainerLowest,
       child: Column(
         children: [
           DrawerHeader(
@@ -384,9 +389,8 @@ class _LichenDrawerState extends State<LichenDrawer> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  const Color.fromARGB(17, 165, 185, 167)
-                      .withValues(alpha: 0.1),
-                  AppTheme.backgroundColor,
+                  AppTheme.primaryGreen.withValues(alpha: 0.08),
+                  colorScheme.surfaceContainerLowest,
                 ],
               ),
             ),
@@ -405,7 +409,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -530,6 +534,7 @@ class _LichenDrawerState extends State<LichenDrawer> {
     required String route,
   }) {
     final isActive = widget.selectedIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
     return ListTile(
       leading: Icon(
         icon,
@@ -538,15 +543,14 @@ class _LichenDrawerState extends State<LichenDrawer> {
       title: Text(
         title,
         style: GoogleFonts.poppins(
-          color: isActive ? AppTheme.textDark : AppTheme.textGray,
+          color: isActive ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
           fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
         ),
       ),
       tileColor: isActive ? AppTheme.primaryGreen.withValues(alpha: 0.08) : null,
       onTap: () {
         Navigator.pop(context);
-        LichenNavigation.instance.navigateTo(index);
-        Navigator.pushNamed(context, route);
+        LichenNavigation.instance.navigateToTab(context, index);
       },
     );
   }

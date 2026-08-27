@@ -11,6 +11,7 @@ import '../widgets/map_controls.dart';
 import '../services/navigation_service.dart';
 import '../state/map_state.dart';
 import '../state/auth_state.dart';
+import '../state/analysis_state.dart';
 import '../models/map_analysis_point.dart';
 
 class MapScreen extends StatefulWidget {
@@ -23,7 +24,6 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   MapAnalysisPoint? _selectedPoint;
   int? _expandedAnalysisId;
-  int _selectedIndex = 2;
   GoogleMapController? _mapController;
   bool _locationPermissionGranted = false;
   bool _locationServiceEnabled = false;
@@ -59,6 +59,7 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   void dispose() {
+    AnalysisState.removeAnalysisCompletedListener(_onAnalysisCompleted);
     _scrollController?.dispose();
     super.dispose();
   }
@@ -110,16 +111,22 @@ class _MapScreenState extends State<MapScreen> {
     LichenNavigation.instance.sync(2);
     _scrollController = ScrollController();
     _scrollController!.addListener(_onScroll);
+    AnalysisState.addAnalysisCompletedListener(_onAnalysisCompleted);
     _requestLocationPermission();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final authState = context.read<AuthState>();
       final mapState = context.read<MapState>();
       mapState.updateUserId(authState.userId);
-      if (!mapState.loading && mapState.points.isEmpty) {
+      if (!mapState.loading) {
         mapState.loadPoints();
       }
     });
+  }
+
+  void _onAnalysisCompleted() {
+    if (!mounted) return;
+    context.read<MapState>().loadPoints();
   }
 
   @override
@@ -128,26 +135,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _onBottomNavTap(int index) {
-    LichenNavigation.instance.navigateTo(index);
-    setState(() => _selectedIndex = index);
-    _navigateToSection(index);
-  }
-
-  void _navigateToSection(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, AppRoutes.analisis);
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, AppRoutes.historial);
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(context, AppRoutes.perfil);
-        break;
-    }
+    LichenNavigation.instance.navigateToTab(context, index);
   }
 
   void _zoomIn() {
@@ -1075,7 +1063,6 @@ class _MapScreenState extends State<MapScreen> {
     if (mapState.loading && mapState.points.isEmpty) {
       return LichenScaffold(
         showBottomNav: true,
-        bottomNavIndex: _selectedIndex,
         onBottomNavTap: _onBottomNavTap,
         showParticleBackground: false,
         body: const Center(
@@ -1090,7 +1077,6 @@ class _MapScreenState extends State<MapScreen> {
     if (mapState.error != null && mapState.points.isEmpty) {
       return LichenScaffold(
         showBottomNav: true,
-        bottomNavIndex: _selectedIndex,
         onBottomNavTap: _onBottomNavTap,
         showParticleBackground: false,
         body: Center(
@@ -1154,7 +1140,6 @@ class _MapScreenState extends State<MapScreen> {
 
     return LichenScaffold(
       showBottomNav: true,
-      bottomNavIndex: _selectedIndex,
       onBottomNavTap: _onBottomNavTap,
       showParticleBackground: false,
       bodyIsScrollable: true,

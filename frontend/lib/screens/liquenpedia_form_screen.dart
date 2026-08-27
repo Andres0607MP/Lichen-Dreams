@@ -32,6 +32,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   File? _pickedImage;
 
   String _estadoPublicacion = 'borrador';
+  int? _selectedCategoriaId;
   bool _isLoading = false;
 
   String _translateToBackend(String estadoEs) {
@@ -73,6 +74,17 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     _estadoPublicacion = _translateToFrontend(
       widget.articleToEdit?.estadoPublicacion ?? 'draft',
     );
+    _selectedCategoriaId = widget.articleToEdit?.idCategoria;
+
+    // Load categories
+    Future.microtask(() {
+      if (mounted) {
+        final articlesState = context.read<ArticlesState>();
+        if (articlesState.categorias.isEmpty) {
+          articlesState.loadCategorias();
+        }
+      }
+    });
   }
 
   @override
@@ -141,13 +153,25 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     try {
       final estadoBackend = _translateToBackend(_estadoPublicacion);
       final articlesState = context.read<ArticlesState>();
+      
+      // Get category name from selected category
+      String categoriaNombre = _categoriaController.text;
+      if (_selectedCategoriaId != null) {
+        final categoria = articlesState.categorias.where(
+          (c) => c.idCategoria == _selectedCategoriaId
+        ).firstOrNull;
+        if (categoria != null) {
+          categoriaNombre = categoria.nombreCategoria;
+        }
+      }
 
       if (widget.articleToEdit == null) {
         await articlesState.createArticle(
           titulo: _tituloController.text,
           contenido: _contenidoController.text,
           autor: _autorController.text,
-          categoria: _categoriaController.text,
+          categoria: categoriaNombre,
+          idCategoria: _selectedCategoriaId,
           estadoPublicacion: estadoBackend,
           imagenArticulo: _imagenController.text.isNotEmpty
               ? _imagenController.text
@@ -165,7 +189,8 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
           titulo: _tituloController.text,
           contenido: _contenidoController.text,
           autor: _autorController.text,
-          categoria: _categoriaController.text,
+          categoria: categoriaNombre,
+          idCategoria: _selectedCategoriaId,
           estadoPublicacion: estadoBackend,
           imagenArticulo: _imagenController.text.isNotEmpty
               ? _imagenController.text
@@ -287,28 +312,80 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
               _buildSectionCard(
                 icon: Icons.category_rounded,
                 title: 'Clasificación',
-                subtitle: 'Taxonomía y estado del artículo',
+                subtitle: 'Categoría y estado del artículo',
                 color: AppTheme.lightGreen,
                 child: Column(
                   children: [
-                    TextFormField(
-                      controller: _categoriaController,
-                      decoration: InputDecoration(
-                        labelText: 'Categoría',
-                        hintText: 'Ej: Hongos, Algas, Bacterias',
-                        prefixIcon: const Icon(Icons.category_rounded),
-                        helperText: 'Tipo biológico del líquen',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        filled: true,
-                        fillColor: AppTheme.surfaceColor,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'La categoría es requerida';
+                    Consumer<ArticlesState>(
+                      builder: (context, articlesState, child) {
+                        if (articlesState.loadingCategorias) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
                         }
-                        return null;
+                        
+                        if (articlesState.categoriasError != null) {
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            child: Text(
+                              'Error al cargar categorías: ${articlesState.categoriasError}',
+                              style: GoogleFonts.poppins(
+                                color: AppTheme.errorColor,
+                                fontSize: 12,
+                              ),
+                            ),
+                          );
+                        }
+
+                        return DropdownButtonFormField<int?>(
+                          value: _selectedCategoriaId,
+                          decoration: InputDecoration(
+                            labelText: 'Categoría',
+                            prefixIcon: const Icon(Icons.category_rounded),
+                            helperText: 'Selecciona una categoría para el artículo',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            filled: true,
+                            fillColor: AppTheme.surfaceColor,
+                          ),
+                          items: [
+                            const DropdownMenuItem<int?>(
+                              value: null,
+                              child: Text('Sin categoría'),
+                            ),
+                            ...articlesState.categorias.map((categoria) {
+                              return DropdownMenuItem<int?>(
+                                value: categoria.idCategoria,
+                                child: Text(categoria.nombreCategoria),
+                              );
+                            }),
+                          ],
+                          onChanged: (value) {
+                            setState(() {
+                              _selectedCategoriaId = value;
+                              if (value != null) {
+                                final categoria = articlesState.categorias.where(
+                                  (c) => c.idCategoria == value
+                                ).firstOrNull;
+                                if (categoria != null) {
+                                  _categoriaController.text = categoria.nombreCategoria;
+                                }
+                              } else {
+                                _categoriaController.text = '';
+                              }
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null && _categoriaController.text.isEmpty) {
+                              return 'La categoría es requerida';
+                            }
+                            return null;
+                          },
+                        );
                       },
                     ),
                     const SizedBox(height: 16),

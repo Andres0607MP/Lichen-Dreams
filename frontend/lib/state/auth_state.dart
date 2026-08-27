@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../services/navigation_service.dart';
 import 'notifications_state.dart';
@@ -20,6 +21,9 @@ class AuthState extends ChangeNotifier {
   int? _userId;
   bool _loading = false;
 
+  static const String _userNameKey = 'user_name';
+  static const String _userIdKey = 'user_id';
+
   AuthState({ApiService? apiService}) : _apiService = apiService ?? ApiService();
 
   String? get token => _token;
@@ -35,7 +39,37 @@ class AuthState extends ChangeNotifier {
     _token = await _apiService.getToken();
     _refreshToken = await _apiService.getRefreshToken();
     _role = await _apiService.getSavedRole();
+    await _loadPersistedUserInfo();
     notifyListeners();
+  }
+
+  Future<void> _loadPersistedUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    _userName = prefs.getString(_userNameKey);
+    final userIdStr = prefs.getString(_userIdKey);
+    if (userIdStr != null && userIdStr.isNotEmpty) {
+      _userId = int.tryParse(userIdStr);
+    }
+  }
+
+  Future<void> _persistUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_userName != null) {
+      await prefs.setString(_userNameKey, _userName!);
+    } else {
+      await prefs.remove(_userNameKey);
+    }
+    if (_userId != null) {
+      await prefs.setString(_userIdKey, _userId.toString());
+    } else {
+      await prefs.remove(_userIdKey);
+    }
+  }
+
+  Future<void> _clearPersistedUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userNameKey);
+    await prefs.remove(_userIdKey);
   }
 
   Future<bool> login(String email, String password) async {
@@ -51,6 +85,7 @@ class AuthState extends ChangeNotifier {
         _userName = user['nombre']?.toString();
         _userId = _parseUserId(user['id_usuario'] ?? user['id']);
       }
+      await _persistUserInfo();
       notifyListeners();
       await NotificationsState.instance.loadNotifications();
       return true;
@@ -64,6 +99,7 @@ class AuthState extends ChangeNotifier {
     try {
       final profile = await _apiService.getProfile();
       _userName = profile['nombre']?.toString();
+      await _persistUserInfo();
       notifyListeners();
     } catch (_) {
       // silently fail
@@ -107,6 +143,7 @@ class AuthState extends ChangeNotifier {
           _userName = user['nombre']?.toString();
           _userId = _parseUserId(user['id_usuario'] ?? user['id']);
         }
+        await _persistUserInfo();
         notifyListeners();
         await NotificationsState.instance.loadNotifications();
       }
@@ -122,6 +159,7 @@ class AuthState extends ChangeNotifier {
     _role = null;
     _userName = null;
     _userId = null;
+    await _clearPersistedUserInfo();
     LichenNavigation.instance.reset();
     NotificationsState.instance.reset();
     if (context != null) {
@@ -141,6 +179,7 @@ class AuthState extends ChangeNotifier {
     _role = null;
     _userName = null;
     _userId = null;
+    await _clearPersistedUserInfo();
     LichenNavigation.instance.reset();
     NotificationsState.instance.reset();
     if (context != null) {
@@ -157,6 +196,22 @@ class AuthState extends ChangeNotifier {
     if (value is int) return value;
     if (value is String && value.isNotEmpty) return int.tryParse(value);
     return null;
+  }
+
+  Future<void> forgotPassword(String email) async {
+    await _apiService.forgotPassword(email);
+  }
+
+  Future<void> resetPassword(String token, String newPassword) async {
+    await _apiService.resetPassword(token, newPassword);
+  }
+
+  Future<void> verifyEmail(String token) async {
+    await _apiService.verifyEmail(token);
+  }
+
+  Future<void> resendVerification(String email) async {
+    await _apiService.resendVerification(email);
   }
 
   void setState(bool Function() fn) {

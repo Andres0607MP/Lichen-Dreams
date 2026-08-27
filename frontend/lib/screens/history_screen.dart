@@ -15,6 +15,7 @@ import '../services/navigation_service.dart';
 import '../widgets/common_widgets.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/app_theme.dart';
+import '../state/analysis_state.dart';
 import '../state/history_state.dart';
 import '../state/map_state.dart';
 
@@ -163,15 +164,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String _cachedFilter = 'todos';
   String _cachedSearchQuery = '';
   String _cachedSortMode = 'recent';
+  int _lastProcessedDataVersion = 0;
 
   @override
   void initState() {
     super.initState();
     LichenNavigation.instance.sync(3);
+    AnalysisState.addAnalysisCompletedListener(_onAnalysisCompleted);
     Future.microtask(() {
       if (mounted) {
         final historyState = context.read<HistoryState>();
-        if (!historyState.hasLoaded && !historyState.loading) {
+        final analysisState = context.read<AnalysisState>();
+        final currentDataVersion = analysisState.dataVersion;
+        final hasNewData = currentDataVersion != _lastProcessedDataVersion;
+        _lastProcessedDataVersion = currentDataVersion;
+        if ((hasNewData || !historyState.hasLoaded) && !historyState.loading) {
+          if (hasNewData) {
+            historyState.invalidate();
+          }
           historyState.loadHistory();
         }
       }
@@ -179,30 +189,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   @override
+  void dispose() {
+    AnalysisState.removeAnalysisCompletedListener(_onAnalysisCompleted);
+    super.dispose();
+  }
+
+  void _onAnalysisCompleted() {
+    if (!mounted) return;
+    final historyState = context.read<HistoryState>();
+    if (!historyState.loading) {
+      historyState.invalidate();
+      historyState.loadHistory();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final selectedIndex = 3;
     final apiService = Provider.of<ApiService>(context, listen: false);
 
     return LichenScaffold(
       apiService: apiService,
       showBottomNav: true,
-      bottomNavIndex: selectedIndex,
       onBottomNavTap: (index) {
-        LichenNavigation.instance.navigateTo(index);
-        switch (index) {
-          case 0:
-            Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-            break;
-          case 1:
-            Navigator.pushReplacementNamed(context, AppRoutes.analisis);
-            break;
-          case 2:
-            Navigator.pushReplacementNamed(context, AppRoutes.mapa);
-            break;
-          case 4:
-            Navigator.pushReplacementNamed(context, AppRoutes.perfil);
-            break;
-        }
+        LichenNavigation.instance.navigateToTab(context, index);
       },
       showParticleBackground: false,
       body: Consumer<HistoryState>(
@@ -378,14 +387,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ubicacion: ubicacion,
                   humedad: humedad,
                   calidadAire: calidadAire,
-                  isDeleting: _deletingIds.contains(record.id),
+                  isDeleting: _deletingIds.contains(record.analysisId),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ResultScreen(analysis: record),
                     ),
                   ),
-                  onDelete: () => _deleteRecord(record.id),
+                  onDelete: () => _deleteRecord(record.analysisId),
                   onChartTap: () => _showEnvironmentalChartSheet([record], singleRecord: record),
                 );
 
@@ -838,7 +847,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.1),
                     ),
                   ),
-                  if (context.read<HistoryState>().isShared(record.analysisId))
+                  if (record.isShared)
                     IconButton(
                       onPressed: () {
                         Navigator.pushNamed(
@@ -1567,11 +1576,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
         );
       }
     }
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
 

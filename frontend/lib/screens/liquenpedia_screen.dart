@@ -19,6 +19,8 @@ class LiquenpediaScreen extends StatefulWidget {
 }
 
 class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
@@ -224,24 +226,30 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           filled: true,
           fillColor: AppTheme.surfaceColor,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          suffixIcon: articlesState.search('').isNotEmpty
+          suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.close_rounded, size: 20),
                   onPressed: () {
-                    // clear search handled by state
+                    setState(() {
+                      _searchQuery = '';
+                    });
                   },
                 )
               : null,
         ),
         onChanged: (value) {
-          // search is handled locally in UI rebuild via state
+          setState(() {
+            _searchQuery = value;
+          });
         },
       ),
     );
   }
 
   Widget _buildArticlesList(BuildContext context, ArticlesState articlesState, bool isAdmin) {
-    final articles = articlesState.articles;
+    final articles = _searchQuery.isEmpty 
+        ? articlesState.articles 
+        : articlesState.search(_searchQuery);
 
     if (articlesState.loading && articles.isEmpty) {
       return Padding(

@@ -418,59 +418,59 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                     child: _RegisterButton(
                                       loading: _loading,
                                       enabled: _isFormValid,
-                                      onPressed: () async {
-                                        final messenger = ScaffoldMessenger.of(context);
-                                        final navigator = Navigator.of(context);
-                                        final fullName = _nameController.text.trim();
-                                        final email = _emailController.text.trim();
-                                        final password = _passwordController.text;
+                                       onPressed: () async {
+                                         final messenger = ScaffoldMessenger.of(context);
+                                         final navigator = Navigator.of(context);
+                                         final fullName = _nameController.text.trim();
+                                         final email = _emailController.text.trim();
+                                         final password = _passwordController.text;
 
-                                        setState(() => _loading = true);
-                                        try {
-                                           String? fechaNacimientoFormatted;
-                                           final fecha = _selectedFechaNacimiento;
-                                           if (fecha != null) {
-                                             fechaNacimientoFormatted = DateFormat('yyyy-MM-dd').format(fecha);
-                                           }
+                                         setState(() => _loading = true);
+                                         try {
+                                            String? fechaNacimientoFormatted;
+                                            final fecha = _selectedFechaNacimiento;
+                                            if (fecha != null) {
+                                              fechaNacimientoFormatted = DateFormat('yyyy-MM-dd').format(fecha);
+                                            }
 
-                                           await context.read<AuthState>().register(
-                                             name: fullName,
-                                             email: email,
-                                             password: password,
-                                             apellido: _apellidoController.text.isEmpty ? null : _apellidoController.text,
-                                             phone: _telefonoController.text.isEmpty ? null : _telefonoController.text,
-                                             tipoDocumento: _selectedTipoDocumento,
-                                             numeroDocumento: _numeroDocumentoController.text.isEmpty ? null : _numeroDocumentoController.text,
-                                             fechaNacimiento: fechaNacimientoFormatted,
+                                            await context.read<AuthState>().register(
+                                              name: fullName,
+                                              email: email,
+                                              password: password,
+                                              apellido: _apellidoController.text.isEmpty ? null : _apellidoController.text,
+                                              phone: _telefonoController.text.isEmpty ? null : _telefonoController.text,
+                                              tipoDocumento: _selectedTipoDocumento,
+                                              numeroDocumento: _numeroDocumentoController.text.isEmpty ? null : _numeroDocumentoController.text,
+                                              fechaNacimiento: fechaNacimientoFormatted,
+                                            );
+                                           messenger.showSnackBar(
+                                             SnackBar(
+                                               content: const Row(
+                                                 children: [
+                                                   Icon(Icons.check_circle, color: Colors.white),
+                                                   SizedBox(width: 12),
+                                                   Text('¡Cuenta creada! Verifica tu correo para activarla'),
+                                                 ],
+                                               ),
+                                               backgroundColor: Colors.green.shade400,
+                                               behavior: SnackBarBehavior.floating,
+                                               shape: RoundedRectangleBorder(
+                                                 borderRadius: BorderRadius.circular(10),
+                                               ),
+                                             ),
                                            );
-                                          messenger.showSnackBar(
-                                            SnackBar(
-                                              content: const Row(
-                                                children: [
-                                                  Icon(Icons.check_circle, color: Colors.white),
-                                                  SizedBox(width: 12),
-                                                  Text('¡Cuenta creada! Inicia sesión ahora'),
-                                                ],
-                                              ),
-                                              backgroundColor: Colors.green.shade400,
-                                              behavior: SnackBarBehavior.floating,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(10),
-                                              ),
-                                            ),
-                                          );
-                                          if (!mounted) return;
-                                          Future.delayed(const Duration(seconds: 1), () {
-                                            if (mounted) navigator.pushReplacementNamed(AppRoutes.login);
-                                          });
-                                        } catch (error) {
-                                          if (!mounted) return;
-                                          final message = error is ApiException ? error.message : 'Error al crear la cuenta';
-                                          _showMessage(message, isError: true);
-                                        } finally {
-                                          if (mounted) setState(() => _loading = false);
-                                        }
-                                      },
+                                           if (!mounted) return;
+                                           Future.delayed(const Duration(seconds: 1), () {
+                                             if (mounted) navigator.pushReplacementNamed(AppRoutes.verifyEmail, arguments: email);
+                                           });
+                                         } catch (error) {
+                                           if (!mounted) return;
+                                           final message = error is ApiException ? error.message : 'Error al crear la cuenta';
+                                           _showMessage(message, isError: true);
+                                         } finally {
+                                           if (mounted) setState(() => _loading = false);
+                                         }
+                                       },
                                     ),
                                   ),
                                   const SizedBox(height: 18),

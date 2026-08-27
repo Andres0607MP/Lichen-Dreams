@@ -16,6 +16,10 @@ class DashboardState extends ChangeNotifier {
   bool get loading => _loading;
   bool get hasFreshData => _lastLoadedAt != null && DateTime.now().difference(_lastLoadedAt!) < _cacheDuration;
 
+  void invalidate() {
+    _lastLoadedAt = null;
+  }
+
   Future<void> loadStats({bool force = false}) async {
     if (_loading || _loadStatsInProgress) return;
     if (!force && hasFreshData) return;

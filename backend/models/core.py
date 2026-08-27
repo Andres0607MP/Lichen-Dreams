@@ -210,7 +210,7 @@ class Imagen(Base):
 class EspecieLiquen(Base):
     __tablename__ = 'especies_liquenes'
     id_especie = Column(Integer, primary_key=True, autoincrement=True)
-    nombre_cientifico = Column(String(100))
+    nombre_cientifico = Column(String(100), nullable=False, unique=True)
     nombre_comun = Column(String(100))
     descripcion = Column(Text)
     color_predominante = Column(String(50))
@@ -285,15 +285,38 @@ class LiquenPedia(Base):
     titulo = Column(String(150), nullable=False)
     contenido = Column(Text, nullable=False)
     categoria = Column(String(100), nullable=False, default='general')
+    id_categoria = Column(Integer, ForeignKey('categorias_articulos.id_categoria'), nullable=True)
     autor = Column(String(100), nullable=True, default='system')
     imagen_articulo = Column(Text, nullable=True)
     estado_publicacion = Column(String(50), default='draft')
     fecha_publicacion = Column(TIMESTAMP, server_default=func.now())
     fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    categoria_obj = relationship('CategoriaArticulo', back_populates='articulos')
+
     __table_args__ = (
         Index('idx_categoria', 'categoria'),
         Index('idx_estado_publicacion', 'estado_publicacion'),
+        Index('idx_id_categoria', 'id_categoria'),
+    )
+
+
+class CategoriaArticulo(Base):
+    __tablename__ = 'categorias_articulos'
+    id_categoria = Column(Integer, primary_key=True, autoincrement=True)
+    nombre_categoria = Column(String(100), nullable=False, unique=True)
+    descripcion = Column(Text, nullable=True)
+    color = Column(String(7), nullable=True)
+    icono = Column(String(50), nullable=True)
+    orden = Column(Integer, default=0)
+    activo = Column(Boolean, default=True)
+    fecha_creacion = Column(TIMESTAMP, server_default=func.now())
+
+    articulos = relationship('LiquenPedia', back_populates='categoria_obj')
+
+    __table_args__ = (
+        Index('idx_nombre_categoria', 'nombre_categoria'),
+        Index('idx_orden', 'orden'),
     )
 
 
@@ -328,3 +351,37 @@ class ModeloDataset(Base):
     id_modelo = Column(Integer, ForeignKey('modelos_ia.id_modelo'))
     id_dataset = Column(Integer, ForeignKey('datasets.id_dataset'))
     fecha_asociacion = Column(TIMESTAMP, server_default=func.now())
+
+
+class PasswordResetToken(Base):
+    __tablename__ = 'password_reset_tokens'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    token_hash = Column(String(255), nullable=False, unique=True)
+    expires_at = Column(TIMESTAMP, nullable=False)
+    used_at = Column(TIMESTAMP, nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+    usuario = relationship('Usuario', backref='password_reset_tokens')
+
+    __table_args__ = (
+        Index('idx_token_hash', 'token_hash'),
+        Index('idx_id_usuario_token', 'id_usuario'),
+    )
+
+
+class EmailVerificationToken(Base):
+    __tablename__ = 'email_verification_tokens'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    token_hash = Column(String(255), nullable=False, unique=True)
+    expires_at = Column(TIMESTAMP, nullable=False)
+    used_at = Column(TIMESTAMP, nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+    usuario = relationship('Usuario', backref='email_verification_tokens')
+
+    __table_args__ = (
+        Index('idx_verification_token_hash', 'token_hash'),
+        Index('idx_verification_id_usuario', 'id_usuario'),
+    )

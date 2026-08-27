@@ -19,6 +19,7 @@ import '../state/auth_state.dart';
 import '../state/articles_state.dart';
 import '../state/analysis_state.dart';
 import '../state/notifications_state.dart';
+import '../state/catalog_state.dart';
 import '../screens/dashboard_stats_detail_sheet.dart';
 
 const String profileImagePath = 'assets/logo/saludo.png';
@@ -33,20 +34,29 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
   bool _hasAnimated = false;
   bool _isHoveringPrimary = false;
+  int _lastProcessedDataVersion = 0;
 
   @override
   void initState() {
     super.initState();
     LichenNavigation.instance.sync(0);
+    AnalysisState.addAnalysisCompletedListener(_onAnalysisCompleted);
     Future.microtask(() {
       if (mounted) {
         final dashboardState = context.read<DashboardState>();
+        final analysisState = context.read<AnalysisState>();
+        final currentDataVersion = analysisState.dataVersion;
+        final hasNewData = currentDataVersion != _lastProcessedDataVersion;
+        _lastProcessedDataVersion = currentDataVersion;
+        if ((hasNewData || !dashboardState.hasFreshData) && !dashboardState.loading) {
+          if (hasNewData) {
+            dashboardState.invalidate();
+          }
+          dashboardState.loadStats();
+        }
         final appSettings = context.read<AppSettingsState>();
         final notificationsState = context.read<NotificationsState>();
         notificationsState.setSoundEnabled(appSettings.soundEnabled);
-        if (!dashboardState.hasFreshData && !dashboardState.loading) {
-          dashboardState.loadStats();
-        }
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -55,19 +65,37 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         precacheImage(const AssetImage(profileImagePath), context);
         final articlesState = context.read<ArticlesState>();
         final notificationsState = context.read<NotificationsState>();
+        final catalogState = context.read<CatalogState>();
         if (!articlesState.hasFreshData && !articlesState.loading) {
           articlesState.loadArticles();
         }
         notificationsState.loadNotifications();
+        if (catalogState.species.isEmpty && !catalogState.loadingSpecies) {
+          catalogState.loadSpecies();
+        }
       }
     });
+  }
+
+  @override
+  void dispose() {
+    AnalysisState.removeAnalysisCompletedListener(_onAnalysisCompleted);
+    super.dispose();
+  }
+
+  void _onAnalysisCompleted() {
+    if (!mounted) return;
+    final dashboardState = context.read<DashboardState>();
+    if (!dashboardState.loading) {
+      dashboardState.invalidate();
+      dashboardState.loadStats();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final userRole = context.select<AuthState, String?>((a) => a.role);
     final userName = context.select<AuthState, String?>((a) => a.userName);
-    final selectedIndex = 0;
     final apiService = Provider.of<ApiService>(context, listen: false);
     final screenWidth = MediaQuery.of(context).size.width;
     final isLargeScreen = screenWidth >= 600;
@@ -78,10 +106,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     return LichenScaffold(
       userRole: userRole,
       apiService: apiService,
-      bottomNavIndex: selectedIndex,
       onBottomNavTap: (index) {
-        LichenNavigation.instance.navigateTo(index);
-        _navigateToSection(context, index);
+        LichenNavigation.instance.navigateToTab(context, index);
       },
       showParticleBackground: true,
       body: Center(
@@ -141,6 +167,22 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 child: _buildSectionDivider(),
               ),
               SizedBox(height: sectionSpacing),
+              Selector<CatalogState, _SpeciesSectionData>(
+                selector: (context, catalogState) => _SpeciesSectionData(
+                  species: catalogState.species,
+                  loading: catalogState.loadingSpecies,
+                  error: catalogState.speciesError,
+                ),
+                builder: (context, data, child) {
+                  return _buildSpeciesSection(context, data, horizontalPadding, isLargeScreen);
+                },
+              ),
+              SizedBox(height: sectionSpacing),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                child: _buildSectionDivider(),
+              ),
+              SizedBox(height: sectionSpacing),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: _buildSectionHeader(
@@ -163,6 +205,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     String? subtitle,
     bool accent = false,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         if (accent)
@@ -188,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: colorScheme.onSurface,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -199,7 +242,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: AppTheme.textGray,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -212,6 +255,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildWelcomeHeader(BuildContext context, String? userName, double horizontalPadding) {
     final analysisState = context.watch<AnalysisState>();
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isLargeScreen(context) ? 20 : 16),
       decoration: BoxDecoration(
@@ -229,7 +273,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.05),
+            color: colorScheme.shadow.withValues(alpha: 0.06),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -282,7 +326,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   style: GoogleFonts.poppins(
                     fontSize: isLargeScreen(context) ? 22 : 20,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: colorScheme.onSurface,
                     letterSpacing: -0.3,
                   ),
                 ),
@@ -292,7 +336,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   style: GoogleFonts.poppins(
                     fontSize: isLargeScreen(context) ? 13 : 12,
                     fontWeight: FontWeight.w400,
-                    color: AppTheme.textGray,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -338,13 +382,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
   }
 
   Widget _buildSectionDivider() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 1,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
             Colors.transparent,
-            AppTheme.borderColor.withValues(alpha: 0.4),
+            colorScheme.outlineVariant.withValues(alpha: 0.6),
             Colors.transparent,
           ],
         ),
@@ -354,6 +399,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildStatsSection(BuildContext context, DashboardStats stats, double horizontalPadding, bool isLargeScreen) {
     final quality = stats.environmentalQuality;
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
@@ -367,7 +413,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textGray,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
               Tooltip(
@@ -379,7 +425,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     icon: Icon(
                       Icons.info_outline_rounded,
                       size: 18,
-                      color: AppTheme.infoColor.withValues(alpha: 0.7),
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                     onPressed: () => DashboardStatsDetailSheet.show(context),
                     padding: EdgeInsets.zero,
@@ -470,7 +516,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
-                              color: AppTheme.textGray,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -504,11 +550,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Basado en el último análisis de líquenes',
+                  'Basado en tus análisis de cámara',
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
-                    color: AppTheme.textGray,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -543,6 +589,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     required Color color,
     String? trendText,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: BoxDecoration(
@@ -553,7 +600,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         ),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.05),
+            color: colorScheme.shadow.withValues(alpha: 0.06),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -587,7 +634,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               style: GoogleFonts.poppins(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textDark,
+                color: colorScheme.onSurface,
                 letterSpacing: -0.5,
               ),
             ),
@@ -600,7 +647,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textGray,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -613,7 +660,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 style: GoogleFonts.poppins(
                   fontSize: 10,
                   fontWeight: FontWeight.w400,
-                  color: AppTheme.textGray.withValues(alpha: 0.7),
+                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -644,7 +691,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               icon: Icons.history_rounded,
               color: AppTheme.historialPrimary,
               badge: unreadCount > 0 ? _buildBadge('$unreadCount') : null,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.historial),
+              onTap: () => LichenNavigation.instance.navigateToTab(context, 3),
             ),
             QuickActionCard(
               entranceDelay: 50,
@@ -652,7 +699,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               subtitle: 'Ubicaciones registradas',
               icon: Icons.map_rounded,
               color: AppTheme.mapaPrimary,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.mapa),
+              onTap: () => LichenNavigation.instance.navigateToTab(context, 2),
             ),
             QuickActionCard(
               entranceDelay: 100,
@@ -662,13 +709,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               color: AppTheme.liquenpediaPrimary,
               onTap: () => Navigator.pushNamed(context, AppRoutes.liquenpedia),
             ),
-            QuickActionCard(
-              entranceDelay: 150,
-              title: 'Especies',
-              subtitle: 'Catálogo de especies',
-              icon: Icons.eco_rounded,
-              color: AppTheme.especiesPrimary,
-              onTap: () => Navigator.pushNamed(context, AppRoutes.species),
+            Selector<CatalogState, int>(
+              selector: (context, catalogState) => catalogState.species.length,
+              builder: (context, speciesCount, child) {
+                return QuickActionCard(
+                  entranceDelay: 150,
+                  title: 'Especies',
+                  subtitle: 'Catálogo de especies',
+                  icon: Icons.eco_rounded,
+                  color: AppTheme.especiesPrimary,
+                  badge: speciesCount > 0 ? _buildBadge('$speciesCount') : null,
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.adminSpeciesSettings),
+                );
+              },
             ),
           ],
         );
@@ -718,7 +771,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         onEnter: (_) => setState(() => _isHoveringPrimary = true),
         onExit: (_) => setState(() => _isHoveringPrimary = false),
         child: GestureDetector(
-          onTap: () => Navigator.pushNamed(context, AppRoutes.analisis),
+          onTap: () => LichenNavigation.instance.navigateToTab(context, 1),
           child: Transform.scale(
             scale: _isHoveringPrimary && isLargeScreen ? 1.02 : 1.0,
             child: AnimatedContainer(
@@ -810,6 +863,180 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeciesSection(
+    BuildContext context,
+    _SpeciesSectionData data,
+    double horizontalPadding,
+    bool isLargeScreen,
+  ) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _buildSectionHeader(
+                  title: 'Especies',
+                  subtitle: 'Catálogo de líquenes',
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () => Navigator.pushNamed(context, AppRoutes.adminSpeciesSettings),
+                icon: const Icon(Icons.arrow_forward_rounded, size: 16),
+                label: Text(
+                  'Ver catálogo',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (data.loading)
+            _buildSpeciesLoading(context)
+          else if (data.error != null)
+            _buildSpeciesError(context, data.error!)
+          else if (data.species.isEmpty)
+            _buildSpeciesEmpty(context)
+          else
+            _buildSpeciesList(context, data.species, isLargeScreen),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpeciesLoading(BuildContext context) {
+    return SizedBox(
+      height: 200,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        physics: const ClampingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: List.generate(3, (index) {
+            return Container(
+              width: 160,
+              height: 200,
+              margin: const EdgeInsets.only(right: 12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeciesError(BuildContext context, String error) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: AppTheme.errorColor.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.2)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, color: AppTheme.errorColor, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              'No pudimos cargar las especies',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => context.read<CatalogState>().loadSpecies(),
+              child: Text(
+                'Reintentar',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.primaryGreen,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeciesEmpty(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.eco_rounded, size: 40, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
+            const SizedBox(height: 8),
+            Text(
+              'Aún no hay especies en el catálogo',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Cuando agregues especies, aparecerán aquí.',
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSpeciesList(BuildContext context, List<Map<String, dynamic>> species, bool isLargeScreen) {
+    final displaySpecies = species.take(5).toList();
+    return SizedBox(
+      height: 200,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        physics: const ClampingScrollPhysics(),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: displaySpecies
+              .map((s) => _DashboardSpeciesCard(species: s))
+              .toList(),
         ),
       ),
     );
@@ -927,21 +1154,141 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       ),
     );
   }
+}
 
-  void _navigateToSection(BuildContext context, int index) {
-    switch (index) {
-      case 1:
-        Navigator.pushReplacementNamed(context, AppRoutes.analisis);
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, AppRoutes.mapa);
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, AppRoutes.historial);
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(context, AppRoutes.perfil);
-        break;
-    }
+class _SpeciesSectionData {
+  final List<Map<String, dynamic>> species;
+  final bool loading;
+  final String? error;
+
+  const _SpeciesSectionData({
+    required this.species,
+    required this.loading,
+    this.error,
+  });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is _SpeciesSectionData &&
+          runtimeType == other.runtimeType &&
+          species == other.species &&
+          loading == other.loading &&
+          error == other.error;
+
+  @override
+  int get hashCode => Object.hash(species, loading, error);
+}
+
+class _DashboardSpeciesCard extends StatelessWidget {
+  final Map<String, dynamic> species;
+
+  const _DashboardSpeciesCard({required this.species});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final nombreCientifico = species['nombre_cientifico'] ?? 'Sin nombre';
+    final nombreComun = species['nombre_comun']?.toString();
+    final tipoCrecimiento = species['tipo_crecimiento']?.toString();
+    final colorPredominante = species['color_predominante']?.toString();
+
+    return Container(
+      width: 160,
+      height: 200,
+      margin: const EdgeInsets.only(right: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.especiesPrimary.withValues(alpha: 0.12),
+            AppTheme.especiesSecondary.withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppTheme.especiesPrimary.withValues(alpha: 0.2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: colorScheme.shadow.withValues(alpha: 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: AppTheme.especiesPrimary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.eco_rounded,
+                color: AppTheme.especiesPrimary,
+                size: 28,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              nombreCientifico,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (nombreComun != null && nombreComun.isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                nombreComun,
+                style: GoogleFonts.poppins(
+                  fontSize: 11,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            const SizedBox(height: 8),
+            if (tipoCrecimiento != null && tipoCrecimiento.isNotEmpty) ...[
+              _buildTag(context, tipoCrecimiento, AppTheme.especiesIcon),
+            ] else if (colorPredominante != null && colorPredominante.isNotEmpty) ...[
+              _buildTag(context, colorPredominante, AppTheme.especiesIcon),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTag(BuildContext context, String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        text,
+        style: GoogleFonts.poppins(
+          fontSize: 10,
+          fontWeight: FontWeight.w500,
+          color: color,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
   }
 }

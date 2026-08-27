@@ -232,6 +232,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             timed('HistoryState', () => historyState.loadHistory().timeout(_backgroundTimeout)),
             timed('ArticlesState', () => articlesState.loadArticles().timeout(_backgroundTimeout)),
             timed('MapState', () => mapState.loadPoints().timeout(_mapTimeout)),
+            timed('NotificationsState', () => NotificationsState.instance.loadNotifications(force: true).timeout(_backgroundTimeout)),
           ]);
         } catch (_) {
           _printLog('background: ERROR after ${DateTime.now().difference(t0).inMilliseconds}ms');
@@ -316,6 +317,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   }
 
   Widget _buildAnimatedBackground() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Positioned.fill(
       child: Container(
         decoration: BoxDecoration(
@@ -336,7 +338,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
               painter: _OrganicBackgroundPainter(
                 rotation: _rotationController.value,
                 pulse: _pulseController.value,
-                color: Colors.white.withValues(alpha: 0.03),
+                color: colorScheme.onPrimary.withValues(alpha: 0.05),
               ),
             );
           },
@@ -346,6 +348,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   }
 
   Widget _buildLogo() {
+    final colorScheme = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
@@ -359,14 +362,14 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
               height: 110,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.12),
+                color: colorScheme.onPrimary.withValues(alpha: 0.12),
                 border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.3),
+                  color: colorScheme.onPrimary.withValues(alpha: 0.3),
                   width: 2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.1),
+                    color: colorScheme.onPrimary.withValues(alpha: 0.1),
                     blurRadius: 20 + (_pulseController.value * 10),
                     spreadRadius: 2 + (_pulseController.value * 3),
                   ),
@@ -377,7 +380,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                 child: Image.asset(
                   'assets/logo/logo.png',
                   fit: BoxFit.contain,
-                  color: Colors.white.withValues(alpha: 0.95),
+                  color: colorScheme.onPrimary.withValues(alpha: 0.95),
                 ),
               ),
             ),
@@ -388,13 +391,14 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   }
 
   Widget _buildTitle() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         ShaderMask(
           shaderCallback: (bounds) => LinearGradient(
             colors: [
-              Colors.white,
-              Colors.white.withValues(alpha: 0.9),
+              colorScheme.onPrimary,
+              colorScheme.onPrimary.withValues(alpha: 0.9),
               AppTheme.accentGreen,
             ],
           ).createShader(bounds),
@@ -403,7 +407,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             style: GoogleFonts.poppins(
               fontSize: 32,
               fontWeight: FontWeight.w700,
-              color: Colors.white,
+              color: colorScheme.onPrimary,
               letterSpacing: 0.5,
             ),
           ),
@@ -414,7 +418,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha: 0.75),
+            color: colorScheme.onPrimary.withValues(alpha: 0.75),
             letterSpacing: 0.3,
           ),
         ).animate().fadeIn(duration: 600.ms, delay: 400.ms).slideY(begin: 0.15, duration: 600.ms),
@@ -437,6 +441,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   }
 
   Widget _buildAnimatedLoader() {
+    final colorScheme = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
@@ -445,9 +450,9 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
           height: 50,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha: 0.08),
+            color: colorScheme.onPrimary.withValues(alpha: 0.08),
             border: Border.all(
-              color: Colors.white.withValues(alpha: 0.15),
+              color: colorScheme.onPrimary.withValues(alpha: 0.15),
               width: 1,
             ),
           ),
@@ -456,7 +461,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
               valueColor: AlwaysStoppedAnimation<Color>(
-                Colors.white.withValues(alpha: 0.7 + (_pulseController.value * 0.3)),
+                colorScheme.onPrimary.withValues(alpha: 0.7 + (_pulseController.value * 0.3)),
               ),
             ),
           ),
@@ -466,6 +471,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   }
 
   Widget _buildLoadingMessage() {
+    final colorScheme = Theme.of(context).colorScheme;
     return AnimatedBuilder(
       animation: _messageController,
       builder: (context, child) {
@@ -476,7 +482,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: Colors.white.withValues(alpha: 0.85),
+              color: colorScheme.onPrimary.withValues(alpha: 0.85),
             ),
             textAlign: TextAlign.center,
           ),
@@ -486,6 +492,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   }
 
   Widget _buildErrorState() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -497,7 +504,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
               height: 64,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
+                color: colorScheme.onPrimary.withValues(alpha: 0.1),
                 border: Border.all(
                   color: Colors.orange.withValues(alpha: 0.5),
                   width: 2,
@@ -516,7 +523,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.95),
+              color: colorScheme.onPrimary.withValues(alpha: 0.95),
             ),
             textAlign: TextAlign.center,
           ),
@@ -525,7 +532,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             'Puedes continuar, pero algunos datos podrían estar desactualizados.',
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.7),
+              color: colorScheme.onPrimary.withValues(alpha: 0.7),
               height: 1.4,
             ),
             textAlign: TextAlign.center,
@@ -541,14 +548,14 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
                 _preloadAndNavigate();
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: colorScheme.onPrimary,
                 foregroundColor: AppTheme.darkGreen,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(24),
                 ),
                 elevation: 4,
-                shadowColor: Colors.black.withValues(alpha: 0.2),
+                shadowColor: colorScheme.shadow.withValues(alpha: 0.3),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -572,6 +579,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
   }
 
   Widget _buildSubtitle() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
       label: 'Cargando, por favor espere',
       child: Text(
@@ -579,7 +587,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
         style: GoogleFonts.poppins(
           fontSize: 12,
           fontWeight: FontWeight.w400,
-          color: Colors.white.withValues(alpha: 0.5),
+          color: colorScheme.onPrimary.withValues(alpha: 0.5),
         ),
       ),
     ).animate().fadeIn(duration: 600.ms, delay: 600.ms);

@@ -1,13 +1,18 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Response
 from pydantic import BaseModel, EmailStr, field_validator
+from sqlalchemy import func
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
 
 from config.db import get_db
-from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion
+from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion, EspecieLiquen, ZonaAmbiental
 from auth.auth_service import get_current_user
 from auth.password_handler import hash_password
+from models.validations import (
+    EspecieLiquenCreate, EspecieLiquenUpdate, EspecieLiquenResponse,
+    ZonaAmbientalCreate, ZonaAmbientalUpdate, ZonaAmbientalResponse,
+)
 
 router = APIRouter()
 
@@ -117,7 +122,7 @@ def create_user(
         nombre=request.name,
         correo=request.email,
         contrasena=hash_password(request.password),
-        estado_cuenta="activo",
+        estado_cuenta="active",
         id_rol=request.id_rol,
     )
     db.add(nuevo)
@@ -138,6 +143,8 @@ def update_user(
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
+    estado_anterior = user.estado_cuenta
+
     if request.email is not None:
         user.correo = request.email
     if request.name is not None:
@@ -148,6 +155,12 @@ def update_user(
         user.estado_cuenta = request.estado_cuenta
     if request.active is not None:
         user.estado_cuenta = 'active' if request.active else 'inactive'
+
+    if estado_anterior == "active" and user.estado_cuenta != "active":
+        db.query(Sesion).filter(
+            Sesion.id_usuario == user.id_usuario,
+            Sesion.estado_sesion == "active"
+        ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
 
     db.commit()
     db.refresh(user)
@@ -281,3 +294,199 @@ def create_notification(
 
 
 # ---------- Reportes ----------
+
+# ---------- Especies de Líquenes ----------
+
+@router.get("/species", response_model=List[EspecieLiquenResponse], summary="Obtener todas las especies (Admin)")
+def get_species(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Lista todas las especies de líquenes (solo administradores)."""
+    species = db.query(EspecieLiquen).order_by(EspecieLiquen.nombre_cientifico).offset(skip).limit(limit).all()
+    return species
+
+
+@router.post("/species", response_model=EspecieLiquenResponse, status_code=status.HTTP_201_CREATED, summary="Crear nueva especie (Admin)")
+def create_species(
+    request: EspecieLiquenCreate,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Crea una nueva especie de líquen (solo administradores)."""
+    nombre = request.nombre_cientifico
+    duplicada = (
+        db.query(EspecieLiquen)
+        .filter(func.lower(EspecieLiquen.nombre_cientifico) == nombre.lower())
+        .first()
+    )
+    if duplicada:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Ya existe una especie con el nombre científico '{nombre}'"
+        )
+
+    especie = EspecieLiquen(
+        nombre_cientifico=nombre,
+        nombre_comun=request.nombre_comun,
+        descripcion=request.descripcion,
+        color_predominante=request.color_predominante,
+        tipo_crecimiento=request.tipo_crecimiento,
+        nivel_tolerancia_contaminacion=request.nivel_tolerancia_contaminacion,
+        indicador_calidad_aire=request.indicador_calidad_aire,
+        habitat=request.habitat,
+        imagen_referencia=request.imagen_referencia,
+    )
+    db.add(especie)
+    db.commit()
+    db.refresh(especie)
+    return especie
+
+
+@router.put("/species/{species_id}", response_model=EspecieLiquenResponse, summary="Actualizar especie (Admin)")
+def update_species(
+    species_id: int,
+    request: EspecieLiquenUpdate,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Actualiza una especie de líquen existente (solo administradores)."""
+    especie = db.query(EspecieLiquen).filter(EspecieLiquen.id_especie == species_id).first()
+    if not especie:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Especie no encontrada")
+
+    campos_opcionales = (
+        'nombre_comun',
+        'descripcion',
+        'color_predominante',
+        'tipo_crecimiento',
+        'nivel_tolerancia_contaminacion',
+        'indicador_calidad_aire',
+        'habitat',
+        'imagen_referencia',
+    )
+    for campo in campos_opcionales:
+        if campo in request.model_fields_set:
+            setattr(especie, campo, getattr(request, campo))
+
+    if 'nombre_cientifico' in request.model_fields_set:
+        nuevo_nombre = request.nombre_cientifico
+        duplicada = (
+            db.query(EspecieLiquen)
+            .filter(
+                func.lower(EspecieLiquen.nombre_cientifico) == nuevo_nombre.lower(),
+                EspecieLiquen.id_especie != species_id,
+            )
+            .first()
+        )
+        if duplicada:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Ya existe una especie con el nombre científico '{nuevo_nombre}'"
+            )
+        especie.nombre_cientifico = nuevo_nombre
+
+    db.commit()
+    db.refresh(especie)
+    return especie
+
+
+@router.delete("/species/{species_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar especie (Admin)")
+def delete_species(
+    species_id: int,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Elimina una especie de líquen si no está siendo usada en análisis (solo administradores)."""
+    especie = db.query(EspecieLiquen).filter(EspecieLiquen.id_especie == species_id).first()
+    if not especie:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Especie no encontrada")
+
+    analisis_count = db.query(Analisis).filter(Analisis.id_especie == species_id).count()
+    if analisis_count > 0:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"No se puede eliminar: la especie está siendo usada en {analisis_count} análisis"
+        )
+
+    db.delete(especie)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------- Zonas Ambientales ----------
+
+@router.get("/zones", response_model=List[ZonaAmbientalResponse], summary="Obtener todas las zonas ambientales (Admin)")
+def get_zones(
+    skip: int = 0,
+    limit: int = 100,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Lista todas las zonas ambientales (solo administradores)."""
+    zones = db.query(ZonaAmbiental).order_by(ZonaAmbiental.nombre_zona).offset(skip).limit(limit).all()
+    return zones
+
+
+@router.post("/zones", response_model=ZonaAmbientalResponse, status_code=status.HTTP_201_CREATED, summary="Crear nueva zona ambiental (Admin)")
+def create_zone(
+    request: ZonaAmbientalCreate,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Crea una nueva zona ambiental (solo administradores)."""
+    zona = ZonaAmbiental(
+        nombre_zona=request.nombre_zona,
+        nivel_riesgo=request.nivel_riesgo,
+        calidad_promedio_aire=request.calidad_promedio_aire,
+        descripcion=request.descripcion,
+    )
+    db.add(zona)
+    db.commit()
+    db.refresh(zona)
+    return zona
+
+
+@router.put("/zones/{zone_id}", response_model=ZonaAmbientalResponse, summary="Actualizar zona ambiental (Admin)")
+def update_zone(
+    zone_id: int,
+    request: ZonaAmbientalUpdate,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Actualiza una zona ambiental existente (solo administradores)."""
+    zona = db.query(ZonaAmbiental).filter(ZonaAmbiental.id_zona == zone_id).first()
+    if not zona:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zona ambiental no encontrada")
+
+    if request.nombre_zona is not None:
+        zona.nombre_zona = request.nombre_zona
+    if request.nivel_riesgo is not None:
+        zona.nivel_riesgo = request.nivel_riesgo
+    if request.calidad_promedio_aire is not None:
+        zona.calidad_promedio_aire = request.calidad_promedio_aire
+    if request.descripcion is not None:
+        zona.descripcion = request.descripcion
+
+    zona.fecha_actualizacion = datetime.utcnow()
+    db.commit()
+    db.refresh(zona)
+    return zona
+
+
+@router.delete("/zones/{zone_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar zona ambiental (Admin)")
+def delete_zone(
+    zone_id: int,
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Elimina una zona ambiental (solo administradores)."""
+    zona = db.query(ZonaAmbiental).filter(ZonaAmbiental.id_zona == zone_id).first()
+    if not zona:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zona ambiental no encontrada")
+
+    db.delete(zona)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

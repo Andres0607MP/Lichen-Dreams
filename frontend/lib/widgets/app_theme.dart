@@ -285,4 +285,270 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData darkTheme() {
+    const darkBackground = Color(0xFF0D1117);
+    const darkSurface = Color(0xFF161B22);
+    const darkSurfaceElevated = Color(0xFF1C2128);
+    const darkSurfaceHigh = Color(0xFF21262D);
+    const darkText = Color(0xFFE6EDF3);
+    const darkTextSecondary = Color(0xFF8B949E);
+    const darkTextMuted = Color(0xFF6E7681);
+    const darkBorder = Color(0xFF30363D);
+    const darkBorderSubtle = Color(0xFF21262D);
+    const darkGreen = Color(0xFF3FB950);
+    const darkGreenMuted = Color(0xFF238636);
+
+    final baseTextTheme = GoogleFonts.poppinsTextTheme(
+      ThemeData.dark().textTheme,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: ColorScheme(
+        brightness: Brightness.dark,
+        primary: darkGreen,
+        onPrimary: Colors.white,
+        primaryContainer: darkGreenMuted,
+        onPrimaryContainer: darkText,
+        secondary: const Color(0xFF58A6FF),
+        onSecondary: Colors.white,
+        secondaryContainer: const Color(0xFF1F6FEB),
+        onSecondaryContainer: darkText,
+        tertiary: const Color(0xFFBC8CFF),
+        onTertiary: Colors.white,
+        error: const Color(0xFFF85149),
+        onError: Colors.white,
+        errorContainer: const Color(0xFFDA3633),
+        onErrorContainer: darkText,
+        surface: darkSurface,
+        onSurface: darkText,
+        surfaceContainerHighest: darkSurfaceHigh,
+        surfaceContainerHigh: darkSurfaceElevated,
+        surfaceContainer: darkSurface,
+        surfaceContainerLow: darkBackground,
+        surfaceContainerLowest: darkBackground,
+        onSurfaceVariant: darkTextSecondary,
+        outline: darkBorder,
+        outlineVariant: darkBorderSubtle,
+        shadow: Colors.black,
+        scrim: Colors.black,
+        inverseSurface: darkText,
+        onInverseSurface: darkSurface,
+        inversePrimary: darkGreenMuted,
+        surfaceTint: darkGreen,
+      ),
+      scaffoldBackgroundColor: darkBackground,
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        backgroundColor: darkSurface,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        foregroundColor: darkText,
+        titleTextStyle: baseTextTheme.titleLarge?.copyWith(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: darkText,
+        ),
+        iconTheme: const IconThemeData(color: darkText),
+      ),
+      textTheme: TextTheme(
+        displayLarge: baseTextTheme.displayLarge?.copyWith(color: darkText),
+        displayMedium: baseTextTheme.displayMedium?.copyWith(color: darkText),
+        displaySmall: baseTextTheme.displaySmall?.copyWith(color: darkText),
+        headlineLarge: baseTextTheme.headlineLarge?.copyWith(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: darkText,
+        ),
+        headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: darkText,
+        ),
+        headlineSmall: baseTextTheme.headlineSmall?.copyWith(color: darkText),
+        titleLarge: baseTextTheme.titleLarge?.copyWith(
+          fontSize: 22,
+          fontWeight: FontWeight.w700,
+          color: darkText,
+        ),
+        titleMedium: baseTextTheme.titleMedium?.copyWith(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: darkText,
+        ),
+        titleSmall: baseTextTheme.titleSmall?.copyWith(color: darkText),
+        bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: darkText,
+        ),
+        bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+          color: darkTextSecondary,
+        ),
+        bodySmall: baseTextTheme.bodySmall?.copyWith(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: darkTextMuted,
+        ),
+        labelLarge: baseTextTheme.labelLarge?.copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: darkText,
+        ),
+        labelMedium: baseTextTheme.labelMedium?.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+          color: darkTextSecondary,
+        ),
+        labelSmall: baseTextTheme.labelSmall?.copyWith(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: darkTextMuted,
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: darkSurface,
+        border: OutlineInputBorder(
+          borderRadius: inputRadius,
+          borderSide: const BorderSide(color: darkBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: inputRadius,
+          borderSide: const BorderSide(color: darkBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: inputRadius,
+          borderSide: const BorderSide(color: darkGreen, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: inputRadius,
+          borderSide: const BorderSide(color: Color(0xFFF85149)),
+        ),
+        contentPadding: inputContentPadding,
+        labelStyle: baseTextTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          color: darkTextSecondary,
+        ),
+        hintStyle: baseTextTheme.bodyMedium?.copyWith(
+          fontSize: 14,
+          color: darkTextMuted,
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: darkGreen,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: spaceXL, vertical: spaceMD),
+          shape: RoundedRectangleBorder(borderRadius: defaultRadius),
+          textStyle: baseTextTheme.labelLarge?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+          elevation: 0,
+          shadowColor: Colors.transparent,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: darkGreen,
+          side: const BorderSide(color: darkGreen, width: 2),
+          padding: const EdgeInsets.symmetric(horizontal: spaceXL, vertical: spaceMD),
+          shape: RoundedRectangleBorder(borderRadius: defaultRadius),
+          textStyle: baseTextTheme.labelLarge?.copyWith(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: darkGreen,
+          textStyle: baseTextTheme.labelLarge?.copyWith(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: darkText,
+          iconSize: iconLG,
+        ),
+      ),
+      cardTheme: CardThemeData(
+        color: darkSurface,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: cardRadius,
+          side: const BorderSide(color: darkBorderSubtle, width: 1),
+        ),
+        margin: EdgeInsets.zero,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: darkSurfaceElevated,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: radiusXLBorder),
+        titleTextStyle: baseTextTheme.titleLarge?.copyWith(color: darkText),
+        contentTextStyle: baseTextTheme.bodyMedium?.copyWith(color: darkTextSecondary),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: darkSurface,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: darkSurface,
+        surfaceTintColor: Colors.transparent,
+        indicatorColor: darkGreenMuted,
+        labelTextStyle: WidgetStateProperty.all(
+          baseTextTheme.labelSmall?.copyWith(color: darkText),
+        ),
+        iconTheme: WidgetStateProperty.all(
+          const IconThemeData(color: darkTextSecondary),
+        ),
+      ),
+      iconTheme: const IconThemeData(
+        color: darkTextSecondary,
+        size: iconMD,
+      ),
+      dividerTheme: const DividerThemeData(
+        color: darkBorder,
+        thickness: 1,
+        space: 1,
+      ),
+      listTileTheme: ListTileThemeData(
+        tileColor: Colors.transparent,
+        selectedTileColor: darkSurfaceHigh,
+        textColor: darkText,
+        iconColor: darkTextSecondary,
+        shape: RoundedRectangleBorder(borderRadius: radiusMDBorder),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: darkSurfaceHigh,
+        selectedColor: darkGreenMuted,
+        labelStyle: baseTextTheme.labelSmall?.copyWith(color: darkText),
+        side: const BorderSide(color: darkBorder),
+        shape: RoundedRectangleBorder(borderRadius: radiusFullBorder),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: darkSurfaceHigh,
+        contentTextStyle: baseTextTheme.bodyMedium?.copyWith(color: darkText),
+        shape: RoundedRectangleBorder(borderRadius: radiusMDBorder),
+        behavior: SnackBarBehavior.floating,
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: darkSurfaceElevated,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(borderRadius: radiusMDBorder),
+        textStyle: baseTextTheme.bodyMedium?.copyWith(color: darkText),
+      ),
+    );
+  }
 }

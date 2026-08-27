@@ -580,6 +580,22 @@ class ApiService {
     }
   }
 
+  /// Eliminar un análisis por su ID
+  Future<void> deleteAnalysis(int analysisId) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/analysis/$analysisId'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode != 204) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al eliminar análisis',
+        ),
+      );
+    }
+  }
+
   /// Obtener estadísticas principales para el dashboard
   Future<Map<String, dynamic>> getDashboardStats() async {
     final response = await _client.get(
@@ -601,6 +617,7 @@ class ApiService {
   Future<Map<String, dynamic>> submitAnalysis(
     File imageFile, {
     int? id_ubicacion,
+    String imageSource = 'camera',
   }) async {
     final uri = AppConfig.buildUri('/analysis/process');
     final request = http.MultipartRequest('POST', uri);
@@ -615,6 +632,7 @@ class ApiService {
     if (id_ubicacion != null) {
       request.fields['id_ubicacion'] = id_ubicacion.toString();
     }
+    request.fields['image_source'] = imageSource;
 
     final streamedResponse = await _client.send(request);
     final response = await http.Response.fromStream(streamedResponse);
@@ -938,6 +956,7 @@ class ApiService {
     required String contenido,
     required String autor,
     required String categoria,
+    int? idCategoria,
     required String estadoPublicacion,
     String? imagenArticulo,
   }) async {
@@ -949,6 +968,7 @@ class ApiService {
         'contenido': contenido,
         'autor': autor,
         'categoria': categoria,
+        'id_categoria': idCategoria,
         'estado_publicacion': estadoPublicacion,
         'imagen_articulo': imagenArticulo,
       }),
@@ -971,6 +991,7 @@ class ApiService {
     String? contenido,
     String? autor,
     String? categoria,
+    int? idCategoria,
     String? estadoPublicacion,
     String? imagenArticulo,
   }) async {
@@ -979,6 +1000,7 @@ class ApiService {
     if (contenido != null) payload['contenido'] = contenido;
     if (autor != null) payload['autor'] = autor;
     if (categoria != null) payload['categoria'] = categoria;
+    if (idCategoria != null) payload['id_categoria'] = idCategoria;
     if (estadoPublicacion != null)
       payload['estado_publicacion'] = estadoPublicacion;
     if (imagenArticulo != null) payload['imagen_articulo'] = imagenArticulo;
@@ -999,6 +1021,29 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  /// Obtener categorías de artículos
+  Future<List<Map<String, dynamic>>> getCategoriasLiquenpedia() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/categorias-liquenpedia'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener categorías',
+        ),
+      );
+    }
+    final data = jsonDecode(response.body);
+    if (data is List) {
+      return List<Map<String, dynamic>>.from(
+        data.map((item) => item as Map<String, dynamic>),
+      );
+    }
+    return <Map<String, dynamic>>[];
+  }
+
   /// Eliminar artículo (solo admin)
   Future<void> deleteLiquenpediaArticle(int id) async {
     final response = await _client.delete(
@@ -1013,6 +1058,280 @@ class ApiService {
         ),
       );
     }
+  }
+
+  // ==================== ESPECIES DE LÍQUENES (Admin) ====================
+
+  Future<List<dynamic>> getAdminSpecies() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/admin/species'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener especies'),
+      );
+    }
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createAdminSpecies(Map<String, dynamic> data) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/admin/species'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(data),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al crear especie'),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateAdminSpecies(int id, Map<String, dynamic> data) async {
+    final response = await _client.put(
+      AppConfig.buildUri('/admin/species/$id'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(data),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al actualizar especie'),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> deleteAdminSpecies(int id) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/admin/species/$id'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al eliminar especie'),
+      );
+    }
+  }
+
+  // ==================== ZONAS AMBIENTALES (Admin) ====================
+
+  Future<List<dynamic>> getZones() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/admin/zones'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener zonas'),
+      );
+    }
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createZone(Map<String, dynamic> data) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/admin/zones'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(data),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al crear zona'),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updateZone(int id, Map<String, dynamic> data) async {
+    final response = await _client.put(
+      AppConfig.buildUri('/admin/zones/$id'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(data),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al actualizar zona'),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<void> deleteZone(int id) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/admin/zones/$id'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode != 204 && response.statusCode != 200) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al eliminar zona'),
+      );
+    }
+  }
+
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/auth/change-password'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'new_password': newPassword,
+      }),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al cambiar contraseña'),
+      );
+    }
+  }
+
+  Future<void> deleteAccount({required String password}) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/auth/account'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode({'password': password}),
+    );
+    if (response.statusCode != 204) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al eliminar cuenta'),
+      );
+    }
+  }
+
+  Future<List<dynamic>> getMyAnalyses() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/analysis/my'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener análisis'),
+      );
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is List) {
+      return decoded;
+    }
+    return [];
+  }
+
+  Future<Map<String, dynamic>> updateAnalysisVisibility(int analysisId, String visibility) async {
+    final response = await _client.put(
+      AppConfig.buildUri('/analysis/$analysisId/visibility'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode({'visibilidad': visibility}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al actualizar visibilidad'),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> getSessions() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/auth/sessions'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener sesiones'),
+      );
+    }
+    final decoded = jsonDecode(response.body);
+    if (decoded is List) {
+      return decoded;
+    }
+    return [];
+  }
+
+  Future<void> revokeSession(int sessionId) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/auth/sessions/$sessionId'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode != 204) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al revocar sesión'),
+      );
+    }
+  }
+
+  /// Solicitar código de recuperación de contraseña
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/auth/forgot-password'),
+      headers: await _headers(authorized: false),
+      body: jsonEncode({'email': email}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al solicitar recuperación',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Restablecer contraseña con código de recuperación
+  Future<Map<String, dynamic>> resetPassword(String token, String newPassword) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/auth/reset-password'),
+      headers: await _headers(authorized: false),
+      body: jsonEncode({'token': token, 'new_password': newPassword}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al restablecer contraseña',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Verificar correo electrónico con código de verificación
+  Future<Map<String, dynamic>> verifyEmail(String token) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/auth/verify-email'),
+      headers: await _headers(authorized: false),
+      body: jsonEncode({'token': token}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al verificar correo',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Reenviar código de verificación
+  Future<Map<String, dynamic>> resendVerification(String email) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/auth/resend-verification'),
+      headers: await _headers(authorized: false),
+      body: jsonEncode({'email': email}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al reenviar código',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   void dispose() {

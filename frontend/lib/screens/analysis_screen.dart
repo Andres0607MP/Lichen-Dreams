@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 import 'package:provider/provider.dart';
 
 import '../routes/route_names.dart';
@@ -32,13 +34,24 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   File? _selectedImage;
   ImageSource _selectedSource = ImageSource.camera;
-  int _selectedIndex = 1;
   bool _isSubmitting = false;
+  bool _isNavigatingToResult = false;
+  bool _showCompletedProgress = false;
+  Timer? _completedProgressTimer;
+  int _lastShownCompletedDataVersion = -1;
+  String _previousStatus = 'idle';
 
   @override
   void initState() {
     super.initState();
     LichenNavigation.instance.sync(1);
+  }
+
+  @override
+  void dispose() {
+    _completedProgressTimer?.cancel();
+    _completedProgressTimer = null;
+    super.dispose();
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -49,11 +62,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         _selectedImage = File(pickedFile.path);
         _selectedSource = source;
       });
-      Future.microtask(() {
-        if (mounted) {
-          context.read<AnalysisState>().reset();
-        }
-      });
+      if (mounted) {
+        context.read<AnalysisState>().reset();
+      }
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,6 +84,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     }
 
     final analysisState = context.read<AnalysisState>();
+    analysisState.reset();
+
     if (analysisState.hasActiveAnalysis) {
       _isSubmitting = false;
       if (!mounted) return;
@@ -101,56 +114,104 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         return;
       }
 
-      if (position != null) {
+      if (position == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        _isSubmitting = false;
+        return;
+      }
+
+      try {
+        final apiService = Provider.of<ApiService>(context, listen: false);
+
+        String municipio = '';
+        String departamento = '';
+        String direccion = '';
+
         try {
-          final apiService = Provider.of<ApiService>(context, listen: false);
-          final locationResponse = await apiService.findOrCreateLocation(
-            latitude: position.latitude,
-            longitude: position.longitude,
-            radiusMeters: 15.0,
-            direccion: '',
-            municipio: '',
-            departamento: '',
-            pais: 'Colombia',
+          final placemarks = await geocoding.placemarkFromCoordinates(
+            position.latitude,
+            position.longitude,
           );
+          if (placemarks.isNotEmpty) {
+            final p = placemarks.first;
+            municipio = p.subAdministrativeArea ?? p.locality ?? p.administrativeArea ?? '';
+            departamento = p.administrativeArea ?? '';
 
-          final rawId = locationResponse['id_ubicacion'];
-          if (rawId is int) {
-            locationId = rawId;
-          } else if (rawId is String && rawId.isNotEmpty) {
-            locationId = int.tryParse(rawId);
-          } else if (locationResponse['location'] is Map<String, dynamic>) {
-            final nested = locationResponse['location'] as Map<String, dynamic>;
-            final nestedId = nested['id_ubicacion'];
-            if (nestedId is int) {
-              locationId = nestedId;
-            } else if (nestedId is String && nestedId.isNotEmpty) {
-              locationId = int.tryParse(nestedId);
+            final parts = <String>[];
+            final thoroughfare = p.thoroughfare?.trim() ?? '';
+            if (thoroughfare.isNotEmpty &&
+                thoroughfare.toLowerCase() != 'unnamed road') {
+              parts.add(thoroughfare);
             }
+            final subLocality = p.subLocality?.trim() ?? '';
+            if (subLocality.isNotEmpty &&
+                subLocality.toLowerCase() != 'unnamed road') {
+              parts.add(subLocality);
+            }
+            if (parts.isEmpty && p.name != null && p.name!.trim().isNotEmpty) {
+              final name = p.name!.trim();
+              if (name.toLowerCase() != 'unnamed road') {
+                parts.add(name);
+              }
+            }
+            direccion = parts.join(', ');
           }
-        } catch (e) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudo guardar la ubicación. Intenta de nuevo.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          _isSubmitting = false;
-          return;
+        } catch (_) {
+          // reverse geocoding no disponible, continuar con valores vacíos
         }
 
-        if (locationId == null) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-          _isSubmitting = false;
-          return;
+        final locationResponse = await apiService.findOrCreateLocation(
+          latitude: position.latitude,
+          longitude: position.longitude,
+          radiusMeters: 15.0,
+          direccion: direccion,
+          municipio: municipio,
+          departamento: departamento,
+          pais: 'Colombia',
+        );
+
+        final rawId = locationResponse['id_ubicacion'];
+        if (rawId is int) {
+          locationId = rawId;
+        } else if (rawId is String && rawId.isNotEmpty) {
+          locationId = int.tryParse(rawId);
+        } else if (locationResponse['location'] is Map<String, dynamic>) {
+          final nested = locationResponse['location'] as Map<String, dynamic>;
+          final nestedId = nested['id_ubicacion'];
+          if (nestedId is int) {
+            locationId = nestedId;
+          } else if (nestedId is String && nestedId.isNotEmpty) {
+            locationId = int.tryParse(nestedId);
+          }
         }
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo guardar la ubicación. Intenta de nuevo.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        _isSubmitting = false;
+        return;
+      }
+
+      if (locationId == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        _isSubmitting = false;
+        return;
       }
     }
 
@@ -166,6 +227,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   }
 
   Future<void> _viewResult() async {
+    _completedProgressTimer?.cancel();
+    _completedProgressTimer = null;
+    _showCompletedProgress = false;
+
+    if (_isNavigatingToResult) return;
+    _isNavigatingToResult = true;
+
     final analysisState = context.read<AnalysisState>();
     final resultJson = analysisState.lastResult;
     if (resultJson == null) {
@@ -181,6 +249,24 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
+  void _showCompletedProgressBriefly(AnalysisState analysisState) {
+    if (_showCompletedProgress) return;
+    if (_isNavigatingToResult) return;
+    if (analysisState.dataVersion == _lastShownCompletedDataVersion) return;
+
+    _lastShownCompletedDataVersion = analysisState.dataVersion;
+    _showCompletedProgress = true;
+
+    _completedProgressTimer?.cancel();
+    _completedProgressTimer = Timer(const Duration(milliseconds: 400), () {
+      _completedProgressTimer = null;
+      if (!mounted) return;
+      setState(() {
+        _showCompletedProgress = false;
+      });
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthState>();
@@ -191,15 +277,19 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     final isFailed = analysisState.status == 'failed';
     final isRejected = analysisState.status == 'rejected';
 
+    final justCompleted = _previousStatus == 'processing' && analysisState.status == 'completed';
+    _previousStatus = analysisState.status;
+
+    if (justCompleted && !_isNavigatingToResult) {
+      _showCompletedProgressBriefly(analysisState);
+    }
+
     return LichenScaffold(
       apiService: Provider.of<ApiService>(context, listen: false),
       showBottomNav: true,
       showParticleBackground: false,
-      bottomNavIndex: _selectedIndex,
       onBottomNavTap: (index) {
-        LichenNavigation.instance.navigateTo(index);
-        setState(() => _selectedIndex = index);
-        _navigateToSection(index);
+        LichenNavigation.instance.navigateToTab(context, index);
       },
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -207,11 +297,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           _buildHeader(),
           const SizedBox(height: 28),
 
-          if (isProcessing) ...[
+          if (isProcessing || _showCompletedProgress) ...[
             _buildProcessingIndicator(),
             const SizedBox(height: 16),
             Text(
-              'Tu análisis está siendo procesado',
+              _showCompletedProgress ? 'Análisis completado' : 'Tu análisis está siendo procesado',
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -221,7 +311,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Puedes seguir navegando por la app. Te notificaremos cuando esté listo.',
+              _showCompletedProgress ? 'Preparando resultado...' : 'Puedes seguir navegando por la app. Te notificaremos cuando esté listo.',
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 color: AppTheme.textGray,
@@ -392,39 +482,85 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   }
 
   Widget _buildProcessingIndicator() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: _primaryGreen.withValues(alpha: 0.04),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _primaryGreen.withValues(alpha: 0.1)),
-      ),
-      child: Column(
-        children: [
-          const CircularProgressIndicator(color: AppTheme.primaryGreen),
-          const SizedBox(height: 16),
-          Text(
-            'Analizando características del liquen...',
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textDark,
-            ),
-            textAlign: TextAlign.center,
+    return Consumer<AnalysisState>(
+      builder: (context, analysisState, _) {
+        final percent = (analysisState.estimatedProgress * 100).round();
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: _primaryGreen.withValues(alpha: 0.04),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: _primaryGreen.withValues(alpha: 0.12)),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'La IA está estudiando la muestra',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              color: AppTheme.textGray,
-            ),
-            textAlign: TextAlign.center,
+          child: Column(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: _primaryGreen.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(
+                  Icons.auto_awesome_rounded,
+                  color: AppTheme.primaryGreen,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Analizando imagen...',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.textDark,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'La IA está estudiando la muestra',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: AppTheme.textGray,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: analysisState.estimatedProgress,
+                  minHeight: 6,
+                  backgroundColor: const Color(0x1A2F7D32),
+                  valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Progreso estimado: $percent%',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.primaryGreen,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Esto puede tardar unos segundos...',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppTheme.textGray.withValues(alpha: 0.8),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        ],
-      ),
-    ).animate().fadeIn(duration: 500.ms);
+        ).animate().fadeIn(duration: 500.ms);
+      },
+    );
   }
 
   Widget _buildRejectedPreview(String message) {
@@ -863,25 +999,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
           ],
         ),
       ),
-    ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.05, end: 0, duration: 800.ms);
-  }
-
-  void _navigateToSection(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-        break;
-      case 1:
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, AppRoutes.mapa);
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, AppRoutes.historial);
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(context, AppRoutes.perfil);
-        break;
-    }
+    ).animate().fadeIn(duration: 800.ms).slideY(begin: 0.05, end: 0, duration: 800.ms    );
   }
 }

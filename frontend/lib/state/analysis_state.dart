@@ -16,6 +16,10 @@ class AnalysisState extends ChangeNotifier {
   Map<String, dynamic>? _lastResult;
   int? _lastCompletedId;
   String? _imageSource;
+  int _dataVersion = 0;
+  DateTime? _startedAt;
+  double _estimatedProgress = 0.0;
+  Timer? _progressTimer;
 
   int? get activeAnalysisId => _activeAnalysisId;
   String get status => _status;
@@ -25,6 +29,9 @@ class AnalysisState extends ChangeNotifier {
   Map<String, dynamic>? get lastResult => _lastResult;
   int? get lastCompletedId => _lastCompletedId;
   String? get imageSource => _imageSource;
+  int get dataVersion => _dataVersion;
+  DateTime? get startedAt => _startedAt;
+  double get estimatedProgress => _estimatedProgress;
 
   Future<void> startAnalysis({required File image, int? locationId, String imageSource = 'camera'}) async {
     if (_activeAnalysisId != null && _status == 'processing') {
@@ -37,10 +44,11 @@ class AnalysisState extends ChangeNotifier {
     _lastResult = null;
     _lastCompletedId = null;
     _imageSource = imageSource;
+    _startProgressEstimation();
     notifyListeners();
 
     try {
-      final resultJson = await _apiService.submitAnalysis(image, id_ubicacion: locationId);
+      final resultJson = await _apiService.submitAnalysis(image, id_ubicacion: locationId, imageSource: _imageSource ?? 'camera');
 
       if (resultJson['rechazado'] == true) {
         _status = 'rejected';
@@ -48,6 +56,7 @@ class AnalysisState extends ChangeNotifier {
         _activeAnalysisId = 0;
         _lastResult = Map<String, dynamic>.from(resultJson)..['source'] = _imageSource;
         _lastCompletedId = null;
+        _stopProgressEstimation();
         notifyListeners();
         return;
       }
@@ -59,6 +68,7 @@ class AnalysisState extends ChangeNotifier {
       if (analysisId == 0) {
         _status = 'failed';
         _error = 'El servidor no devolvió un ID de análisis válido';
+        _stopProgressEstimation();
         notifyListeners();
         return;
       }
@@ -81,9 +91,11 @@ class AnalysisState extends ChangeNotifier {
         _lastResult = Map<String, dynamic>.from(resultJson)..['source'] = _imageSource;
         _lastCompletedId = analysisId;
         NotificationsState.instance.completeAnalysis(analysisId, _extractTitle(resultJson));
+        _dataVersion++;
+        _stopProgressEstimation(completed: true);
+        _notifyAnalysisCompleted();
         notifyListeners();
       } else {
-        _status = 'processing';
         NotificationsState.instance.trackAnalysis(analysisId, 'Análisis en proceso');
         _startPolling(analysisId);
         notifyListeners();
@@ -94,6 +106,7 @@ class AnalysisState extends ChangeNotifier {
       if (_activeAnalysisId != null) {
         NotificationsState.instance.failAnalysis(_activeAnalysisId!);
       }
+      _stopProgressEstimation();
       notifyListeners();
     }
   }
@@ -123,11 +136,15 @@ class AnalysisState extends ChangeNotifier {
           } catch (_) {
             NotificationsState.instance.completeAnalysis(analysisId, 'Análisis completado');
           }
+          _dataVersion++;
+          _stopProgressEstimation(completed: true);
+          _notifyAnalysisCompleted();
           notifyListeners();
         } else if (estado == 'failed' || estado == 'error' || estado == 'fallido') {
           _status = 'failed';
           _pollTimer?.cancel();
           NotificationsState.instance.failAnalysis(analysisId);
+          _stopProgressEstimation();
           notifyListeners();
         }
       } catch (_) {
@@ -156,9 +173,13 @@ class AnalysisState extends ChangeNotifier {
         _lastResult = Map<String, dynamic>.from(resultJson)..['source'] = _imageSource;
         _lastCompletedId = _activeAnalysisId;
         NotificationsState.instance.completeAnalysis(_activeAnalysisId!, _extractTitle(resultJson));
+        _dataVersion++;
+        _stopProgressEstimation(completed: true);
+        _notifyAnalysisCompleted();
       } else if (estado == 'failed' || estado == 'error') {
         _status = 'failed';
         NotificationsState.instance.failAnalysis(_activeAnalysisId!);
+        _stopProgressEstimation();
       }
     } catch (e) {
       _error = e.toString();
@@ -169,11 +190,14 @@ class AnalysisState extends ChangeNotifier {
 
   Future<void> reset() {
     _pollTimer?.cancel();
+    _progressTimer?.cancel();
     _activeAnalysisId = null;
     _status = 'idle';
     _error = null;
     _lastResult = null;
     _lastCompletedId = null;
+    _startedAt = null;
+    _estimatedProgress = 0.0;
     notifyListeners();
     return Future.value();
   }
@@ -184,6 +208,48 @@ class AnalysisState extends ChangeNotifier {
     updated['visibilidad'] = 'shared';
     _lastResult = updated;
     notifyListeners();
+  }
+
+  static final List<VoidCallback> _analysisCompletedListeners = [];
+
+  static void addAnalysisCompletedListener(VoidCallback listener) {
+    _analysisCompletedListeners.add(listener);
+  }
+
+  static void removeAnalysisCompletedListener(VoidCallback listener) {
+    _analysisCompletedListeners.remove(listener);
+  }
+
+  void _notifyAnalysisCompleted() {
+    for (final listener in _analysisCompletedListeners) {
+      listener();
+    }
+  }
+
+  void _startProgressEstimation() {
+    _progressTimer?.cancel();
+    _startedAt = DateTime.now();
+    _estimatedProgress = 0.0;
+    _progressTimer = Timer.periodic(const Duration(milliseconds: 150), (_) {
+      if (_status != 'processing') {
+        _progressTimer?.cancel();
+        return;
+      }
+      final elapsed = DateTime.now().difference(_startedAt!).inMilliseconds;
+      final raw = 1.0 - (1.0 / (elapsed / 1800.0 + 1.0));
+      _estimatedProgress = (raw * 0.9).clamp(0.0, 0.9);
+      notifyListeners();
+    });
+  }
+
+  void _stopProgressEstimation({bool completed = false}) {
+    _progressTimer?.cancel();
+    _progressTimer = null;
+    _startedAt = null;
+    if (completed) {
+      _estimatedProgress = 1.0;
+      notifyListeners();
+    }
   }
 
   String _extractTitle(Map<String, dynamic> json) {

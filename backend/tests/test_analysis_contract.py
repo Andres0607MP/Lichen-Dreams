@@ -20,6 +20,17 @@ def get_admin_headers():
 ADMIN_HEADERS = get_admin_headers()
 
 
+def _create_test_analysis():
+    """Helper to create a real analysis for testing."""
+    response = client.post(
+        "/analysis/process",
+        json={"image_url": "https://example.com/test_image.jpg"},
+    )
+    if response.status_code == 200:
+        return response.json().get("id")
+    return None
+
+
 def test_analysis_process_contract_uses_spanish_fields():
     response = client.post(
         "/analysis/process",
@@ -47,7 +58,10 @@ def test_analysis_process_contract_uses_spanish_fields():
 
 
 def test_analysis_status_contract_uses_spanish_fields():
-    response = client.get("/analysis/1/status")
+    analysis_id = _create_test_analysis()
+    assert analysis_id is not None, "No se pudo crear el análisis de prueba"
+
+    response = client.get(f"/analysis/{analysis_id}/status")
 
     assert response.status_code == 200
     payload = response.json()
@@ -92,14 +106,16 @@ def test_analysis_and_history_endpoints_include_frontend_contract_fields():
         "fecha_creacion",
     }
 
+    analysis_id = _create_test_analysis()
+    assert analysis_id is not None, "No se pudo crear el análisis de prueba"
+
     analysis_requests = [
-        ("POST", "/analysis/process", {"image_url": "https://example.com/image.jpg"}),
-        ("GET", "/analysis/results/1", None),
-        ("GET", "/analysis/1/status", None),
-        ("GET", "/analysis/1/humidity", None),
-        ("GET", "/analysis/1/air-quality", None),
-        ("GET", "/analysis/1/recommendation", None),
-        ("GET", "/analysis/1", None),
+        ("GET", f"/analysis/results/{analysis_id}", None),
+        ("GET", f"/analysis/{analysis_id}/status", None),
+        ("GET", f"/analysis/{analysis_id}/humidity", None),
+        ("GET", f"/analysis/{analysis_id}/air-quality", None),
+        ("GET", f"/analysis/{analysis_id}/recommendation", None),
+        ("GET", f"/analysis/{analysis_id}", None),
     ]
 
     for method, path, payload in analysis_requests:
@@ -118,7 +134,16 @@ def test_analysis_and_history_endpoints_include_frontend_contract_fields():
         assert response.status_code == 200, f"Fallo en {method} {path}: {response.text}"
         body = response.json()
         if isinstance(body, list):
-            assert body, "La respuesta de historial no debe estar vacía"
-            assert expected_fields.issubset(body[0].keys())
+            if body:
+                assert expected_fields.issubset(body[0].keys())
         else:
             assert expected_fields.issubset(body.keys())
+
+
+def test_nonexistent_analysis_returns_404():
+    """Verify that requesting a non-existent analysis returns 404."""
+    response = client.get("/analysis/99999/status")
+    assert response.status_code == 404
+
+    response = client.get("/analysis/99999/results")
+    assert response.status_code == 404

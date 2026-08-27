@@ -15,6 +15,9 @@ class SettingsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -25,19 +28,19 @@ class SettingsSection extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textGray,
+              color: colorScheme.onSurfaceVariant,
               letterSpacing: 0.5,
             ),
           ),
         ),
         Container(
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: colorScheme.surface,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.borderColor, width: 1),
+            border: Border.all(color: colorScheme.outlineVariant, width: 1),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
+                color: colorScheme.shadow.withValues(alpha: 0.06),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -67,6 +70,7 @@ class SettingsHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = gradientColor ?? AppTheme.primaryGreen;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       width: double.infinity,
@@ -81,7 +85,7 @@ class SettingsHeader extends StatelessWidget {
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderColor, width: 1),
+        border: Border.all(color: colorScheme.outlineVariant, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -91,7 +95,7 @@ class SettingsHeader extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -99,7 +103,7 @@ class SettingsHeader extends StatelessWidget {
             subtitle,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppTheme.textGray,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -132,6 +136,8 @@ class SettingsTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -162,7 +168,7 @@ class SettingsTile extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: titleColor ?? AppTheme.textDark,
+                      color: titleColor ?? colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -172,7 +178,7 @@ class SettingsTile extends StatelessWidget {
                     subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGray,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -186,7 +192,7 @@ class SettingsTile extends StatelessWidget {
             ] else if (onTap != null && showChevron && titleColor == null) ...[
               Icon(
                 Icons.chevron_right_rounded,
-                color: AppTheme.textGray,
+                color: colorScheme.onSurfaceVariant,
                 size: 20,
               ),
             ],
@@ -215,6 +221,8 @@ class SettingsInfoTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       child: Row(
@@ -242,7 +250,7 @@ class SettingsInfoTile extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 if (subtitle != null) ...[
@@ -251,7 +259,7 @@ class SettingsInfoTile extends StatelessWidget {
                     subtitle!,
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppTheme.textGray,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -300,6 +308,8 @@ class SettingsSwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = onChanged != null;
+    final colorScheme = Theme.of(context).colorScheme;
+    final disabledColor = colorScheme.onSurfaceVariant.withValues(alpha: 0.5);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -314,7 +324,7 @@ class SettingsSwitchTile extends StatelessWidget {
             ),
             child: Icon(
               icon,
-              color: isEnabled ? iconColor : AppTheme.textGray,
+              color: isEnabled ? iconColor : colorScheme.onSurfaceVariant,
               size: 20,
             ),
           ),
@@ -328,7 +338,7 @@ class SettingsSwitchTile extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
-                    color: isEnabled ? AppTheme.textDark : AppTheme.textGray,
+                    color: isEnabled ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -336,7 +346,7 @@ class SettingsSwitchTile extends StatelessWidget {
                   subtitle,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppTheme.textGray,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -347,8 +357,8 @@ class SettingsSwitchTile extends StatelessWidget {
             onChanged: onChanged,
             activeThumbColor: AppTheme.primaryGreen,
             activeTrackColor: AppTheme.primaryGreen.withValues(alpha: 0.3),
-            inactiveThumbColor: AppTheme.textGray,
-            inactiveTrackColor: AppTheme.textGray.withValues(alpha: 0.2),
+            inactiveThumbColor: disabledColor,
+            inactiveTrackColor: colorScheme.onSurfaceVariant.withValues(alpha: 0.2),
           ),
         ],
       ),
@@ -362,6 +372,8 @@ class SettingsDialog {
     required String title,
     required String content,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -372,14 +384,14 @@ class SettingsDialog {
           title,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: colorScheme.onSurface,
           ),
         ),
         content: Text(
           content,
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: AppTheme.textGray,
+            color: colorScheme.onSurfaceVariant,
             height: 1.5,
           ),
         ),
@@ -407,6 +419,8 @@ class SettingsDialog {
     String cancelText = 'Cancelar',
     Color? titleColor,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -417,14 +431,14 @@ class SettingsDialog {
           title,
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700,
-            color: titleColor ?? AppTheme.textDark,
+            color: titleColor ?? colorScheme.onSurface,
           ),
         ),
         content: Text(
           content,
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: AppTheme.textGray,
+            color: colorScheme.onSurfaceVariant,
             height: 1.5,
           ),
         ),
@@ -434,7 +448,7 @@ class SettingsDialog {
             child: Text(
               cancelText,
               style: GoogleFonts.poppins(
-                color: AppTheme.textGray,
+                color: colorScheme.onSurfaceVariant,
               ),
             ),
           ),

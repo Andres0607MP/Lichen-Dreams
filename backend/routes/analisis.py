@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 import os
+import logging
 
 from fastapi import APIRouter, File, UploadFile, status, Request, Form, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -8,12 +9,13 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth.auth_service import get_current_user
-from models.core import Analisis, Usuario, HistorialActividad
+from models.core import Analisis, Usuario, HistorialActividad, ProcesamientoIA, Notificacion, Imagen
 from config.db import get_db
 from services.analysis_service import AnalysisService
 from services.upload_service import (
     validate_image,
     save_file,
+    resolve_file_path,
     IMAGE_TYPE_ANALYSIS,
 )
 
@@ -132,6 +134,7 @@ async def process_analysis(
     id_modelo: int = Form(default=1),
     id_dataset: int | None = Form(default=None),
     id_ubicacion: int | None = Form(default=None),
+    image_source: str | None = Form(default=None),
     current_user: Usuario = Depends(get_current_user),
 ):
     """
@@ -144,6 +147,7 @@ async def process_analysis(
     resolved_dataset = id_dataset
     resolved_usuario = current_user.id_usuario
     resolved_ubicacion = id_ubicacion
+    resolved_image_source = image_source if image_source in ('camera', 'gallery') else 'upload'
 
     if file is not None:
         content, ext = await validate_image(file)
@@ -173,12 +177,19 @@ async def process_analysis(
     if not resolved_image_url:
         raise HTTPException(status_code=422, detail="Debes enviar una imagen o image_url")
 
+    if resolved_image_source == "camera" and resolved_ubicacion is None:
+        raise HTTPException(
+            status_code=422,
+            detail="Los análisis desde cámara requieren una ubicación válida. Activa el GPS e intenta de nuevo.",
+        )
+
     return analysis_service.process_analysis(
         image_url=resolved_image_url,
         id_modelo=resolved_modelo,
         id_dataset=resolved_dataset,
         id_usuario=resolved_usuario,
         id_ubicacion=resolved_ubicacion,
+        image_source=resolved_image_source,
     )
 
 
@@ -219,6 +230,28 @@ def get_recommendation(analysis_id: int, current_user: Usuario = Depends(get_cur
     return analysis_service.get_recommendation(analysis_id=analysis_id, user_id=current_user.id_usuario)
 
 
+@router.get("/my", response_model=List[dict], summary="Obtener análisis del usuario")
+def get_my_analyses(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Obtiene todos los análisis del usuario autenticado."""
+    analyses = db.query(Analisis).filter(
+        Analisis.id_usuario == current_user.id_usuario
+    ).order_by(Analisis.fecha.desc()).all()
+
+    return [
+        {
+            "id_analisis": a.id_analisis,
+            "resultado_ia": a.resultado_ia,
+            "visibilidad": a.visibilidad,
+            "fecha_creacion": a.fecha.isoformat() if a.fecha else None,
+            "confianza": a.porcentaje_confianza,
+        }
+        for a in analyses
+    ]
+
+
 @router.get("/results/{analysis_id}", response_model=AnalysisResponse, summary="Obtener resultados completos")
 def get_results(analysis_id: int, current_user: Usuario = Depends(get_current_user)):
     """
@@ -243,7 +276,7 @@ def delete_analysis(
     current_user: Usuario = Depends(get_current_user)
 ):
     """
-    Elimina un análisis y sus imágenes asociadas.
+    Elimina un análisis y todos sus recursos asociados.
     Solo el propietario del análisis o un administrador pueden eliminarlo.
     """
     analysis = db.query(Analisis).filter(
@@ -257,9 +290,8 @@ def delete_analysis(
         )
 
     is_owner = analysis.id_usuario == current_user.id_usuario
-
     is_admin = (
-        current_user.rol 
+        current_user.rol
         and current_user.rol.nombre_rol == "admin"
     )
 
@@ -269,21 +301,51 @@ def delete_analysis(
             detail="No tienes permiso para eliminar este análisis"
         )
 
-    # Eliminar registros de historial asociados
-    for historial in db.query(HistorialActividad).filter(
-        HistorialActividad.id_usuario == analysis.id_usuario,
-        HistorialActividad.descripcion_accion.contains(f"analysis_id={analysis.id_analisis};")
-    ).all():
-        db.delete(historial)
+    try:
+        # Eliminar historial asociado (busca por analysis_id en descripcion_accion)
+        db.query(HistorialActividad).filter(
+            HistorialActividad.id_usuario == analysis.id_usuario,
+            HistorialActividad.descripcion_accion.like(f"%analysis_id={analysis_id};%")
+        ).delete(synchronize_session=False)
 
-    # Eliminar imágenes asociadas
-    for imagen in analysis.imagenes:
-        db.delete(imagen)
+        # Eliminar notificaciones asociadas a este análisis
+        db.query(Notificacion).filter(
+            Notificacion.id_usuario == analysis.id_usuario,
+            Notificacion.tipo_notificacion == "analysis",
+            Notificacion.mensaje.like(f"%analysis_id={analysis_id}|%")
+        ).delete(synchronize_session=False)
 
-    # Eliminar análisis
-    db.delete(analysis)
+        # Eliminar procesamiento IA asociado
+        db.query(ProcesamientoIA).filter(
+            ProcesamientoIA.id_analisis == analysis_id
+        ).delete(synchronize_session=False)
 
-    db.commit()
+        # Eliminar imágenes físicas y registros de imagen
+        imagenes = db.query(Imagen).filter(Imagen.id_analisis == analysis_id).all()
+        for imagen in imagenes:
+            for path_attr in ['ruta_imagen', 'url']:
+                path = getattr(imagen, path_attr, None)
+                if path:
+                    physical_path = resolve_file_path(path)
+                    if physical_path and physical_path.exists():
+                        try:
+                            physical_path.unlink()
+                        except OSError as e:
+                            logging.warning(f"No se pudo eliminar archivo {physical_path}: {e}")
+            db.delete(imagen)
+
+        # Eliminar análisis
+        db.delete(analysis)
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error al eliminar análisis {analysis_id}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error al eliminar el análisis: {str(e)}"
+        )
+
     return None
 
 
@@ -371,4 +433,37 @@ def share_analysis(
         "id_analisis": analysis_id,
         "message": "Análisis compartido exitosamente en el mapa",
         "visibilidad": analysis.visibilidad,
+    }
+
+
+class VisibilityRequest(BaseModel):
+    visibilidad: str
+
+
+@router.put("/{analysis_id}/visibility", response_model=dict, summary="Cambiar visibilidad del análisis")
+def update_visibility(
+    analysis_id: int,
+    request: VisibilityRequest,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Cambia la visibilidad de un análisis (private/shared)."""
+    if request.visibilidad not in ("private", "shared"):
+        raise HTTPException(status_code=400, detail="Visibilidad debe ser 'private' o 'shared'")
+
+    analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+
+    if analysis.id_usuario != current_user.id_usuario:
+        raise HTTPException(status_code=403, detail="No tienes permiso para modificar este análisis")
+
+    analysis.visibilidad = request.visibilidad
+    db.commit()
+    db.refresh(analysis)
+
+    return {
+        "id_analisis": analysis_id,
+        "visibilidad": analysis.visibilidad,
+        "message": f"Visibilidad actualizada a {request.visibilidad}"
     }

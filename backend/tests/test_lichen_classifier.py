@@ -61,10 +61,12 @@ def test_preprocess_image_missing():
 
 
 def test_predict_output_contract():
+    from ia.modelos.lichen_classifier import MODEL_PATH
+
     if SAMPLE_IMAGE is None:
         pytest.skip("No hay imágenes de dataset disponibles")
 
-    if not Path("backend/ia/modelos/lichen_model.keras").exists():
+    if not MODEL_PATH.exists():
         pytest.skip("Modelo IA no entrenado disponible")
 
     result = predict(str(SAMPLE_IMAGE))
@@ -82,10 +84,12 @@ def test_predict_output_contract():
 
 
 def test_predict_nombre_especie_is_none_when_no_species_model():
+    from ia.modelos.lichen_classifier import MODEL_PATH
+
     if SAMPLE_IMAGE is None:
         pytest.skip("No hay imágenes de dataset disponibles")
 
-    if not Path("backend/ia/modelos/lichen_model.keras").exists():
+    if not MODEL_PATH.exists():
         pytest.skip("Modelo IA no entrenado disponible")
 
     result = predict(str(SAMPLE_IMAGE))
@@ -93,12 +97,14 @@ def test_predict_nombre_especie_is_none_when_no_species_model():
 
 
 def test_predict_invalid_image_path():
+    from ia.modelos.lichen_classifier import MODEL_PATH
+
     try:
         import tensorflow  # noqa: F401
     except ModuleNotFoundError:
         pytest.skip("TensorFlow no instalado en el entorno de pruebas")
 
-    if not Path("backend/ia/modelos/lichen_model.keras").exists():
+    if not MODEL_PATH.exists():
         pytest.skip("Modelo IA no entrenado disponible")
 
     with pytest.raises((FileNotFoundError, ValueError)):

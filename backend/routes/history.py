@@ -5,7 +5,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from config.db import get_db
-from models.core import Analisis, HistorialActividad, Usuario
+from models.core import Analisis, HistorialActividad, Usuario, ProcesamientoIA, Notificacion, Imagen
 from auth.auth_service import get_current_user
 from services.analysis_service import AnalysisService
 
@@ -138,7 +138,7 @@ def delete_history(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Elimina un registro del historial del usuario autenticado o un admin."""
+    """Elimina un registro del historial y su análisis asociado si existe."""
     registro = db.query(HistorialActividad).filter(
         HistorialActividad.id_historial == history_id
     ).first()
@@ -152,6 +152,7 @@ def delete_history(
     if not (is_owner or is_admin):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No tienes permiso para eliminar este registro")
 
+    # Extraer analysis_id del historial
     analysis_id = None
     if registro.descripcion_accion:
         for part in registro.descripcion_accion.split(";"):
@@ -165,11 +166,46 @@ def delete_history(
                         analysis_id = None
                     break
 
-    if analysis_id is not None:
-        analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
-        if analysis:
-            db.delete(analysis)
+    try:
+        # Eliminar historial
+        db.delete(registro)
 
-    db.delete(registro)
-    db.commit()
+        # Si hay análisis asociado, eliminarlo también
+        if analysis_id is not None:
+            analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+            if analysis:
+                # Eliminar notificaciones asociadas
+                db.query(Notificacion).filter(
+                    Notificacion.id_usuario == analysis.id_usuario,
+                    Notificacion.tipo_notificacion == "analysis",
+                    Notificacion.mensaje.like(f"%analysis_id={analysis_id}|%")
+                ).delete(synchronize_session=False)
+
+                # Eliminar procesamiento IA
+                db.query(ProcesamientoIA).filter(
+                    ProcesamientoIA.id_analisis == analysis_id
+                ).delete(synchronize_session=False)
+
+                # Eliminar imágenes físicas y registros
+                from services.upload_service import resolve_file_path
+                imagenes = db.query(Imagen).filter(Imagen.id_analisis == analysis_id).all()
+                for imagen in imagenes:
+                    for path_attr in ['ruta_imagen', 'url']:
+                        path = getattr(imagen, path_attr, None)
+                        if path:
+                            physical_path = resolve_file_path(path)
+                            if physical_path and physical_path.exists():
+                                try:
+                                    physical_path.unlink()
+                                except OSError:
+                                    pass
+                    db.delete(imagen)
+
+                db.delete(analysis)
+
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error al eliminar: {str(e)}")
+
     return None

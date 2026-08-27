@@ -9,7 +9,7 @@ from sqlalchemy import or_
 
 from config.db import get_db
 from config.settings import normalize_image_path
-from models.core import LiquenPedia, Usuario
+from models.core import LiquenPedia, Usuario, CategoriaArticulo
 from models.validations import ArticuloCreate, ArticuloUpdate
 from auth.auth_service import get_current_user, get_current_user_optional
 from auth.jwt_handler import decode_token
@@ -85,15 +85,22 @@ def list_articles(
     # Paginación
     articulos = query.offset(skip).limit(limit).all()
     
-    # Convertir a dict
+    # Convertir a dict con información de categoría
     result = []
     for art in articulos:
+        categoria_nombre = None
+        if art.id_categoria:
+            cat_obj = db.query(CategoriaArticulo).filter(CategoriaArticulo.id_categoria == art.id_categoria).first()
+            if cat_obj:
+                categoria_nombre = cat_obj.nombre_categoria
         result.append({
             "id_articulo": art.id_articulo,
             "titulo": art.titulo,
             "contenido": art.contenido,
             "autor": art.autor,
             "categoria": art.categoria,
+            "id_categoria": art.id_categoria,
+            "categoria_nombre": categoria_nombre,
             "imagen_articulo": art.imagen_articulo,
             "estado_publicacion": art.estado_publicacion,
             "fecha_publicacion": art.fecha_publicacion,
@@ -124,6 +131,7 @@ def create_article(
         contenido=payload.contenido,
         autor=payload.autor,
         categoria=payload.categoria,
+        id_categoria=payload.id_categoria,
         imagen_articulo=normalize_image_path(payload.imagen_articulo),
         estado_publicacion=payload.estado_publicacion or 'draft'
     )
@@ -131,12 +139,20 @@ def create_article(
     db.commit()
     db.refresh(article)
     
+    categoria_nombre = None
+    if article.id_categoria:
+        cat_obj = db.query(CategoriaArticulo).filter(CategoriaArticulo.id_categoria == article.id_categoria).first()
+        if cat_obj:
+            categoria_nombre = cat_obj.nombre_categoria
+    
     return {
         "id_articulo": article.id_articulo,
         "titulo": article.titulo,
         "contenido": article.contenido,
         "autor": article.autor,
         "categoria": article.categoria,
+        "id_categoria": article.id_categoria,
+        "categoria_nombre": categoria_nombre,
         "imagen_articulo": article.imagen_articulo,
         "estado_publicacion": article.estado_publicacion,
         "fecha_publicacion": article.fecha_publicacion,
@@ -161,12 +177,20 @@ def get_article(
     if not is_admin and art.estado_publicacion != 'published':
         raise HTTPException(status_code=403, detail="No tienes permiso para ver este artículo")
     
+    categoria_nombre = None
+    if art.id_categoria:
+        cat_obj = db.query(CategoriaArticulo).filter(CategoriaArticulo.id_categoria == art.id_categoria).first()
+        if cat_obj:
+            categoria_nombre = cat_obj.nombre_categoria
+    
     return {
         "id_articulo": art.id_articulo,
         "titulo": art.titulo,
         "contenido": art.contenido,
         "autor": art.autor,
         "categoria": art.categoria,
+        "id_categoria": art.id_categoria,
+        "categoria_nombre": categoria_nombre,
         "imagen_articulo": art.imagen_articulo,
         "estado_publicacion": art.estado_publicacion,
         "fecha_publicacion": art.fecha_publicacion,
@@ -206,12 +230,20 @@ def update_article(
     db.commit()
     db.refresh(art)
     
+    categoria_nombre = None
+    if art.id_categoria:
+        cat_obj = db.query(CategoriaArticulo).filter(CategoriaArticulo.id_categoria == art.id_categoria).first()
+        if cat_obj:
+            categoria_nombre = cat_obj.nombre_categoria
+    
     return {
         "id_articulo": art.id_articulo,
         "titulo": art.titulo,
         "contenido": art.contenido,
         "autor": art.autor,
         "categoria": art.categoria,
+        "id_categoria": art.id_categoria,
+        "categoria_nombre": categoria_nombre,
         "imagen_articulo": art.imagen_articulo,
         "estado_publicacion": art.estado_publicacion,
         "fecha_publicacion": art.fecha_publicacion,

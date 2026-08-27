@@ -80,6 +80,11 @@ def predict(image_path: str) -> dict:
     nivel_contaminacion = CONTAMINATION_MAP[categoria]
     calidad_aire = AIR_QUALITY_MAP[categoria]
 
+    print(f"[PREDICT] model_path={MODEL_PATH}")
+    print(f"[PREDICT] image_path={image_path}")
+    print(f"[PREDICT] class_index={class_index} categoria={categoria} confidence={confidence}")
+    print(f"[PREDICT] predictions={predictions[0].tolist()}")
+
     return {
         "categoria": categoria,
         "confianza": confidence,

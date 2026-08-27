@@ -4,6 +4,8 @@ class LiquenpediaArticle {
   final String contenido;
   final String autor;
   final String categoria;
+  final int? idCategoria;
+  final String? categoriaNombre;
   final String? imagenArticulo;
   final String estadoPublicacion;
   final DateTime? fechaPublicacion;
@@ -15,6 +17,8 @@ class LiquenpediaArticle {
     required this.contenido,
     required this.autor,
     required this.categoria,
+    this.idCategoria,
+    this.categoriaNombre,
     this.imagenArticulo,
     required this.estadoPublicacion,
     this.fechaPublicacion,
@@ -28,6 +32,8 @@ class LiquenpediaArticle {
       contenido: json['contenido'] as String? ?? '',
       autor: json['autor'] as String? ?? '',
       categoria: json['categoria'] as String? ?? '',
+      idCategoria: json['id_categoria'] as int?,
+      categoriaNombre: json['categoria_nombre'] as String?,
       imagenArticulo: json['imagen_articulo']?.toString(),
       estadoPublicacion: json['estado_publicacion'] as String? ?? 'borrador',
       fechaPublicacion: json['fecha_publicacion'] != null
@@ -46,6 +52,7 @@ class LiquenpediaArticle {
       'contenido': contenido,
       'autor': autor,
       'categoria': categoria,
+      'id_categoria': idCategoria,
       'imagen_articulo': imagenArticulo,
       'estado_publicacion': estadoPublicacion,
       'fecha_publicacion': fechaPublicacion?.toIso8601String(),
@@ -59,6 +66,8 @@ class LiquenpediaArticle {
     String? contenido,
     String? autor,
     String? categoria,
+    int? idCategoria,
+    String? categoriaNombre,
     String? imagenArticulo,
     String? estadoPublicacion,
     DateTime? fechaPublicacion,
@@ -70,6 +79,8 @@ class LiquenpediaArticle {
       contenido: contenido ?? this.contenido,
       autor: autor ?? this.autor,
       categoria: categoria ?? this.categoria,
+      idCategoria: idCategoria ?? this.idCategoria,
+      categoriaNombre: categoriaNombre ?? this.categoriaNombre,
       imagenArticulo: imagenArticulo ?? this.imagenArticulo,
       estadoPublicacion: estadoPublicacion ?? this.estadoPublicacion,
       fechaPublicacion: fechaPublicacion ?? this.fechaPublicacion,

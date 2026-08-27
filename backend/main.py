@@ -110,6 +110,12 @@ except ImportError as e:
     print(f"Warning: liquenpedia router not found - {e}")
 
 try:
+    from routes.categorias_liquenpedia import router as categorias_liquenpedia_router
+    app.include_router(categorias_liquenpedia_router, prefix="/categorias-liquenpedia", tags=["CategoriasLiquenPedia"])
+except ImportError as e:
+    print(f"Warning: categorias liquenpedia router not found - {e}")
+
+try:
     from routes.dashboard import router as dashboard_router
     app.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard"])
 except ImportError as e:
@@ -179,34 +185,6 @@ def startup():
             db.add(dataset)
 
         db.commit()
-
-        if not db.query(Analisis).filter(Analisis.id_analisis == 1).first():
-            seed_analysis = Analisis(
-                id_analisis=1,
-                id_usuario=admin_user.id_usuario,
-                id_modelo=modelo.id_modelo,
-                id_dataset=dataset.id_dataset,
-                resultado_ia='liquen saludable',
-                porcentaje_confianza=0.93,
-                nivel_contaminacion='baja',
-                calidad_aire='moderada',
-                estado_liquen='completado',
-                tiempo_procesamiento=1.2,
-                observaciones='Buena calidad de aire en la zona',
-                estado_validacion='completed',
-                temperatura_ambiente=22.0,
-                humedad_relativa=65.5,
-            )
-            db.add(seed_analysis)
-            db.flush()
-
-            seed_historial = HistorialActividad(
-                accion_realizada='analisis_guardado',
-                descripcion_accion=f'analysis_id={seed_analysis.id_analisis}; location=',
-                id_usuario=seed_analysis.id_usuario,
-            )
-            db.add(seed_historial)
-            db.commit()
     except Exception as e:
         print('Error inicializando la base de datos:', e)
     finally:

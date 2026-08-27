@@ -10,8 +10,8 @@ import '../services/api_service.dart';
 import '../state/profile_state.dart';
 import '../state/auth_state.dart';
 import '../widgets/lichen_scaffold.dart';
+import '../widgets/app_theme.dart';
 import '../services/navigation_service.dart';
-import '../routes/route_names.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -30,12 +30,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final TextEditingController _numeroDocumentoController = TextEditingController();
   final TextEditingController _fechaNacimientoController = TextEditingController();
   File? _selectedImage;
-  int _selectedIndex = 4;
   Map<String, dynamic>? _originalProfile;
 
   @override
   void initState() {
     super.initState();
+    LichenNavigation.instance.sync(4);
     Future.microtask(() {
       if (mounted) {
         final profileState = context.read<ProfileState>();
@@ -46,54 +46,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  void _navigateToSection(int index) {
-    switch (index) {
-      case 0:
-        Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(context, AppRoutes.analisis);
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(context, AppRoutes.mapa);
-        break;
-      case 3:
-        Navigator.pushReplacementNamed(context, AppRoutes.historial);
-        break;
-    }
+  void _navigateToTab(int index) {
+    LichenNavigation.instance.navigateToTab(context, index);
   }
 
   Future<void> _onBottomNavTap(int index) async {
     if (_hasPendingChanges()) {
       final shouldSave = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Cambios sin guardar'),
-          content: const Text('Tienes cambios pendientes en tu perfil. ¿Qué deseas hacer?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancelar'),
+      builder: (context) => AlertDialog(
+        title: const Text('Cambios sin guardar'),
+        content: const Text('Tienes cambios pendientes en tu perfil. ¿Qué deseas hacer?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context, false);
+              await _discardAndNavigate(index);
+            },
+            child: const Text('Salir sin guardar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context, true);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+              foregroundColor: Colors.white,
             ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context, false);
-                await _discardAndNavigate(index);
-              },
-              child: const Text('Salir sin guardar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                Navigator.pop(context, true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2F7D32),
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Guardar cambios'),
-            ),
-          ],
-        ),
+            child: const Text('Guardar cambios'),
+          ),
+        ],
+      ),
       );
 
       if (shouldSave == true) {
@@ -104,17 +91,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    LichenNavigation.instance.navigateTo(index);
-    setState(() => _selectedIndex = index);
-    _navigateToSection(index);
+    _navigateToTab(index);
   }
 
   Future<void> _saveAndNavigate(int index) async {
     await _updateProfile();
     if (!mounted) return;
-    LichenNavigation.instance.navigateTo(index);
-    setState(() => _selectedIndex = index);
-    _navigateToSection(index);
+    _navigateToTab(index);
   }
 
   Future<void> _discardAndNavigate(int index) async {
@@ -124,9 +107,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
     _loadProfile();
     if (!mounted) return;
-    LichenNavigation.instance.navigateTo(index);
-    setState(() => _selectedIndex = index);
-    _navigateToSection(index);
+    _navigateToTab(index);
   }
 
   @override
@@ -254,8 +235,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFF2F7D32),
+            colorScheme: Theme.of(context).colorScheme.copyWith(
+              primary: AppTheme.primaryGreen,
               onPrimary: Colors.white,
             ),
           ),
@@ -298,7 +279,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return LichenScaffold(
       apiService: Provider.of<ApiService>(context, listen: false),
       showBottomNav: true,
-      bottomNavIndex: _selectedIndex,
       onBottomNavTap: _onBottomNavTap,
       showParticleBackground: false,
       body: SingleChildScrollView(
@@ -313,14 +293,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     height: 140,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF2F7D32), Color(0xFF1B5E20)],
+                      gradient: LinearGradient(
+                        colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF2F7D32).withValues(alpha: 0.4),
+                          color: AppTheme.primaryGreen.withValues(alpha: 0.4),
                           blurRadius: 15,
                           offset: const Offset(0, 6),
                         ),
@@ -329,392 +309,393 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: _buildImage(profile),
                   ),
                   const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F7D32),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () => _pickImage(ImageSource.gallery),
-                        icon: const Icon(Icons.photo_library_rounded),
-                        label: const Text('Galería'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF2F7D32),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        onPressed: () => _pickImage(ImageSource.camera),
-                        icon: const Icon(Icons.camera_alt_rounded),
-                        label: const Text('Cámara'),
-                      ),
-                    ],
-                  ),
-                  if (_selectedImage != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2F7D32).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Imagen seleccionada (se guardará al presionar "Guardar cambios")',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: const Color(0xFF2F7D32),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(height: 36),
+                   Row(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       ElevatedButton.icon(
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: AppTheme.primaryGreen,
+                           shape: RoundedRectangleBorder(
+                             borderRadius: BorderRadius.circular(10),
+                           ),
+                         ),
+                         onPressed: () => _pickImage(ImageSource.gallery),
+                         icon: const Icon(Icons.photo_library_rounded),
+                         label: const Text('Galería'),
+                       ),
+                       const SizedBox(width: 12),
+                       ElevatedButton.icon(
+                         style: ElevatedButton.styleFrom(
+                           backgroundColor: AppTheme.primaryGreen,
+                           shape: RoundedRectangleBorder(
+                             borderRadius: BorderRadius.circular(10),
+                           ),
+                         ),
+                         onPressed: () => _pickImage(ImageSource.camera),
+                         icon: const Icon(Icons.camera_alt_rounded),
+                         label: const Text('Cámara'),
+                       ),
+                     ],
+                   ),
+                   if (_selectedImage != null) ...[
+                     const SizedBox(height: 12),
+                     Container(
+                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                       decoration: BoxDecoration(
+                         color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                         borderRadius: BorderRadius.circular(8),
+                       ),
+                       child: Text(
+                         'Imagen seleccionada (se guardará al presionar "Guardar cambios")',
+                         style: TextStyle(
+                           fontSize: 12,
+                           color: AppTheme.primaryGreen,
+                           fontWeight: FontWeight.w500,
+                         ),
+                       ),
+                     ),
+                   ],
+                 ],
+               ),
+             ),
+             const SizedBox(height: 36),
 
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFE1E9DD),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Información Personal',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2F7D32),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEditableField(
-                    controller: _nameController,
-                    label: 'Nombre',
-                    icon: Icons.person_rounded,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildEditableField(
-                    controller: _lastNameController,
-                    label: 'Apellido',
-                    icon: Icons.person_rounded,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildEditableField(
-                    controller: _emailController,
-                    label: 'Correo Electrónico',
-                    icon: Icons.email_rounded,
-                    readOnly: true,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildEditableField(
-                    controller: _phoneController,
-                    label: 'Teléfono',
-                    icon: Icons.phone_rounded,
-                    keyboardType: TextInputType.phone,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+             Container(
+               padding: const EdgeInsets.all(20),
+               decoration: BoxDecoration(
+                 color: Theme.of(context).colorScheme.surface,
+                 borderRadius: BorderRadius.circular(16),
+                 border: Border.all(
+                   color: Theme.of(context).colorScheme.outlineVariant,
+                   width: 1.5,
+                 ),
+                 boxShadow: [
+                   BoxShadow(
+                     color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
+                     blurRadius: 10,
+                     offset: const Offset(0, 4),
+                   ),
+                 ],
+               ),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Text(
+                     'Información Personal',
+                     style: TextStyle(
+                       fontSize: 18,
+                       fontWeight: FontWeight.bold,
+                       color: AppTheme.primaryGreen,
+                     ),
+                   ),
+                   const SizedBox(height: 16),
+                   _buildEditableField(
+                     controller: _nameController,
+                     label: 'Nombre',
+                     icon: Icons.person_rounded,
+                   ),
+                   const SizedBox(height: 14),
+                   _buildEditableField(
+                     controller: _lastNameController,
+                     label: 'Apellido',
+                     icon: Icons.person_rounded,
+                   ),
+                   const SizedBox(height: 14),
+                   _buildEditableField(
+                     controller: _emailController,
+                     label: 'Correo Electrónico',
+                     icon: Icons.email_rounded,
+                     readOnly: true,
+                   ),
+                   const SizedBox(height: 14),
+                   _buildEditableField(
+                     controller: _phoneController,
+                     label: 'Teléfono',
+                     icon: Icons.phone_rounded,
+                     keyboardType: TextInputType.phone,
+                   ),
+                 ],
+               ),
+             ),
+             const SizedBox(height: 20),
 
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFE1E9DD),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Documentación',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2F7D32),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildEditableField(
-                    controller: _tipoDocumentoController,
-                    label: 'Tipo de Documento (CC, TI, CE, PASAPORTE)',
-                    icon: Icons.card_giftcard_rounded,
-                  ),
-                  const SizedBox(height: 14),
-                  _buildEditableField(
-                    controller: _numeroDocumentoController,
-                    label: 'Número de Documento',
-                    icon: Icons.numbers_rounded,
-                    keyboardType: TextInputType.number,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 20),
+             Container(
+               padding: const EdgeInsets.all(20),
+               decoration: BoxDecoration(
+                 color: Theme.of(context).colorScheme.surface,
+                 borderRadius: BorderRadius.circular(16),
+                 border: Border.all(
+                   color: Theme.of(context).colorScheme.outlineVariant,
+                   width: 1.5,
+                 ),
+                 boxShadow: [
+                   BoxShadow(
+                     color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
+                     blurRadius: 10,
+                     offset: const Offset(0, 4),
+                   ),
+                 ],
+               ),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Text(
+                     'Documentación',
+                     style: TextStyle(
+                       fontSize: 18,
+                       fontWeight: FontWeight.bold,
+                       color: AppTheme.primaryGreen,
+                     ),
+                   ),
+                   const SizedBox(height: 16),
+                   _buildEditableField(
+                     controller: _tipoDocumentoController,
+                     label: 'Tipo de Documento (CC, TI, CE, PASAPORTE)',
+                     icon: Icons.card_giftcard_rounded,
+                   ),
+                   const SizedBox(height: 14),
+                   _buildEditableField(
+                     controller: _numeroDocumentoController,
+                     label: 'Número de Documento',
+                     icon: Icons.numbers_rounded,
+                     keyboardType: TextInputType.number,
+                   ),
+                 ],
+               ),
+             ),
+             const SizedBox(height: 20),
 
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: const Color(0xFFE1E9DD),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Información Adicional',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF2F7D32),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  GestureDetector(
-                    onTap: _selectDate,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: const Color(0xFFE1E9DD),
-                          width: 1.5,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        color: Colors.grey.shade50,
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.cake_rounded,
-                            color: Color(0xFF2F7D32),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Fecha de Nacimiento',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _fechaNacimientoController.text.isEmpty
-                                      ? 'Selecciona una fecha'
-                                      : _fechaNacimientoController.text,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.calendar_today_rounded,
-                            color: Color(0xFF2F7D32),
-                            size: 20,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
+             Container(
+               padding: const EdgeInsets.all(20),
+               decoration: BoxDecoration(
+                 color: Theme.of(context).colorScheme.surface,
+                 borderRadius: BorderRadius.circular(16),
+                 border: Border.all(
+                   color: Theme.of(context).colorScheme.outlineVariant,
+                   width: 1.5,
+                 ),
+                 boxShadow: [
+                   BoxShadow(
+                     color: Theme.of(context).colorScheme.shadow.withValues(alpha: 0.08),
+                     blurRadius: 10,
+                     offset: const Offset(0, 4),
+                   ),
+                 ],
+               ),
+               child: Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                 children: [
+                   Text(
+                     'Información Adicional',
+                     style: TextStyle(
+                       fontSize: 18,
+                       fontWeight: FontWeight.bold,
+                       color: AppTheme.primaryGreen,
+                     ),
+                   ),
+                   const SizedBox(height: 16),
+                   GestureDetector(
+                     onTap: _selectDate,
+                     child: Container(
+                       padding: const EdgeInsets.symmetric(
+                         horizontal: 16,
+                         vertical: 14,
+                       ),
+                       decoration: BoxDecoration(
+                         border: Border.all(
+                           color: Theme.of(context).colorScheme.outlineVariant,
+                           width: 1.5,
+                         ),
+                         borderRadius: BorderRadius.circular(12),
+                         color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                       ),
+                       child: Row(
+                         children: [
+                           Icon(
+                             Icons.cake_rounded,
+                             color: AppTheme.primaryGreen,
+                           ),
+                           const SizedBox(width: 12),
+                           Expanded(
+                             child: Column(
+                               crossAxisAlignment: CrossAxisAlignment.start,
+                               children: [
+                                 Text(
+                                   'Fecha de Nacimiento',
+                                   style: TextStyle(
+                                     fontSize: 12,
+                                     color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                     fontWeight: FontWeight.w500,
+                                   ),
+                                 ),
+                                 const SizedBox(height: 4),
+                                 Text(
+                                   _fechaNacimientoController.text.isEmpty
+                                       ? 'Selecciona una fecha'
+                                       : _fechaNacimientoController.text,
+                                   style: TextStyle(
+                                     fontSize: 16,
+                                     color: Theme.of(context).colorScheme.onSurface,
+                                     fontWeight: FontWeight.w500,
+                                   ),
+                                 ),
+                               ],
+                             ),
+                           ),
+                           Icon(
+                             Icons.calendar_today_rounded,
+                             color: AppTheme.primaryGreen,
+                             size: 20,
+                           ),
+                         ],
+                       ),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+             const SizedBox(height: 28),
 
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF2F7D32), Color(0xFF1B5E20)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF2F7D32).withValues(alpha: 0.35),
-                      blurRadius: 15,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: isLoading ? null : _updateProfile,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Center(
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.save_rounded, color: Colors.white),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Guardar Cambios',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
+             SizedBox(
+               width: double.infinity,
+               height: 56,
+               child: Container(
+                 decoration: BoxDecoration(
+                   gradient: LinearGradient(
+                     colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
+                     begin: Alignment.topLeft,
+                     end: Alignment.bottomRight,
+                   ),
+                   borderRadius: BorderRadius.circular(12),
+                   boxShadow: [
+                     BoxShadow(
+                       color: AppTheme.primaryGreen.withValues(alpha: 0.35),
+                       blurRadius: 15,
+                       offset: const Offset(0, 6),
+                     ),
+                   ],
+                 ),
+                 child: Material(
+                   color: Colors.transparent,
+                   child: InkWell(
+                     onTap: isLoading ? null : _updateProfile,
+                     borderRadius: BorderRadius.circular(12),
+                     child: Center(
+                       child: isLoading
+                           ? SizedBox(
+                               width: 24,
+                               height: 24,
+                               child: CircularProgressIndicator(
+                                 strokeWidth: 2.5,
+                                 valueColor: AlwaysStoppedAnimation<Color>(
+                                   Theme.of(context).colorScheme.onPrimary,
+                                 ),
+                               ),
+                             )
+                           : Row(
+                               mainAxisAlignment: MainAxisAlignment.center,
+                               children: [
+                                 Icon(Icons.save_rounded, color: Theme.of(context).colorScheme.onPrimary),
+                                 const SizedBox(width: 12),
+                                 Text(
+                                   'Guardar Cambios',
+                                   style: TextStyle(
+                                     fontSize: 16,
+                                     fontWeight: FontWeight.bold,
+                                     color: Theme.of(context).colorScheme.onPrimary,
+                                   ),
+                                 ),
+                               ],
+                             ),
+                     ),
+                   ),
+                 ),
+               ),
+             ),
+             const SizedBox(height: 16),
 
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: Colors.blue.shade200,
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.blue.shade700),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Registrado: ${profile['fecha_registro'] ?? 'N/A'}',
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+             Container(
+               padding: const EdgeInsets.all(12),
+               decoration: BoxDecoration(
+                 color: Theme.of(context).colorScheme.secondaryContainer,
+                 borderRadius: BorderRadius.circular(10),
+                 border: Border.all(
+                   color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.3),
+                   width: 1,
+                 ),
+               ),
+               child: Row(
+                 children: [
+                   Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                   const SizedBox(width: 12),
+                   Expanded(
+                     child: Text(
+                       'Registrado: ${profile['fecha_registro'] ?? 'N/A'}',
+                       style: TextStyle(
+                         color: Theme.of(context).colorScheme.onSecondaryContainer,
+                         fontSize: 12,
+                         fontWeight: FontWeight.w500,
+                       ),
+                     ),
+                   ),
+                 ],
+               ),
+             ),
+           ],
+         ),
+       ),
+     );
+   }
 
-  Widget _buildEditableField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool readOnly = false,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      readOnly: readOnly,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: const Color(0xFF2F7D32)),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE1E9DD),
-            width: 1.5,
+   Widget _buildEditableField({
+     required TextEditingController controller,
+     required String label,
+     required IconData icon,
+     bool readOnly = false,
+     TextInputType keyboardType = TextInputType.text,
+   }) {
+     final colorScheme = Theme.of(context).colorScheme;
+     return TextField(
+       controller: controller,
+       readOnly: readOnly,
+       keyboardType: keyboardType,
+       decoration: InputDecoration(
+         labelText: label,
+         prefixIcon: Icon(icon, color: AppTheme.primaryGreen),
+         border: OutlineInputBorder(
+           borderRadius: BorderRadius.circular(12),
+           borderSide: BorderSide(
+             color: colorScheme.outlineVariant,
+             width: 1.5,
+           ),
+         ),
+         enabledBorder: OutlineInputBorder(
+           borderRadius: BorderRadius.circular(12),
+           borderSide: BorderSide(
+             color: colorScheme.outlineVariant,
+             width: 1.5,
+           ),
+         ),
+         focusedBorder: OutlineInputBorder(
+           borderRadius: BorderRadius.circular(12),
+           borderSide: BorderSide(
+             color: AppTheme.primaryGreen,
+             width: 2,
+           ),
+         ),
+         filled: true,
+         fillColor: readOnly ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+         labelStyle: TextStyle(
+           color: colorScheme.onSurfaceVariant,
+           fontWeight: FontWeight.w500,
+         ),
+         contentPadding: const EdgeInsets.symmetric(
+           vertical: 14,
+           horizontal: 12,
           ),
         ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFFE1E9DD),
-            width: 1.5,
-          ),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: Color(0xFF2F7D32),
-            width: 2,
-          ),
-        ),
-        filled: true,
-        fillColor: readOnly ? Colors.grey.shade100 : Colors.white,
-        labelStyle: TextStyle(
-          color: Colors.grey.shade600,
-          fontWeight: FontWeight.w500,
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 14,
-          horizontal: 12,
-        ),
-      ),
-    );
-  }
+      );
+   }
 }
 
 class _CachedProfileImage extends StatefulWidget {

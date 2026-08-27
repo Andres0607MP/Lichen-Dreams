@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
+import '../screens/forgot_password_screen.dart';
+import '../screens/reset_password_screen.dart';
+import '../screens/verify_email_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/dashboard_screen.dart';
 import '../screens/admin_users_screen.dart';
@@ -14,7 +17,6 @@ import '../screens/developer_map_screen.dart';
 import '../screens/liquenpedia_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/location_screen.dart';
-import '../screens/species_screen.dart';
 import '../screens/settings_screen.dart';
 import '../screens/settings/account_settings_screen.dart';
 import '../screens/settings/privacy_settings_screen.dart';
@@ -22,12 +24,22 @@ import '../screens/settings/notification_settings_screen.dart';
 import '../screens/settings/appearance_settings_screen.dart';
 import '../screens/settings/information_settings_screen.dart';
 import '../screens/settings/legal_settings_screen.dart';
+import '../screens/catalogs_screen.dart';
+import '../screens/admin_species_screen.dart';
+import '../screens/admin_zones_screen.dart';
 import 'route_names.dart';
 
 class AppRouter {
   static Map<String, WidgetBuilder> routes = {
     AppRoutes.login: (_) => const LoginScreen(),
     AppRoutes.register: (_) => const RegisterScreen(),
+    AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
+    AppRoutes.resetPassword: (_) => const ResetPasswordScreen(),
+    AppRoutes.verifyEmail: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final email = args is String ? args : '';
+      return VerifyEmailScreen(email: email);
+    },
     AppRoutes.loading: (_) => const LoadingScreen(),
     AppRoutes.dashboard: (_) => const DashboardScreen(),
     AppRoutes.adminUsers: (_) => const AdminUsersScreen(),
@@ -44,7 +56,7 @@ class AppRouter {
     AppRoutes.perfil: (_) => const ProfileScreen(),
     AppRoutes.liquenpedia: (_) => const LiquenpediaScreen(),
     AppRoutes.location: (_) => const LocationScreen(),
-    AppRoutes.species: (_) => const SpeciesScreen(),
+    AppRoutes.species: (_) => const AdminSpeciesScreen(),
     AppRoutes.configuracion: (_) => const SettingsScreen(),
     AppRoutes.accountSettings: (_) => const AccountSettingsScreen(),
     AppRoutes.privacySettings: (_) => const PrivacySettingsScreen(),
@@ -52,6 +64,9 @@ class AppRouter {
     AppRoutes.appearanceSettings: (_) => const AppearanceSettingsScreen(),
     AppRoutes.informationSettings: (_) => const InformationSettingsScreen(),
     AppRoutes.legalSettings: (_) => const LegalSettingsScreen(),
+    AppRoutes.catalogsSettings: (_) => const CatalogsScreen(),
+    AppRoutes.adminSpeciesSettings: (_) => const AdminSpeciesScreen(),
+    AppRoutes.adminZonesSettings: (_) => const AdminZonesScreen(),
   };
 
   static Route<dynamic> generateRoute(RouteSettings settings) {

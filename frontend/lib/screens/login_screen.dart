@@ -191,20 +191,10 @@ class _LoginScreenState extends State<LoginScreen>
                         child: Container(
                           padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(
-                              255,
-                              255,
-                              255,
-                              255,
-                            ).withValues(alpha: 0.72),
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
                             borderRadius: AppTheme.cardRadius,
                             border: Border.all(
-                              color: const Color.fromARGB(
-                                255,
-                                69,
-                                150,
-                                96,
-                              ).withValues(alpha: 0.4),
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
                               width: 1,
                             ),
                             boxShadow: const [AppTheme.baseShadow],
@@ -263,7 +253,9 @@ class _LoginScreenState extends State<LoginScreen>
                                     child: Align(
                                       alignment: Alignment.centerRight,
                                       child: TextButton(
-                                        onPressed: () {},
+                                        onPressed: () {
+                                          Navigator.pushNamed(context, AppRoutes.forgotPassword);
+                                        },
                                         child: Text(
                                           '¿Olvidaste tu contraseña?',
                                           style: GoogleFonts.poppins(
@@ -302,38 +294,38 @@ class _LoginScreenState extends State<LoginScreen>
                                     ),
                                   ),
                                   const SizedBox(height: 18),
-                                  _AnimatedField(
-                                    delay: const Duration(milliseconds: 520),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Container(
-                                            height: 1,
-                                            color: AppTheme.borderColor,
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 12,
-                                          ),
-                                          child: Text(
-                                            '¿Nuevo aquí?',
-                                            style: GoogleFonts.poppins(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                              color: AppTheme.textGray,
-                                            ),
-                                          ),
-                                        ),
-                                        Expanded(
-                                          child: Container(
-                                            height: 1,
-                                            color: AppTheme.borderColor,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                   _AnimatedField(
+                                     delay: const Duration(milliseconds: 520),
+                                     child: Row(
+                                       children: [
+                                         Expanded(
+                                           child: Container(
+                                             height: 1,
+                                             color: Theme.of(context).colorScheme.outlineVariant,
+                                           ),
+                                         ),
+                                         Padding(
+                                           padding: const EdgeInsets.symmetric(
+                                             horizontal: 12,
+                                           ),
+                                           child: Text(
+                                             '¿Nuevo aquí?',
+                                             style: GoogleFonts.poppins(
+                                               fontSize: 12,
+                                               fontWeight: FontWeight.w600,
+                                               color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                             ),
+                                           ),
+                                         ),
+                                         Expanded(
+                                           child: Container(
+                                             height: 1,
+                                             color: Theme.of(context).colorScheme.outlineVariant,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                   ),
                                   const SizedBox(height: 18),
                                   _AnimatedField(
                                     delay: const Duration(milliseconds: 600),
@@ -403,76 +395,76 @@ class _LoginScreenState extends State<LoginScreen>
           obscureText: obscureText,
           onChanged: onChanged,
 
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: AppTheme.textDark,
-          ),
+           style: GoogleFonts.poppins(
+             fontSize: 14,
+             fontWeight: FontWeight.w500,
+             color: Theme.of(context).colorScheme.onSurface,
+           ),
 
-          decoration: InputDecoration(
-            labelText: label,
+           decoration: InputDecoration(
+             labelText: label,
 
-            floatingLabelBehavior: FloatingLabelBehavior.auto,
+             floatingLabelBehavior: FloatingLabelBehavior.auto,
 
-            floatingLabelStyle: GoogleFonts.poppins(
-              color: AppTheme.primaryGreen,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
+             floatingLabelStyle: GoogleFonts.poppins(
+               color: AppTheme.primaryGreen,
+               fontSize: 13,
+               fontWeight: FontWeight.w600,
+             ),
 
-            labelStyle: GoogleFonts.poppins(
-              color: AppTheme.textGray,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
+             labelStyle: GoogleFonts.poppins(
+               color: Theme.of(context).colorScheme.onSurfaceVariant,
+               fontSize: 14,
+               fontWeight: FontWeight.w500,
+             ),
 
-            prefixIcon: Icon(icon, color: AppTheme.primaryGreen),
+             prefixIcon: Icon(icon, color: AppTheme.primaryGreen),
 
-            suffixIcon: suffixIcon,
+             suffixIcon: suffixIcon,
 
-            border: OutlineInputBorder(
-              borderRadius: AppTheme.inputRadius,
-              borderSide: BorderSide(
-                color: errorText != null
-                    ? Colors.red.shade300
-                    : AppTheme.borderColor,
-                width: 1.5,
-              ),
-            ),
+             border: OutlineInputBorder(
+               borderRadius: AppTheme.inputRadius,
+               borderSide: BorderSide(
+                 color: errorText != null
+                     ? Colors.red.shade300
+                     : Theme.of(context).colorScheme.outline,
+                 width: 1.5,
+               ),
+             ),
 
-            enabledBorder: OutlineInputBorder(
-              borderRadius: AppTheme.inputRadius,
-              borderSide: BorderSide(
-                color: errorText != null
-                    ? Colors.red.shade300
-                    : AppTheme.borderColor,
-                width: 1.5,
-              ),
-            ),
+             enabledBorder: OutlineInputBorder(
+               borderRadius: AppTheme.inputRadius,
+               borderSide: BorderSide(
+                 color: errorText != null
+                     ? Colors.red.shade300
+                     : Theme.of(context).colorScheme.outline,
+                 width: 1.5,
+               ),
+             ),
 
-            focusedBorder: OutlineInputBorder(
-              borderRadius: AppTheme.inputRadius,
-              borderSide: BorderSide(
-                color: errorText != null
-                    ? Colors.red.shade400
-                    : AppTheme.primaryGreen,
-                width: 2,
-              ),
-            ),
+             focusedBorder: OutlineInputBorder(
+               borderRadius: AppTheme.inputRadius,
+               borderSide: BorderSide(
+                 color: errorText != null
+                     ? Colors.red.shade400
+                     : AppTheme.primaryGreen,
+                 width: 2,
+               ),
+             ),
 
-            errorBorder: OutlineInputBorder(
-              borderRadius: AppTheme.inputRadius,
-              borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
-            ),
+             errorBorder: OutlineInputBorder(
+               borderRadius: AppTheme.inputRadius,
+               borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
+             ),
 
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: AppTheme.inputRadius,
-              borderSide: BorderSide(color: Colors.red.shade400, width: 2),
-            ),
+             focusedErrorBorder: OutlineInputBorder(
+               borderRadius: AppTheme.inputRadius,
+               borderSide: BorderSide(color: Colors.red.shade400, width: 2),
+             ),
 
-            filled: true,
+             filled: true,
 
-            fillColor: Colors.white.withValues(alpha: 0.75),
+             fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
 
             contentPadding: const EdgeInsets.symmetric(
               vertical: 16,
@@ -856,7 +848,7 @@ class _AnimatedLogoState extends State<_AnimatedLogo>
           height: 95,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFFF2F0E6).withValues(alpha: 0.12),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
             border: Border.all(
               color: AppTheme.primaryGreen.withValues(alpha: 0.35),
               width: 1.5,
@@ -877,6 +869,7 @@ class _AnimatedTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
       duration: const Duration(milliseconds: 900),
@@ -897,7 +890,7 @@ class _AnimatedTitle extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 26,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 6),
@@ -906,7 +899,7 @@ class _AnimatedTitle extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -994,7 +987,7 @@ class _LoginButtonState extends State<_LoginButton>
               : widget.onPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.darkGreen,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             shape: RoundedRectangleBorder(borderRadius: AppTheme.defaultRadius),
             textStyle: GoogleFonts.poppins(

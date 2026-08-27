@@ -1,6 +1,9 @@
 class AppRoutes {
   static const login = '/login';
   static const register = '/register';
+  static const forgotPassword = '/forgot-password';
+  static const resetPassword = '/reset-password';
+  static const verifyEmail = '/verify-email';
   static const loading = '/loading';
   static const dashboard = '/dashboard';
   static const adminUsers = '/admin-users';
@@ -23,4 +26,7 @@ class AppRoutes {
   static const appearanceSettings = '/settings/appearance';
   static const informationSettings = '/settings/information';
   static const legalSettings = '/settings/legal';
+  static const catalogsSettings = '/settings/catalogs';
+  static const adminSpeciesSettings = '/settings/admin-species';
+  static const adminZonesSettings = '/settings/admin-zones';
 }

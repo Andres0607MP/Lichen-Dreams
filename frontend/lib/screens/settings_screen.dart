@@ -153,6 +153,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             const SizedBox(height: 10),
 
+            Selector<AuthState, bool>(
+              selector: (context, state) => state.isAdmin,
+              builder: (context, isAdmin, child) {
+                if (!isAdmin) return const SizedBox.shrink();
+                return _SettingsCategoryTile(
+                  icon: Icons.folder_special_rounded,
+                  iconColor: const Color(0xFFE65100),
+                  title: 'Catálogos',
+                  subtitle: 'Especies de líquenes, zonas ambientales',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.catalogsSettings),
+                ).animate().fadeIn(duration: 300.ms, delay: 275.ms).slideX(begin: 0.05);
+              },
+            ),
+
+            const SizedBox(height: 10),
+
             _SettingsCategoryTile(
               icon: Icons.info_outline_rounded,
               iconColor: const Color(0xFF00897B),

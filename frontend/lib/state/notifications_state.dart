@@ -10,8 +10,8 @@ class NotificationsState extends ChangeNotifier {
   String? _error;
   DateTime? _lastLoadedAt;
   static const Duration _cacheDuration = Duration(seconds: 30);
-  int _previousNotificationCount = 0;
   final Set<String> _soundedEventIds = {};
+  final Set<String> _knownNotificationIds = {};
   bool _isOnNotificationsScreen = false;
   bool _soundEnabled = true;
 
@@ -61,7 +61,6 @@ class NotificationsState extends ChangeNotifier {
       final remote = await service.getNotifications();
       if (kDebugMode) debugPrint('NOTIFICATIONS: respuesta recibida, cantidad=${remote.length}');
 
-      final previousCount = _previousNotificationCount;
       _notifications.clear();
       for (final item in remote) {
         _notifications.add(_mapBackendNotification(item));
@@ -72,12 +71,24 @@ class NotificationsState extends ChangeNotifier {
         return dateB.compareTo(dateA);
       });
 
-      if (previousCount > 0 && _notifications.length > previousCount) {
-        final newCount = _notifications.length - previousCount;
-        if (kDebugMode) debugPrint('NOTIFICATIONS: $newCount nuevas detectadas');
-        _playSoundForEvent('new_batch_${DateTime.now().millisecondsSinceEpoch}', NotificationSoundService.instance.playNotificationSound);
+      bool hasNewNotifications = false;
+      for (final notification in _notifications) {
+        final id = notification['id']?.toString() ?? '';
+        if (id.isNotEmpty && !_knownNotificationIds.contains(id)) {
+          _knownNotificationIds.add(id);
+          hasNewNotifications = true;
+        }
       }
-      _previousNotificationCount = _notifications.length;
+      if (_knownNotificationIds.length > 1000) {
+        final toRemove = _knownNotificationIds.take(500).toList();
+        for (final id in toRemove) {
+          _knownNotificationIds.remove(id);
+        }
+      }
+      if (hasNewNotifications && _shouldPlaySound()) {
+        NotificationSoundService.instance.playNotificationSound(true);
+      }
+
       _lastLoadedAt = DateTime.now();
       if (kDebugMode) debugPrint('NOTIFICATIONS: procesadas, total=${_notifications.length}, unreadCount=$unreadCount');
     } catch (e) {
@@ -225,8 +236,8 @@ class NotificationsState extends ChangeNotifier {
     _error = null;
     _loading = false;
     _lastLoadedAt = null;
-    _previousNotificationCount = 0;
     _soundedEventIds.clear();
+    _knownNotificationIds.clear();
     _isOnNotificationsScreen = false;
     notifyListeners();
     return Future.value();

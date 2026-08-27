@@ -70,6 +70,7 @@ class _LichenBottomNavState extends State<LichenBottomNav> {
   Widget build(BuildContext context) {
     final isSmallScreen = MediaQuery.of(context).size.width < 360;
     final activeIndex = _dragIndex ?? widget.currentIndex;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       margin: const EdgeInsets.symmetric(
@@ -81,8 +82,12 @@ class _LichenBottomNavState extends State<LichenBottomNav> {
         vertical: 4,
       ),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: colorScheme.surface,
         borderRadius: AppTheme.radiusXXLBorder,
+        border: Border.all(
+          color: colorScheme.outlineVariant,
+          width: 1,
+        ),
         boxShadow: [AppTheme.shadowLarge],
       ),
       child: Stack(
@@ -183,6 +188,7 @@ class _LichenBottomNavState extends State<LichenBottomNav> {
     final iconSize = isSelected
         ? (isSmallScreen ? AppTheme.iconMD : AppTheme.iconXL)
         : (isSmallScreen ? AppTheme.iconSM : AppTheme.iconLG);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Expanded(
       child: Tooltip(
@@ -215,7 +221,7 @@ class _LichenBottomNavState extends State<LichenBottomNav> {
                     Icon(
                       icon,
                       size: iconSize,
-                      color: isSelected ? Colors.white : AppTheme.textGray,
+                      color: isSelected ? Colors.white : colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -223,7 +229,7 @@ class _LichenBottomNavState extends State<LichenBottomNav> {
                       style: TextStyle(
                         fontSize: fontSize,
                         fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                        color: isSelected ? Colors.white : AppTheme.textGray,
+                        color: isSelected ? Colors.white : colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],

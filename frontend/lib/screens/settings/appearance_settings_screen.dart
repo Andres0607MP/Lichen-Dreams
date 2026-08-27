@@ -17,8 +17,6 @@ class AppearanceSettingsScreen extends StatefulWidget {
 }
 
 class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
-  bool _darkMode = false;
-
   @override
   void initState() {
     super.initState();
@@ -73,25 +71,10 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                   icon: Icons.dark_mode_rounded,
                   iconColor: const Color(0xFF5C6BC0),
                   title: 'Modo oscuro',
-                  subtitle: 'Personaliza el tema visual de la aplicación',
-                  value: _darkMode,
+                  subtitle: 'Cambia entre tema claro y oscuro',
+                  value: appSettings.darkMode,
                   onChanged: (value) {
-                    setState(() => _darkMode = value);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          _darkMode
-                              ? 'El modo oscuro estará disponible próximamente'
-                              : 'Modo claro activado',
-                          style: GoogleFonts.poppins(),
-                        ),
-                        backgroundColor: AppTheme.primaryGreen,
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    );
+                    appSettings.setDarkMode(value);
                   },
                 ),
               ],
@@ -110,21 +93,6 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
                 ),
               ],
             ).animate().fadeIn(duration: 300.ms, delay: 200.ms).slideY(begin: 0.02),
-
-            const SizedBox(height: 20),
-
-            SettingsSection(
-              title: 'Personalización',
-              children: [
-                SettingsTile(
-                  icon: Icons.palette_rounded,
-                  iconColor: const Color(0xFF7B1FA2),
-                  title: 'Preferencias visuales',
-                  subtitle: 'Más opciones de personalización estarán disponibles próximamente',
-                  onTap: () => SettingsDialog.showComingSoon(context, 'Preferencias visuales'),
-                ),
-              ],
-            ).animate().fadeIn(duration: 300.ms, delay: 300.ms).slideY(begin: 0.02),
 
             const SizedBox(height: 32),
           ],

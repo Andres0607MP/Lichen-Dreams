@@ -1,14 +1,19 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Form
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
+import secrets
+import hashlib
 from config.db import get_db
 from config.settings import normalize_image_path
-from models.core import Usuario, Sesion, Role
-from auth.password_handler import hash_password
+from models.core import Usuario, Sesion, Role, PasswordResetToken, EmailVerificationToken
+from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
 from auth.auth_service import authenticate_user, get_current_user
+from models.validations import PasswordResetRequest, PasswordResetConfirm, PasswordResetResponse, EmailVerificationRequest, EmailVerificationConfirm, RegisterResponse
+from services.email_service import email_service
 
 router = APIRouter()
 
@@ -105,6 +110,11 @@ def login(
 
     sid = uuid.uuid4().hex
 
+    db.query(Sesion).filter(
+        Sesion.id_usuario == user.id_usuario,
+        Sesion.estado_sesion == "active"
+    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
+
     sesion = Sesion(
         token_sesion=sid,
         dispositivo=None,
@@ -144,7 +154,7 @@ def login(
 
 @router.post(
     "/register",
-    response_model=UserResponse,
+    response_model=RegisterResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Registrar nuevo usuario"
 )
@@ -188,27 +198,33 @@ def register(
         numero_documento=request.numero_documento,
         fecha_nacimiento=request.fecha_nacimiento,
         foto_perfil=normalize_image_path(request.foto_perfil),
-        estado_cuenta="active",
+        estado_cuenta="inactive",
         id_rol=user_role.id_rol
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    return {
-        "id_usuario": user.id_usuario,
-        "correo": user.correo,
-        "nombre": user.nombre,
-        "apellido": user.apellido,
-        "telefono": user.telefono,
-        "tipo_documento": user.tipo_documento,
-        "numero_documento": user.numero_documento,
-        "fecha_nacimiento": _as_date(user.fecha_nacimiento),
-        "foto_perfil": user.foto_perfil,
-        "estado_cuenta": user.estado_cuenta,
-        "id_rol": user.id_rol,
-        "rol": user_role.nombre_rol
-    }
+    # Generate email verification token
+    raw_token = _generate_reset_token()
+    token_hash = _hash_token(raw_token)
+    expires_at = datetime.utcnow() + timedelta(minutes=60)
+
+    verification_token = EmailVerificationToken(
+        id_usuario=user.id_usuario,
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    db.add(verification_token)
+    db.commit()
+
+    # Send verification email to the user's email
+    email_service.send_verification_email(user.correo, raw_token)
+
+    return RegisterResponse(
+        message="Registro exitoso. Por favor, verifica tu correo electrónico para activar tu cuenta.",
+        email=user.correo
+    )
 
 @router.get("/me", response_model=UserResponse, summary="Obtener información del usuario actual")
 def me(current_user: Usuario = Depends(get_current_user)):
@@ -234,17 +250,13 @@ def logout(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-
-    sesion = db.query(Sesion).filter(
+    """Revoca TODAS las sesiones activas del usuario autenticado."""
+    db.query(Sesion).filter(
         Sesion.id_usuario == current_user.id_usuario,
         Sesion.estado_sesion == "active"
-    ).order_by(
-        Sesion.fecha_inicio.desc()
-    ).first()
+    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
 
-    if sesion:
-        sesion.estado_sesion = "revoked"
-        db.commit()
+    db.commit()
 
     return {
         "message": "Sesión cerrada exitosamente"
@@ -337,3 +349,332 @@ def logout_refresh(
     return {
         "message": "Sesión revocada"
     }
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        if len(value) < 6:
+            raise ValueError("La contraseña debe tener al menos 6 caracteres")
+        if not any(not ch.isalnum() for ch in value):
+            raise ValueError("La contraseña debe incluir al menos un carácter especial")
+        return value
+
+
+class DeleteAccountRequest(BaseModel):
+    password: str
+
+
+@router.post("/change-password", summary="Cambiar contraseña")
+def change_password(
+    request: ChangePasswordRequest,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Cambia la contraseña del usuario autenticado."""
+    if not verify_password(request.current_password, current_user.contrasena):
+        raise HTTPException(
+            status_code=400,
+            detail="Contraseña actual incorrecta"
+        )
+
+    if request.current_password == request.new_password:
+        raise HTTPException(
+            status_code=400,
+            detail="La nueva contraseña debe ser diferente a la actual"
+        )
+
+    current_user.contrasena = hash_password(request.new_password)
+
+    db.query(Sesion).filter(
+        Sesion.id_usuario == current_user.id_usuario,
+        Sesion.estado_sesion == "active"
+    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
+
+    db.commit()
+
+    return {
+        "message": "Contraseña actualizada exitosamente. Por favor, inicia sesión nuevamente."
+    }
+
+
+@router.delete("/account", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar cuenta")
+def delete_account(
+    request: DeleteAccountRequest,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Elimina la cuenta del usuario (soft delete)."""
+    if not verify_password(request.password, current_user.contrasena):
+        raise HTTPException(
+            status_code=400,
+            detail="Contraseña incorrecta"
+        )
+
+    current_user.estado_cuenta = "eliminado"
+
+    db.query(Sesion).filter(
+        Sesion.id_usuario == current_user.id_usuario,
+        Sesion.estado_sesion == "active"
+    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
+
+    db.commit()
+
+    return None
+
+
+@router.get("/sessions", summary="Obtener sesiones activas")
+def get_sessions(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Obtiene únicamente las sesiones activas del usuario autenticado."""
+    sesiones = db.query(Sesion).filter(
+        Sesion.id_usuario == current_user.id_usuario,
+        Sesion.estado_sesion == "active"
+    ).order_by(Sesion.fecha_inicio.desc()).all()
+
+    return [
+        {
+            "id_sesion": s.id_sesion,
+            "dispositivo": s.dispositivo,
+            "sistema_operativo": s.sistema_operativo,
+            "ip_usuario": s.ip_usuario,
+            "fecha_inicio": s.fecha_inicio.isoformat() if s.fecha_inicio else None,
+            "fecha_expiracion": s.fecha_expiracion.isoformat() if s.fecha_expiracion else None,
+            "estado_sesion": s.estado_sesion,
+        }
+        for s in sesiones
+    ]
+
+
+@router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Revocar sesión")
+def revoke_session(
+    session_id: int,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Revoca una sesión específica del usuario autenticado."""
+    sesion = db.query(Sesion).filter(
+        Sesion.id_sesion == session_id,
+        Sesion.id_usuario == current_user.id_usuario
+    ).first()
+
+    if not sesion:
+        raise HTTPException(
+            status_code=404,
+            detail="Sesión no encontrada"
+        )
+
+    sesion.estado_sesion = "revoked"
+    db.commit()
+
+    return None
+
+
+def _generate_reset_token() -> str:
+    """Generate a cryptographically secure 6-digit numeric code."""
+    return ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+
+
+def _hash_token(token: str) -> str:
+    """Hash the token for secure storage."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+@router.post("/forgot-password", response_model=PasswordResetResponse, summary="Solicitar recuperación de contraseña")
+def forgot_password(
+    request: PasswordResetRequest,
+    db: Session = Depends(get_db)
+):
+    """Solicitar un código de recuperación de contraseña.
+    
+    Siempre devuelve el mismo mensaje genérico para no revelar si el correo existe.
+    """
+    user = db.query(Usuario).filter(
+        or_(
+            Usuario.correo == request.email,
+            Usuario.correo == request.email.lower()
+        )
+    ).first()
+
+    if user and user.estado_cuenta == "active":
+        # Invalidate any existing unused tokens for this user
+        db.query(PasswordResetToken).filter(
+            PasswordResetToken.id_usuario == user.id_usuario,
+            PasswordResetToken.used_at.is_(None),
+            PasswordResetToken.expires_at > datetime.utcnow()
+        ).update({"used_at": datetime.utcnow()}, synchronize_session=False)
+
+        # Generate new token
+        raw_token = _generate_reset_token()
+        token_hash = _hash_token(raw_token)
+        expires_at = datetime.utcnow() + timedelta(minutes=30)
+
+        reset_token = PasswordResetToken(
+            id_usuario=user.id_usuario,
+            token_hash=token_hash,
+            expires_at=expires_at,
+        )
+        db.add(reset_token)
+        db.commit()
+
+        # Send email with the raw token
+        email_service.send_password_reset_email(user.correo, raw_token)
+
+    # Always return the same message to prevent email enumeration
+    return PasswordResetResponse(
+        message="Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña."
+    )
+
+
+@router.post("/reset-password", response_model=PasswordResetResponse, summary="Restablecer contraseña con código")
+def reset_password(
+    request: PasswordResetConfirm,
+    db: Session = Depends(get_db)
+):
+    """Restablecer la contraseña usando el código recibido por correo."""
+    token_hash = _hash_token(request.token)
+
+    reset_token = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token_hash == token_hash,
+        PasswordResetToken.used_at.is_(None),
+        PasswordResetToken.expires_at > datetime.utcnow()
+    ).first()
+
+    if not reset_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código inválido o expirado. Solicita uno nuevo."
+        )
+
+    user = db.query(Usuario).filter(Usuario.id_usuario == reset_token.id_usuario).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuario no encontrado."
+        )
+
+    if user.estado_cuenta != "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La cuenta no está activa. Contacta al administrador."
+        )
+
+    # Update password
+    user.contrasena = hash_password(request.new_password)
+
+    # Mark token as used
+    reset_token.used_at = datetime.utcnow()
+
+    # Revoke all active sessions for security
+    db.query(Sesion).filter(
+        Sesion.id_usuario == user.id_usuario,
+        Sesion.estado_sesion == "active"
+    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
+
+    db.commit()
+
+    return PasswordResetResponse(
+        message="Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
+    )
+
+
+@router.post("/verify-email", response_model=PasswordResetResponse, summary="Verificar correo electrónico")
+def verify_email(
+    request: EmailVerificationConfirm,
+    db: Session = Depends(get_db)
+):
+    """Verificar el correo electrónico usando el código recibido."""
+    token_hash = _hash_token(request.token)
+
+    verification_token = db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.token_hash == token_hash,
+        EmailVerificationToken.used_at.is_(None),
+        EmailVerificationToken.expires_at > datetime.utcnow()
+    ).first()
+
+    if not verification_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código inválido o expirado. Solicita uno nuevo."
+        )
+
+    user = db.query(Usuario).filter(Usuario.id_usuario == verification_token.id_usuario).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuario no encontrado."
+        )
+
+    if user.estado_cuenta == "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La cuenta ya está verificada."
+        )
+
+    # Activate user account
+    user.estado_cuenta = "active"
+
+    # Mark token as used
+    verification_token.used_at = datetime.utcnow()
+
+    # Invalidate any other unused verification tokens for this user
+    db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.id_usuario == user.id_usuario,
+        EmailVerificationToken.id != verification_token.id,
+        EmailVerificationToken.used_at.is_(None)
+    ).update({"used_at": datetime.utcnow()}, synchronize_session=False)
+
+    db.commit()
+
+    return PasswordResetResponse(
+        message="Correo verificado exitosamente. Ahora puedes iniciar sesión."
+    )
+
+
+@router.post("/resend-verification", response_model=PasswordResetResponse, summary="Reenviar código de verificación")
+def resend_verification(
+    request: EmailVerificationRequest,
+    db: Session = Depends(get_db)
+):
+    """Reenviar el código de verificación al correo del usuario."""
+    user = db.query(Usuario).filter(Usuario.correo == request.email).first()
+
+    # Always return the same message to prevent email enumeration
+    success_message = "Si el correo está registrado y la cuenta no está verificada, recibirás un nuevo código."
+
+    if not user:
+        return PasswordResetResponse(message=success_message)
+
+    if user.estado_cuenta == "active":
+        return PasswordResetResponse(message=success_message)
+
+    # Invalidate any existing unused tokens
+    db.query(EmailVerificationToken).filter(
+        EmailVerificationToken.id_usuario == user.id_usuario,
+        EmailVerificationToken.used_at.is_(None),
+        EmailVerificationToken.expires_at > datetime.utcnow()
+    ).update({"used_at": datetime.utcnow()}, synchronize_session=False)
+
+    # Generate new token
+    raw_token = _generate_reset_token()
+    token_hash = _hash_token(raw_token)
+    expires_at = datetime.utcnow() + timedelta(minutes=60)
+
+    verification_token = EmailVerificationToken(
+        id_usuario=user.id_usuario,
+        token_hash=token_hash,
+        expires_at=expires_at,
+    )
+    db.add(verification_token)
+    db.commit()
+
+    # Send verification email to the user's email
+    email_service.send_verification_email(user.correo, raw_token)
+
+    return PasswordResetResponse(message=success_message)

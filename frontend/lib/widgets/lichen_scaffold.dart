@@ -15,7 +15,6 @@ class LichenScaffold extends StatefulWidget {
   final Widget body;
   final String? userRole;
   final ApiService? apiService;
-  final int? bottomNavIndex;
   final ValueChanged<int>? onBottomNavTap;
   final bool showBottomNav;
   final bool showDrawer;
@@ -29,7 +28,6 @@ class LichenScaffold extends StatefulWidget {
     required this.body,
     this.userRole,
     this.apiService,
-    this.bottomNavIndex,
     this.onBottomNavTap,
     this.showBottomNav = true,
     this.showDrawer = true,
@@ -157,7 +155,7 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
         }
       },
       child: Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
         appBar: widget.appBar ?? const LichenAppBar(),
       endDrawer: widget.showDrawer
           ? ValueListenableBuilder<int>(
@@ -243,6 +241,7 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
         widget is Consumer ||
         widget is Selector ||
         widget is AnimatedBuilder ||
+        widget is ListenableBuilder ||
         widget is ValueListenableBuilder;
   }
 }
