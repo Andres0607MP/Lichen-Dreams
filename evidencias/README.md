@@ -4,8 +4,8 @@ Esta carpeta contiene las evidencias generadas durante la auditoría QA de la ra
 
 ## Archivos incluidos
 
-- `test-results.txt` — Resultado de `pytest tests/test_endpoints.py -v`.
-- `e2e_results.txt` — Resultado de `pytest tests/test_e2e_flow.py -v`.
+- `test-results.txt` — Resultado de `pytest backend/tests/test_endpoints.py -v`.
+- `e2e_results.txt` — Resultado de `pytest backend/tests/test_e2e_flow.py -v`.
 - `flutter-test-results.txt` — Resultado de `flutter test`. Actualmente contiene el error por asset faltante; debe regenerarse cuando se resuelva.
 - `README.md` — Este archivo.
 

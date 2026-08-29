@@ -6,16 +6,24 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import secrets
 import hashlib
+import logging
+
+from google.auth.exceptions import TransportError
+
 from config.db import get_db
-from config.settings import normalize_image_path
-from models.core import Usuario, Sesion, Role, PasswordResetToken, EmailVerificationToken
+from config.settings import normalize_image_path, GOOGLE_CLIENT_ID
+from models.core import Usuario, Sesion, Role, PasswordResetToken, EmailVerificationToken, RecoveryCode
 from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
 from auth.auth_service import authenticate_user, get_current_user
-from models.validations import PasswordResetRequest, PasswordResetConfirm, PasswordResetResponse, EmailVerificationRequest, EmailVerificationConfirm, RegisterResponse
+from models.validations import PasswordResetRequest, PasswordResetConfirm, PasswordResetResponse, EmailVerificationRequest, EmailVerificationConfirm, RegisterResponse, RecoverWithCodeRequest, RegenerateRecoveryCodeResponse
 from services.email_service import email_service
 
 router = APIRouter()
+
+# Alfabeto sin caracteres ambiguos (0/O, 1/I/L) para códigos fáciles de copiar.
+RECOVERY_CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
+RECOVERY_CODE_EXPIRATION_DAYS = 90
 
 
 def _as_date(value):
@@ -82,30 +90,16 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
-@router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
-def login(
-    username: Optional[str] = Form(None),
-    email: Optional[str] = Form(None),
-    password: str = Form(...),
-    db: Session = Depends(get_db)
-):
+class GoogleLoginRequest(BaseModel):
+    id_token: str
 
-    email = email or username
 
-    if not email or not password:
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="email y password son requeridos"
-        )
+def _issue_auth_tokens(db: Session, user: Usuario) -> dict:
+    """Crea una sesión activa nueva y emite los JWT de Lichen Dreams.
 
-    user = authenticate_user(db, email, password)
-
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Credenciales inválidas"
-        )
-
+    Misma lógica que el login por email/contraseña: revoca las sesiones
+    activas previas del usuario y crea una única sesión activa.
+    """
     import uuid
 
     sid = uuid.uuid4().hex
@@ -146,10 +140,177 @@ def login(
             "correo": user.correo,
             "nombre": user.nombre,
             "telefono": user.telefono,
+            "foto_perfil": user.foto_perfil,
             "id_rol": user.id_rol,
             "rol": user.rol.nombre_rol if user.rol else None
         }
     }
+
+
+@router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
+def login(
+    username: Optional[str] = Form(None),
+    email: Optional[str] = Form(None),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+
+    email = email or username
+
+    if not email or not password:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="email y password son requeridos"
+        )
+
+    user = authenticate_user(db, email, password)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales inválidas"
+        )
+
+    return _issue_auth_tokens(db, user)
+
+
+def verify_google_id_token(id_token: str) -> dict:
+    """Valida criptográficamente un ID token de Google y devuelve sus claims.
+
+    Usa la librería oficial google-auth (google.oauth2.id_token) que verifica:
+    firma, issuer (Google), audience (GOOGLE_CLIENT_ID) y expiración.
+    Lanza ValueError ante cualquier token inválido o si no está configurado
+    GOOGLE_CLIENT_ID.
+    """
+    client_id = GOOGLE_CLIENT_ID.strip()
+    if not client_id:
+        raise ValueError("GOOGLE_CLIENT_ID no está configurado")
+
+    from google.oauth2 import id_token as google_id_token
+    from google.auth.transport import requests as google_requests
+
+    req = google_requests.Request()
+    info = google_id_token.verify_oauth2_token(id_token, req, audience=client_id)
+
+    if not info.get("sub"):
+        raise ValueError("El token no contiene un sub válido")
+
+    return info
+
+
+@router.post("/google", response_model=TokenResponse, summary="Iniciar sesión con Google")
+def google_login(
+    request: GoogleLoginRequest,
+    db: Session = Depends(get_db)
+):
+    """Inicia sesión creando/recuperando un usuario local a partir de un ID token de Google.
+
+    No confía en datos enviados por el cliente: todos los datos del usuario se
+    obtienen del token verificado criptográficamente (sub, email, nombre, foto).
+
+    Si ya existe una cuenta (local u otra de Google) con ese correo no se vincula
+    automáticamente: se devuelve 409 para que el usuario use su flujo normal.
+    """
+    try:
+        info = verify_google_id_token(request.id_token)
+    except TransportError:
+        # Diagnóstico temporal: Google no es alcanzable para descargar las claves
+        # públicas de verificación (bloqueo de red/firewall en el servidor).
+        logging.error("[GOOGLE-DEBUG] TransportError al validar el ID token de Google.")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="No se pudo contactar a Google para validar el token. Verifica la conexión del servidor."
+        )
+    except ValueError as e:
+        # Diagnóstico temporal: registrar el motivo real del rechazo (aud,
+        # firma, expiración, configuración) sin exponer información al cliente.
+        logging.warning("[GOOGLE-DEBUG] ValueError al validar ID token de Google (client_id=%s): %s",
+                        ("seteado" if GOOGLE_CLIENT_ID.strip() else "VACIO"),
+                        e)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token de Google inválido o expirado."
+        )
+
+    sub = info.get("sub")
+    email = (info.get("email") or "").lower().strip()
+
+    user = db.query(Usuario).filter(
+        Usuario.proveedor == "google",
+        Usuario.proveedor_id == sub
+    ).first()
+
+    if not user:
+        if not email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El token de Google no incluye un correo válido."
+            )
+
+        existing = db.query(Usuario).filter(Usuario.correo == email).first()
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ya existe una cuenta con este correo. Inicia sesión con tu correo y contraseña."
+            )
+
+        user_role = db.query(Role).filter(Role.nombre_rol == "user").first()
+        if not user_role:
+            user_role = Role(
+                nombre_rol="user",
+                descripcion="Usuario normal",
+                nivel_acceso=1
+            )
+            db.add(user_role)
+            db.commit()
+            db.refresh(user_role)
+
+        user = Usuario(
+            nombre=info.get("given_name") or info.get("name"),
+            apellido=info.get("family_name"),
+            correo=email,
+            contrasena=None,
+            foto_perfil=info.get("picture"),
+            estado_cuenta="active",
+            id_rol=user_role.id_rol,
+            proveedor="google",
+            proveedor_id=sub
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+    else:
+        # Usuario de Google existente: refrescar la foto de perfil de Google
+        # con la que viene en el token validado. No se sobrescribe una foto
+        # personalizada subida en Lichen Dreams (rutas locales /uploads/...).
+        google_picture = info.get("picture")
+        if google_picture:
+            current_foto = user.foto_perfil or ""
+            is_google_photo = (
+                current_foto.startswith("http://")
+                or current_foto.startswith("https://")
+            )
+            if not current_foto or is_google_photo:
+                user.foto_perfil = google_picture
+                db.commit()
+                db.refresh(user)
+
+    if user.estado_cuenta != "active":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cuenta desactivada. Contacta al administrador."
+        )
+
+    # Diagnóstico temporal [GOOGLE-DEBUG]: confirmar el valor real de la foto
+    # en el token vs el persistido en la BD (no imprime tokens ni crecenciales).
+    logging.info(
+        "[GOOGLE-DEBUG] picture presente=%s url=%s | BD usuarios.foto_perfil=%s",
+        bool(info.get("picture")),
+        (info.get("picture") or "(sin picture)")[:120],
+        (user.foto_perfil or "(NULL)"),
+    )
+
+    return _issue_auth_tokens(db, user)
 
 
 @router.post(
@@ -198,32 +359,22 @@ def register(
         numero_documento=request.numero_documento,
         fecha_nacimiento=request.fecha_nacimiento,
         foto_perfil=normalize_image_path(request.foto_perfil),
-        estado_cuenta="inactive",
-        id_rol=user_role.id_rol
+        estado_cuenta="active",
+        id_rol=user_role.id_rol,
+        proveedor="local"
     )
     db.add(user)
     db.commit()
     db.refresh(user)
 
-    # Generate email verification token
-    raw_token = _generate_reset_token()
-    token_hash = _hash_token(raw_token)
-    expires_at = datetime.utcnow() + timedelta(minutes=60)
-
-    verification_token = EmailVerificationToken(
-        id_usuario=user.id_usuario,
-        token_hash=token_hash,
-        expires_at=expires_at,
-    )
-    db.add(verification_token)
+    raw_code = _store_recovery_code(db, user.id_usuario)
     db.commit()
 
-    # Send verification email to the user's email
-    email_service.send_verification_email(user.correo, raw_token)
-
     return RegisterResponse(
-        message="Registro exitoso. Por favor, verifica tu correo electrónico para activar tu cuenta.",
-        email=user.correo
+        message="Registro exitoso. Tu cuenta está activa. Guarda tu código de recuperación en un lugar seguro.",
+        email=user.correo,
+        recovery_code=raw_code,
+        requires_email_verification=False,
     )
 
 @router.get("/me", response_model=UserResponse, summary="Obtener información del usuario actual")
@@ -486,6 +637,44 @@ def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
+def _normalize_recovery_code(code: str) -> str:
+    """Normaliza un código de recuperación a su forma canónica (LCHN-XXXX-XXXX-XXXX).
+
+    Es tolerante con espacios, guiones y mayúsculas/minúsculas.
+    """
+    cleaned = code.strip().upper().replace(' ', '').replace('-', '')
+    if len(cleaned) == 16 and cleaned.startswith("LCHN"):
+        return f"{cleaned[0:4]}-{cleaned[4:8]}-{cleaned[8:12]}-{cleaned[12:16]}"
+    return cleaned
+
+
+def _generate_recovery_code() -> str:
+    """Genera un código de recuperación criptográficamente seguro.
+
+    Formato: LCHN-XXXX-XXXX-XXXX (prefijo fijo + 12 caracteres aleatorios).
+    Nunca se registra en logs ni se almacena en texto plano en la base de datos.
+    """
+    group = lambda n: ''.join(secrets.choice(RECOVERY_CODE_ALPHABET) for _ in range(n))
+    return f"LCHN-{group(4)}-{group(4)}-{group(4)}"
+
+
+def _store_recovery_code(db: Session, user_id: int, days: int = RECOVERY_CODE_EXPIRATION_DAYS) -> str:
+    """Genera, hashea y guarda un código de recuperación para el usuario.
+
+    Devuelve el código original (texto plano) una única vez.
+    """
+    raw_code = _generate_recovery_code()
+    code_hash = _hash_token(_normalize_recovery_code(raw_code))
+
+    record = RecoveryCode(
+        id_usuario=user_id,
+        code_hash=code_hash,
+        expires_at=datetime.utcnow() + timedelta(days=days),
+    )
+    db.add(record)
+    return raw_code
+
+
 @router.post("/forgot-password", response_model=PasswordResetResponse, summary="Solicitar recuperación de contraseña")
 def forgot_password(
     request: PasswordResetRequest,
@@ -581,6 +770,89 @@ def reset_password(
 
     return PasswordResetResponse(
         message="Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
+    )
+
+
+@router.post("/recover-with-code", response_model=PasswordResetResponse, summary="Recuperar contraseña con código de recuperación")
+def recover_with_code(
+    request: RecoverWithCodeRequest,
+    db: Session = Depends(get_db)
+):
+    """Restablecer la contraseña usando el código de recuperación de un solo uso.
+
+    No inicia sesión automáticamente y revoca todas las sesiones activas.
+    Utiliza el mensaje genérico como el flujo por correo para no permitir enumerar usuarios.
+    """
+    canonical_code = _normalize_recovery_code(request.code)
+    code_hash = _hash_token(canonical_code)
+
+    record = db.query(RecoveryCode).filter(
+        RecoveryCode.code_hash == code_hash,
+        RecoveryCode.used_at.is_(None),
+        RecoveryCode.expires_at > datetime.utcnow()
+    ).first()
+
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código de recuperación inválido, expirado o ya utilizado."
+        )
+
+    user = db.query(Usuario).filter(Usuario.id_usuario == record.id_usuario).first()
+    if not user or user.estado_cuenta != "active":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código de recuperación inválido, expirado o ya utilizado."
+        )
+
+    # Update password using the same bcrypt mechanism as the rest of the system
+    user.contrasena = hash_password(request.new_password)
+
+    # Mark the code as used (single use)
+    record.used_at = datetime.utcnow()
+
+    # Invalidate any other unused recovery codes for this user
+    db.query(RecoveryCode).filter(
+        RecoveryCode.id_usuario == user.id_usuario,
+        RecoveryCode.id != record.id,
+        RecoveryCode.used_at.is_(None)
+    ).update({"used_at": datetime.utcnow()}, synchronize_session=False)
+
+    # Revoke all active sessions for security (same as /auth/reset-password)
+    db.query(Sesion).filter(
+        Sesion.id_usuario == user.id_usuario,
+        Sesion.estado_sesion == "active"
+    ).update({"estado_sesion": "revoked"}, synchronize_session=False)
+
+    db.commit()
+
+    return PasswordResetResponse(
+        message="Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
+    )
+
+
+@router.post("/recovery-code/regenerate", response_model=RegenerateRecoveryCodeResponse, summary="Regenerar código de recuperación")
+def regenerate_recovery_code(
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Genera un nuevo código de recuperación para el usuario autenticado.
+
+    Invalida cualquier código anterior (se marca como utilizado) y devuelve
+    el código nuevo una única vez. El backend no puede mostrar el código
+    original posteriormente.
+    """
+    db.query(RecoveryCode).filter(
+        RecoveryCode.id_usuario == current_user.id_usuario,
+        RecoveryCode.used_at.is_(None)
+    ).update({"used_at": datetime.utcnow()}, synchronize_session=False)
+
+    raw_code = _store_recovery_code(db, current_user.id_usuario)
+    db.commit()
+
+    return RegenerateRecoveryCodeResponse(
+        message="Tu nuevo código de recuperación se generó correctamente. Guárdalo en un lugar seguro.",
+        recovery_code=raw_code
     )
 
 

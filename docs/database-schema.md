@@ -23,7 +23,19 @@ Este documento describe las tablas principales, sus campos, constraints, índice
 - fecha_actualizacion: DATETIME, ON UPDATE CURRENT_TIMESTAMP
 - estado_activo: BOOLEAN, DEFAULT TRUE
 - id_rol: INT, FK -> `roles.id_rol`, NOT NULL
+- proveedor: VARCHAR(50), DEFAULT 'local'  -- 'local' hoy; preparado para 'google'
+- proveedor_id: VARCHAR(255), NULL  -- id externo del proveedor (futuro Google OAuth)
 - Índices: `idx_correo`, `idx_estado_activo`
+
+### recovery_codes
+- id: INT, PK, AUTOINCREMENT
+- id_usuario: INT, FK -> `usuarios.id_usuario`, NOT NULL
+- code_hash: VARCHAR(255), UNIQUE, NOT NULL (SHA-256; nunca el código en claro)
+- expires_at: TIMESTAMP, NOT NULL (-90 días por defecto)
+- used_at: TIMESTAMP, NULL (uso único)
+- created_at: TIMESTAMP, DEFAULT now()
+- Índices: `idx_recovery_code_hash`, `idx_recovery_id_usuario`
+- Relación: `usuarios (1)` ─── (`N`) `recovery_codes`
 
 ### sesiones
 - id_sesion: INT, PK, AUTOINCREMENT

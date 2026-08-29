@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
+import '../services/google_auth_service.dart';
 import '../services/navigation_service.dart';
 import 'notifications_state.dart';
 import 'dashboard_state.dart';
@@ -14,6 +15,7 @@ import 'articles_state.dart';
 
 class AuthState extends ChangeNotifier {
   final ApiService _apiService;
+  final GoogleAuthService _googleAuth;
   String? _token;
   String? _refreshToken;
   String? _role;
@@ -24,7 +26,9 @@ class AuthState extends ChangeNotifier {
   static const String _userNameKey = 'user_name';
   static const String _userIdKey = 'user_id';
 
-  AuthState({ApiService? apiService}) : _apiService = apiService ?? ApiService();
+  AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
+      : _apiService = apiService ?? ApiService(),
+        _googleAuth = googleAuth ?? GoogleAuthService();
 
   String? get token => _token;
   String? get refreshToken => _refreshToken;
@@ -95,6 +99,35 @@ class AuthState extends ChangeNotifier {
     }
   }
 
+  Future<bool> loginWithGoogle() async {
+    await clearAuthState();
+    setState(() => _loading = true);
+    try {
+      final idToken = await _googleAuth.signInAndGetIdToken();
+      if (idToken == null) {
+        // El usuario canceló Google Sign-In: continuar en la pantalla de login.
+        return false;
+      }
+
+      final data = await _apiService.loginWithGoogle(idToken);
+      _token = data['access_token'] as String?;
+      _refreshToken = data['refresh_token'] as String?;
+      if (data['user'] is Map) {
+        final user = data['user'] as Map<String, dynamic>;
+        _role = user['rol']?.toString();
+        _userName = user['nombre']?.toString();
+        _userId = _parseUserId(user['id_usuario'] ?? user['id']);
+      }
+      await _persistUserInfo();
+      notifyListeners();
+      await NotificationsState.instance.loadNotifications();
+      return true;
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadProfile() async {
     try {
       final profile = await _apiService.getProfile();
@@ -111,7 +144,7 @@ class AuthState extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> register({
+  Future<Map<String, dynamic>?> register({
     required String name,
     required String email,
     required String password,
@@ -147,6 +180,7 @@ class AuthState extends ChangeNotifier {
         notifyListeners();
         await NotificationsState.instance.loadNotifications();
       }
+      return data;
     } finally {
       setState(() => _loading = false);
     }
@@ -204,6 +238,14 @@ class AuthState extends ChangeNotifier {
 
   Future<void> resetPassword(String token, String newPassword) async {
     await _apiService.resetPassword(token, newPassword);
+  }
+
+  Future<void> recoverWithCode(String code, String newPassword) async {
+    await _apiService.recoverWithCode(code, newPassword);
+  }
+
+  Future<Map<String, dynamic>> regenerateRecoveryCode() async {
+    return _apiService.regenerateRecoveryCode();
   }
 
   Future<void> verifyEmail(String token) async {

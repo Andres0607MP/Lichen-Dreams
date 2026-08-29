@@ -3,13 +3,13 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
 import '../routes/route_names.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/page_transitions.dart';
+import '../widgets/google_sign_in_button.dart';
 import '../state/auth_state.dart';
 import '../state/profile_state.dart';
 import '../state/dashboard_state.dart';
@@ -32,6 +32,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _googleLoading = false;
 
   String? _emailError;
   String? _passwordError;
@@ -154,6 +155,26 @@ class _LoginScreenState extends State<LoginScreen>
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    if (_googleLoading) return;
+    final authState = context.read<AuthState>();
+    setState(() => _googleLoading = true);
+    try {
+      final success = await authState.loginWithGoogle();
+      if (success && mounted) {
+        _goToDashboard();
+      }
+      // Si success == false, el usuario canceló Google Sign-In:
+      // simplemente se permanece en la pantalla de login.
+    } catch (e) {
+      if (mounted) {
+        _showLoginError(e.toString());
+      }
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
   }
 
   @override
@@ -293,23 +314,31 @@ class _LoginScreenState extends State<LoginScreen>
                                       },
                                     ),
                                   ),
-                                  const SizedBox(height: 18),
+                                  const SizedBox(height: 16),
                                    _AnimatedField(
-                                     delay: const Duration(milliseconds: 520),
-                                     child: Row(
-                                       children: [
-                                         Expanded(
-                                           child: Container(
-                                             height: 1,
-                                             color: Theme.of(context).colorScheme.outlineVariant,
-                                           ),
-                                         ),
-                                         Padding(
-                                           padding: const EdgeInsets.symmetric(
-                                             horizontal: 12,
-                                           ),
-                                           child: Text(
-                                             '¿Nuevo aquí?',
+                                     delay: const Duration(milliseconds: 480),
+                                     child: GoogleSignInButton(
+                                       loading: _googleLoading,
+                                       onPressed: _handleGoogleLogin,
+                                     ),
+                                   ),
+                                   const SizedBox(height: 18),
+                                    _AnimatedField(
+                                      delay: const Duration(milliseconds: 520),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: Container(
+                                              height: 1,
+                                              color: Theme.of(context).colorScheme.outlineVariant,
+                                            ),
+                                          ),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                            ),
+                                            child: Text(
+                                              '¿Nuevo aquí?',
                                              style: GoogleFonts.poppins(
                                                fontSize: 12,
                                                fontWeight: FontWeight.w600,

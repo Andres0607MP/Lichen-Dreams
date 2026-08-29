@@ -10,6 +10,7 @@ class CatalogState extends ChangeNotifier {
   List<Map<String, dynamic>> _zones = [];
   bool _loadingSpecies = false;
   bool _loadingZones = false;
+  bool _mutationPending = false;
   String? _speciesError;
   String? _zonesError;
 
@@ -17,6 +18,7 @@ class CatalogState extends ChangeNotifier {
   List<Map<String, dynamic>> get zones => List.unmodifiable(_zones);
   bool get loadingSpecies => _loadingSpecies;
   bool get loadingZones => _loadingZones;
+  bool get mutationPending => _mutationPending;
   String? get speciesError => _speciesError;
   String? get zonesError => _zonesError;
 
@@ -53,18 +55,72 @@ class CatalogState extends ChangeNotifier {
   }
 
   Future<void> createSpecies(Map<String, dynamic> data) async {
-    await _apiService.createAdminSpecies(data);
-    await loadSpecies();
+    if (_mutationPending) return;
+    _mutationPending = true;
+    notifyListeners();
+    try {
+      final created = await _apiService.createAdminSpecies(data);
+      _upsertSpecies(created);
+      await _refreshSpeciesQuietly();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _mutationPending = false;
+      notifyListeners();
+    }
   }
 
   Future<void> updateSpecies(int id, Map<String, dynamic> data) async {
-    await _apiService.updateAdminSpecies(id, data);
-    await loadSpecies();
+    if (_mutationPending) return;
+    _mutationPending = true;
+    notifyListeners();
+    try {
+      final updated = await _apiService.updateAdminSpecies(id, data);
+      _upsertSpecies(updated);
+      await _refreshSpeciesQuietly();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _mutationPending = false;
+      notifyListeners();
+    }
   }
 
   Future<void> deleteSpecies(int id) async {
-    await _apiService.deleteAdminSpecies(id);
-    await loadSpecies();
+    if (_mutationPending) return;
+    _mutationPending = true;
+    notifyListeners();
+    try {
+      await _apiService.deleteAdminSpecies(id);
+      _species.removeWhere((s) => s['id_especie'] == id);
+      await _refreshSpeciesQuietly();
+    } catch (e) {
+      rethrow;
+    } finally {
+      _mutationPending = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _refreshSpeciesQuietly() async {
+    try {
+      final data = await _apiService.getAdminSpecies();
+      _species = data.cast<Map<String, dynamic>>();
+      _speciesError = null;
+    } catch (_) {
+      // La mutación ya fue exitosa: se conserva la lista local.
+    }
+    notifyListeners();
+  }
+
+  void _upsertSpecies(Map<String, dynamic> item) {
+    final id = item['id_especie'];
+    final index = _species.indexWhere((s) => s['id_especie'] == id);
+    if (index >= 0) {
+      _species[index] = item;
+    } else {
+      _species.add(item);
+    }
   }
 
   Future<void> createZone(Map<String, dynamic> data) async {

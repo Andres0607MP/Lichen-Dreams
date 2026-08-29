@@ -12,7 +12,15 @@ import '../routes/route_names.dart';
 import '../services/api_service.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/page_transitions.dart';
+import '../widgets/google_sign_in_button.dart';
 import '../state/auth_state.dart';
+import '../state/profile_state.dart';
+import '../state/dashboard_state.dart';
+import '../state/history_state.dart';
+import '../state/map_state.dart';
+import '../state/articles_state.dart';
+import '../state/notifications_state.dart';
+import '../state/analysis_state.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -35,6 +43,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _loading = false;
+  bool _googleLoading = false;
 
   final List<String> _tiposDocumento = ['CC', 'TI', 'CE', 'PASAPORTE'];
   String? _selectedTipoDocumento;
@@ -136,26 +145,60 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
     super.dispose();
   }
 
-  void _showMessage(String message, {bool isError = false}) {
+void _showMessage(String message, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
             Icon(
-              isError ? LucideIcons.triangleAlert : Icons.check_circle,
+              isError ? LucideIcons.triangleAlert : LucideIcons.circleCheck,
               color: Colors.white,
             ),
             const SizedBox(width: 12),
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: isError ? Colors.red.shade400 : Colors.green.shade400,
+        backgroundColor: isError ? Colors.red.shade400 : AppTheme.primaryGreen,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
       ),
     );
+  }
+
+  void _goToDashboard() {
+    if (!mounted) return;
+    context.read<ProfileState>().reset();
+    context.read<DashboardState>().reset();
+    context.read<HistoryState>().reset();
+    context.read<ArticlesState>().reset();
+    context.read<NotificationsState>().reset();
+    context.read<AnalysisState>().reset();
+    context.read<MapState>().reset();
+    Navigator.pushReplacementNamed(context, AppRoutes.loading);
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    if (_googleLoading || _loading) return;
+    final authState = context.read<AuthState>();
+    setState(() => _googleLoading = true);
+    try {
+      final success = await authState.loginWithGoogle();
+      if (success && mounted) {
+        _goToDashboard();
+      }
+      // success == false => el usuario canceló Google Sign-In; continuar
+      // normalmente en la pantalla de registro.
+    } catch (e) {
+      if (mounted) {
+        final message =
+            e is ApiException ? e.message : 'No fue posible iniciar sesión con Google. Intenta de nuevo.';
+        _showMessage(message, isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
   }
 
   void _validateAllFields() {
@@ -311,7 +354,46 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                   _AnimatedLogo(),
                                   const SizedBox(height: 20),
                                   _AnimatedTitle(),
-                                  const SizedBox(height: 24),
+                                  const SizedBox(height: 20),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 120),
+                                    child: GoogleSignInButton(
+                                      loading: _googleLoading,
+                                      onPressed: _handleGoogleLogin,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _AnimatedField(
+                                    delay: const Duration(milliseconds: 160),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Container(
+                                            height: 1,
+                                            color: Theme.of(context).colorScheme.outlineVariant,
+                                          ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                                          child: Text(
+                                            'o',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Container(
+                                            height: 1,
+                                            color: Theme.of(context).colorScheme.outlineVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
                                   _AnimatedField(
                                     delay: const Duration(milliseconds: 200),
                                     child: _buildTextField(
@@ -433,7 +515,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                               fechaNacimientoFormatted = DateFormat('yyyy-MM-dd').format(fecha);
                                             }
 
-                                            await context.read<AuthState>().register(
+                                            final registerData = await context.read<AuthState>().register(
                                               name: fullName,
                                               email: email,
                                               password: password,
@@ -449,7 +531,7 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                                  children: [
                                                    Icon(Icons.check_circle, color: Colors.white),
                                                    SizedBox(width: 12),
-                                                   Text('¡Cuenta creada! Verifica tu correo para activarla'),
+                                                   Text('¡Cuenta creada correctamente!'),
                                                  ],
                                                ),
                                                backgroundColor: Colors.green.shade400,
@@ -460,8 +542,14 @@ class _RegisterScreenState extends State<RegisterScreen> with TickerProviderStat
                                              ),
                                            );
                                            if (!mounted) return;
+                                           final recoveryCode = registerData?['recovery_code']?.toString() ?? '';
                                            Future.delayed(const Duration(seconds: 1), () {
-                                             if (mounted) navigator.pushReplacementNamed(AppRoutes.verifyEmail, arguments: email);
+                                             if (mounted) {
+                                               navigator.pushReplacementNamed(
+                                                 AppRoutes.recoveryCode,
+                                                 arguments: recoveryCode,
+                                               );
+                                             }
                                            });
                                          } catch (error) {
                                            if (!mounted) return;

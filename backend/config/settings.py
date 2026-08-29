@@ -36,6 +36,10 @@ def _resolve_backend_url():
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY", "")
 BACKEND_URL = _resolve_backend_url()
 
+# Client ID esperado por el backend para validar ID tokens de Google (mismo
+# valor que usa el frontend como serverClientId / aud del token).
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+
 UPLOADS_BASE_DIR = Path(__file__).resolve().parent.parent / "uploads"
 UPLOADS_BASE_DIR.mkdir(parents=True, exist_ok=True)
 

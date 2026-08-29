@@ -396,3 +396,24 @@ class EmailVerificationConfirm(BaseModel):
 class RegisterResponse(BaseModel):
     message: str
     email: str
+    recovery_code: Optional[str] = None
+    requires_email_verification: bool = False
+
+
+class RecoverWithCodeRequest(BaseModel):
+    code: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, value: str) -> str:
+        if len(value) < 6:
+            raise ValueError("La contraseña debe tener al menos 6 caracteres")
+        if not any(not ch.isalnum() for ch in value):
+            raise ValueError("La contraseña debe incluir al menos un carácter especial")
+        return value
+
+
+class RegenerateRecoveryCodeResponse(BaseModel):
+    message: str
+    recovery_code: str

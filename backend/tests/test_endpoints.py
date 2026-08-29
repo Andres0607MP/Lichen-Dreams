@@ -114,7 +114,7 @@ def test_regular_user(db):
 def _login_headers(client, email, password):
     response = client.post(
         "/auth/login",
-        json={"email": email, "password": password},
+        data={"email": email, "password": password},
     )
     if response.status_code != 200:
         response = client.post(
@@ -128,7 +128,7 @@ def _login_headers(client, email, password):
         assert response.status_code == 201
         response = client.post(
             "/auth/login",
-            json={"email": email, "password": password},
+            data={"email": email, "password": password},
         )
     assert response.status_code == 200
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
@@ -150,8 +150,8 @@ def test_registro_usuario_valido(client):
     )
     assert response.status_code == 201
     data = response.json()
-    assert data["correo"] == "nuevo@example.com"
-    assert "id_usuario" in data
+    assert data["email"] == "nuevo@example.com"
+    assert data["recovery_code"] is not None
 
 
 def test_registro_con_email_duplicado(client):
@@ -185,7 +185,7 @@ def test_login_con_credenciales_validas(client):
     )
     response = client.post(
         "/auth/login",
-        json={"email": "login@example.com", "password": "Password123!"},
+        data={"email": "login@example.com", "password": "Password123!"},
     )
     assert response.status_code == 200
     assert response.json()["access_token"]
@@ -194,7 +194,7 @@ def test_login_con_credenciales_validas(client):
 def test_login_con_credenciales_invalidas(client):
     response = client.post(
         "/auth/login",
-        json={"email": "none@example.com", "password": "wrong"},
+        data={"email": "none@example.com", "password": "wrong"},
     )
     assert response.status_code == 401
 

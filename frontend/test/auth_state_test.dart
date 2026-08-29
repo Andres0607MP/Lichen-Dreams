@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/services/api_service.dart';
 import 'package:frontend/state/auth_state.dart';
 
@@ -22,6 +23,12 @@ class MockApiService extends ApiService {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+  });
+
   group('AuthState login', () {
     test('loading se detiene cuando login falla con excepcion', () async {
       final mockApi = MockApiService();

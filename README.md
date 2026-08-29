@@ -27,18 +27,17 @@ ORM: SQLAlchemy
 IA y Visión Artificial: TensorFlow, Keras y OpenCV
 Autenticación: JWT + Passlib
 APIs externas: Google Maps API
-Hosting: Render / Firebase Storage
 Control de versiones: GitHub
 
 ### Estructura del Proyecto:
 
 ```
 proyecto/
-├── .github/
-│   └── workflows/
-
 ├── backend/
 │   ├── alembic/
+│   │   ├── versions/
+│   │   ├── env.py
+│   │   └── script.py.mako
 │   ├── auth/
 │   ├── config/
 │   ├── ia/
@@ -49,19 +48,15 @@ proyecto/
 │   ├── routes/
 │   ├── scripts/
 │   └── tests/
-
 ├── database/
 │   └── scripts/
-
 ├── docs/
-│   ├── apis/
-│   └── ia/
-
+│   ├── database-schema.md
+│   ├── git-workflow.md
+│   └── reporte_calidad_inicial.md
 └── frontend/
     ├── lib/
     │   ├── config/
-    │   ├── models/
-    │   ├── routes/
     │   ├── screens/
     │   ├── services/
     │   └── widgets/
@@ -72,7 +67,7 @@ proyecto/
     ├── linux/
     ├── macos/
     └── windows/
-
+    └── assets/
 ```
 
 ### Objetivo del sistema:

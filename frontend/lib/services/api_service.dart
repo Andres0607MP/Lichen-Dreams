@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,9 +29,25 @@ class ApiService {
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
-        return decoded['detail']?.toString() ??
-            decoded['message']?.toString() ??
-            fallback;
+        final detail = decoded['detail'];
+        if (detail is String && detail.isNotEmpty) {
+          return detail;
+        }
+        if (detail is List && detail.isNotEmpty) {
+          final mensajes = detail
+              .whereType<Map>()
+              .map((e) => e['msg']?.toString())
+              .whereType<String>()
+              .where((m) => m.isNotEmpty)
+              .toList();
+          if (mensajes.isNotEmpty) {
+            return mensajes.join('\n');
+          }
+        }
+        final message = decoded['message'];
+        if (message is String && message.isNotEmpty) {
+          return message;
+        }
       }
     } catch (_) {
       return fallback;
@@ -191,6 +208,24 @@ class ApiService {
     throw ApiException('Respuesta inesperada al subir imagen');
   }
 
+  /// Descargar imagen: URLs remotas (http/https, p. ej. lh3.googleusercontent.com)
+  /// se obtienen directamente; rutas privadas locales (/uploads/...) usan el
+  /// endpoint autenticado del backend.
+  Future<Uint8List> downloadImageBytes(String imagePath) async {
+    final normalized = imagePath.trim();
+    if (normalized.startsWith('http://') ||
+        normalized.startsWith('https://')) {
+      final response = await _client.get(Uri.parse(normalized));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          'Error ${response.statusCode} al descargar imagen externa',
+        );
+      }
+      return response.bodyBytes;
+    }
+    return downloadPrivateImageBytes(normalized);
+  }
+
   /// Descargar imagen privada (profiles/ o analyses/) con token de auth
   Future<Uint8List> downloadPrivateImageBytes(String imagePath) async {
     final normalized = imagePath.trim();
@@ -283,6 +318,72 @@ class ApiService {
         _parseResponseMessage(
           response,
           'Error en autenticación: ${response.statusCode}',
+        ),
+      );
+    } on http.ClientException catch (error) {
+      throw ApiException('Error de conexión: ${error.message}');
+    } on Exception catch (error) {
+      if (error is ApiException) rethrow;
+      throw ApiException('Error de conexión: ${error.toString()}');
+    }
+  }
+
+  /// Login con el ID token de Google obtenido por google_sign_in
+  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
+    try {
+      final response = await _client
+          .post(
+            AppConfig.buildUri('/auth/google'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'id_token': idToken}),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        if (data['access_token'] != null) {
+          await _saveToken(data['access_token']);
+        }
+        if (data['refresh_token'] != null) {
+          await _saveRefreshToken(data['refresh_token']);
+        }
+        if (data['user'] is Map<String, dynamic>) {
+          final role = (data['user'] as Map<String, dynamic>)['rol'];
+          if (role is String) {
+            await _saveUserRole(role);
+          }
+        }
+        return data;
+      }
+
+      // Diagnóstico temporal [GOOGLE-DEBUG]: el backend devolvió un error;
+      // registrar el estado y el cuerpo real para identificar la causa
+      // exacta (401 aud/exp/firma vs 503 sin conexión a Google).
+      debugPrint('[GOOGLE-DEBUG] POST /auth/google -> ${response.statusCode} '
+          'body=${response.body}');
+
+      if (response.statusCode == 401) {
+        throw ApiException('La sesión de Google no fue autorizada. Intenta de nuevo.');
+      }
+      if (response.statusCode == 409) {
+        throw ApiException(
+          _parseResponseMessage(
+            response,
+            'Ya existe una cuenta con este correo. Usa tu correo y contraseña.',
+          ),
+        );
+      }
+      if (response.statusCode == 503) {
+        throw ApiException(
+          'El servidor no pudo validar el token de Google. '
+          'Verifica que tenga acceso a internet y reintenta.',
+        );
+      }
+
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error al iniciar sesión con Google: ${response.statusCode}',
         ),
       );
     } on http.ClientException catch (error) {
@@ -1292,6 +1393,41 @@ class ApiService {
         _parseResponseMessage(
           response,
           'Error ${response.statusCode} al restablecer contraseña',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Recuperar contraseña usando el código de recuperación de un solo uso
+  Future<Map<String, dynamic>> recoverWithCode(String code, String newPassword) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/auth/recover-with-code'),
+      headers: await _headers(authorized: false),
+      body: jsonEncode({'code': code, 'new_password': newPassword}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al recuperar la cuenta',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Generar un nuevo código de recuperación para el usuario autenticado
+  Future<Map<String, dynamic>> regenerateRecoveryCode() async {
+    final response = await _client.post(
+      AppConfig.buildUri('/auth/recovery-code/regenerate'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al generar el código de recuperación',
         ),
       );
     }

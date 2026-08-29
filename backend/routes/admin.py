@@ -373,6 +373,11 @@ def update_species(
 
     if 'nombre_cientifico' in request.model_fields_set:
         nuevo_nombre = request.nombre_cientifico
+        if not nuevo_nombre or not nuevo_nombre.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El nombre científico no puede estar vacío ni contener solo espacios"
+            )
         duplicada = (
             db.query(EspecieLiquen)
             .filter(

@@ -1,8 +1,8 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:provider/provider.dart';
 
@@ -10,20 +10,27 @@ import '../widgets/app_theme.dart';
 import '../routes/route_names.dart';
 import '../state/auth_state.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+class RecoverWithCodeScreen extends StatefulWidget {
+  const RecoverWithCodeScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<RecoverWithCodeScreen> createState() => _RecoverWithCodeScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
+class _RecoverWithCodeScreenState extends State<RecoverWithCodeScreen>
     with TickerProviderStateMixin {
-  final _emailController = TextEditingController();
-  String? _emailError;
+  final _codeController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
-  bool _emailSent = false;
-  bool _emailSelected = false;
+  bool _passwordReset = false;
+
+  String? _codeError;
+  String? _passwordError;
+  String? _confirmPasswordError;
 
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -58,42 +65,72 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _codeController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     _bgController.dispose();
     super.dispose();
   }
 
-  bool _isValidEmail(String email) {
-    return RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-        .hasMatch(email);
+  bool _isValidCode(String code) {
+    final cleaned =
+        code.trim().toUpperCase().replaceAll(' ', '').replaceAll('-', '');
+    return cleaned.length == 16 && cleaned.startsWith('LCHN');
   }
 
-  void _validateEmail() {
+  bool _isValidPassword(String password) {
+    return password.length >= 6 && password.contains(RegExp(r'[^a-zA-Z0-9]'));
+  }
+
+  void _validateFields() {
     setState(() {
-      if (_emailController.text.isEmpty) {
-        _emailError = 'El correo es obligatorio';
-      } else if (!_isValidEmail(_emailController.text.trim())) {
-        _emailError = 'Correo inválido';
+      if (_codeController.text.isEmpty) {
+        _codeError = 'El código de recuperación es obligatorio';
+      } else if (!_isValidCode(_codeController.text)) {
+        _codeError = 'El código debe tener el formato LCHN-XXXX-XXXX-XXXX';
       } else {
-        _emailError = null;
+        _codeError = null;
+      }
+
+      if (_passwordController.text.isEmpty) {
+        _passwordError = 'La contraseña es obligatoria';
+      } else if (!_isValidPassword(_passwordController.text)) {
+        _passwordError = 'Mínimo 6 caracteres y un carácter especial';
+      } else {
+        _passwordError = null;
+      }
+
+      if (_confirmPasswordController.text.isEmpty) {
+        _confirmPasswordError = 'Confirma la contraseña';
+      } else if (_passwordController.text != _confirmPasswordController.text) {
+        _confirmPasswordError = 'Las contraseñas no coinciden';
+      } else {
+        _confirmPasswordError = null;
       }
     });
   }
 
-  Future<void> _sendResetRequest() async {
-    _validateEmail();
-    if (_emailError != null) return;
+  Future<void> _recover() async {
+    _validateFields();
+    if (_codeError != null ||
+        _passwordError != null ||
+        _confirmPasswordError != null) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
     try {
       final authState = context.read<AuthState>();
-      await authState.forgotPassword(_emailController.text.trim());
+      await authState.recoverWithCode(
+        _codeController.text.trim().toUpperCase(),
+        _passwordController.text,
+      );
       if (mounted) {
         setState(() {
-          _emailSent = true;
+          _passwordReset = true;
           _isLoading = false;
         });
       }
@@ -158,7 +195,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                           ),
                           boxShadow: const [AppTheme.baseShadow],
                         ),
-                        child: _emailSent ? _buildSuccessView() : _buildFormView(),
+                        child: _passwordReset ? _buildSuccessView() : _buildFormView(),
                       ),
                     ),
                   ),
@@ -187,14 +224,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
           ),
           child: const Icon(
-            LucideIcons.lockKeyhole,
+            LucideIcons.keyRound,
             size: 32,
             color: AppTheme.primaryGreen,
           ),
         ),
         const SizedBox(height: 20),
         Text(
-          '¿Olvidaste tu contraseña?',
+          'Recuperar con código',
           style: GoogleFonts.poppins(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -203,124 +240,61 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 8),
-        if (!_emailSelected)
-          Text(
-            'Elige cómo quieres recuperar tu cuenta.',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w400,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        const SizedBox(height: 24),
-        if (!_emailSelected)
-          _buildMethodOptions()
-        else ...[
-          _buildTextField(),
-          const SizedBox(height: 20),
-          _buildSendButton(),
-        ],
-        const SizedBox(height: 16),
-        _buildBackButton(),
-      ],
-    );
-  }
-
-  Widget _buildMethodOptions() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton.icon(
-            onPressed: () {
-              setState(() {
-                _emailSelected = true;
-                _emailError = null;
-              });
-            },
-            icon: const Icon(LucideIcons.mail, size: 20),
-            label: const Text('Recuperar mediante correo'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.darkGreen,
-              foregroundColor: Theme.of(context).colorScheme.onPrimary,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: AppTheme.defaultRadius),
-              textStyle: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-              elevation: 4,
-              shadowColor: AppTheme.primaryGreen.withValues(alpha: 0.55),
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.recoverWithCode);
-            },
-            icon: const Icon(LucideIcons.keyRound, size: 20),
-            label: const Text('Usar mi código de recuperación'),
-            style: OutlinedButton.styleFrom(
-              backgroundColor:
-                  AppTheme.primaryGreen.withValues(alpha: 0.08),
-              side: BorderSide(
-                color: AppTheme.primaryGreen,
-                width: 1.5,
-              ),
-              foregroundColor: AppTheme.primaryGreen,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: AppTheme.defaultRadius,
-              ),
-              textStyle: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
         Text(
-          'El código lo guardaste al crear tu cuenta.',
+          'Ingresa tu código de recuperación (lo guardaste al crear tu cuenta) y define una nueva contraseña.',
           style: GoogleFonts.poppins(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w400,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
         ),
-      ],
-    );
-  }
-
-  Widget _buildBackButton() {
-    final label = _emailSelected ? 'Volver a elegir método' : 'Volver al inicio de sesión';
-    return TextButton.icon(
-      onPressed: () {
-        if (_emailSelected) {
-          setState(() {
-            _emailSelected = false;
-            _emailSent = false;
-          });
-        } else {
-          Navigator.pop(context);
-        }
-      },
-      icon: const Icon(LucideIcons.arrowLeft, size: 18),
-      label: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
+        const SizedBox(height: 24),
+        _buildCodeField(),
+        const SizedBox(height: 16),
+        _buildPasswordField(
+          controller: _passwordController,
+          label: 'Nueva contraseña',
+          obscureText: _obscurePassword,
+          errorText: _passwordError,
+          onToggleVisibility: () {
+            setState(() => _obscurePassword = !_obscurePassword);
+          },
+          onChanged: (_) {
+            if (_passwordError != null) _validateFields();
+          },
         ),
-      ),
-      style: TextButton.styleFrom(
-        foregroundColor: AppTheme.primaryGreen,
-      ),
+        const SizedBox(height: 16),
+        _buildPasswordField(
+          controller: _confirmPasswordController,
+          label: 'Confirmar contraseña',
+          obscureText: _obscureConfirmPassword,
+          errorText: _confirmPasswordError,
+          onToggleVisibility: () {
+            setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
+          },
+          onChanged: (_) {
+            if (_confirmPasswordError != null) _validateFields();
+          },
+        ),
+        const SizedBox(height: 20),
+        _buildRecoverButton(),
+        const SizedBox(height: 16),
+        TextButton.icon(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(LucideIcons.arrowLeft, size: 18),
+          label: Text(
+            'Volver',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          style: TextButton.styleFrom(
+            foregroundColor: AppTheme.primaryGreen,
+          ),
+        ),
+      ],
     );
   }
 
@@ -340,14 +314,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
           ),
           child: const Icon(
-            LucideIcons.mailCheck,
+            LucideIcons.check,
             size: 32,
             color: AppTheme.primaryGreen,
           ),
         ).animate().scale(duration: 500.ms, curve: Curves.easeOutBack),
         const SizedBox(height: 20),
         Text(
-          'Correo enviado',
+          'Contraseña actualizada',
           style: GoogleFonts.poppins(
             fontSize: 22,
             fontWeight: FontWeight.w700,
@@ -357,11 +331,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
         ),
         const SizedBox(height: 8),
         Text(
-          'Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña. Revisa tu bandeja de entrada.',
+          'Tu contraseña ha sido actualizada y todas tus sesiones fueron cerradas por seguridad. Ahora puedes iniciar sesión con tu nueva contraseña.',
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w400,
             color: Theme.of(context).colorScheme.onSurfaceVariant,
+            height: 1.5,
           ),
           textAlign: TextAlign.center,
         ),
@@ -370,10 +345,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
           width: double.infinity,
           child: ElevatedButton.icon(
             onPressed: () {
-              Navigator.pushReplacementNamed(context, AppRoutes.resetPassword);
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
             },
-            icon: const Icon(LucideIcons.arrowRight, size: 18),
-            label: const Text('Tengo un código'),
+            icon: const Icon(LucideIcons.logIn, size: 18),
+            label: const Text('Iniciar sesión'),
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.darkGreen,
               foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -386,42 +365,29 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        TextButton.icon(
-          onPressed: () => Navigator.pop(context),
-          icon: const Icon(LucideIcons.arrowLeft, size: 18),
-          label: Text(
-            'Volver al inicio de sesión',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          style: TextButton.styleFrom(
-            foregroundColor: AppTheme.primaryGreen,
-          ),
-        ),
       ],
     );
   }
 
-  Widget _buildTextField() {
+  Widget _buildCodeField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         TextField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
+          controller: _codeController,
+          textCapitalization: TextCapitalization.characters,
           onChanged: (_) {
-            if (_emailError != null) _validateEmail();
+            if (_codeError != null) _validateFields();
           },
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 1.5,
             color: Theme.of(context).colorScheme.onSurface,
           ),
           decoration: InputDecoration(
-            labelText: 'Correo electrónico',
+            labelText: 'Código de recuperación',
+            counterText: '',
             floatingLabelBehavior: FloatingLabelBehavior.auto,
             floatingLabelStyle: GoogleFonts.poppins(
               color: AppTheme.primaryGreen,
@@ -433,11 +399,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
-            prefixIcon: const Icon(LucideIcons.mail, color: AppTheme.primaryGreen),
+            prefixIcon: const Icon(LucideIcons.keyRound, color: AppTheme.primaryGreen),
+            hintText: 'LCHN-XXXX-XXXX-XXXX',
+            hintStyle: GoogleFonts.poppins(
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+              fontSize: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: AppTheme.inputRadius,
               borderSide: BorderSide(
-                color: _emailError != null
+                color: _codeError != null
                     ? Colors.red.shade300
                     : Theme.of(context).colorScheme.outline,
                 width: 1.5,
@@ -446,7 +417,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             enabledBorder: OutlineInputBorder(
               borderRadius: AppTheme.inputRadius,
               borderSide: BorderSide(
-                color: _emailError != null
+                color: _codeError != null
                     ? Colors.red.shade300
                     : Theme.of(context).colorScheme.outline,
                 width: 1.5,
@@ -455,19 +426,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             focusedBorder: OutlineInputBorder(
               borderRadius: AppTheme.inputRadius,
               borderSide: BorderSide(
-                color: _emailError != null
+                color: _codeError != null
                     ? Colors.red.shade400
                     : AppTheme.primaryGreen,
                 width: 2,
               ),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: AppTheme.inputRadius,
-              borderSide: BorderSide(color: Colors.red.shade400, width: 1.5),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: AppTheme.inputRadius,
-              borderSide: BorderSide(color: Colors.red.shade400, width: 2),
             ),
             filled: true,
             fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
@@ -477,7 +440,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             ),
           ),
         ),
-        if (_emailError != null)
+        if (_codeError != null)
           Padding(
             padding: const EdgeInsets.only(top: 6, left: 16),
             child: Row(
@@ -490,7 +453,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    _emailError!,
+                    _codeError!,
                     softWrap: true,
                     style: GoogleFonts.poppins(
                       color: Colors.red.shade500,
@@ -506,11 +469,116 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
     );
   }
 
-  Widget _buildSendButton() {
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String label,
+    required bool obscureText,
+    required String? errorText,
+    required VoidCallback onToggleVisibility,
+    required ValueChanged<String>? onChanged,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: controller,
+          obscureText: obscureText,
+          onChanged: onChanged,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          decoration: InputDecoration(
+            labelText: label,
+            floatingLabelBehavior: FloatingLabelBehavior.auto,
+            floatingLabelStyle: GoogleFonts.poppins(
+              color: AppTheme.primaryGreen,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+            labelStyle: GoogleFonts.poppins(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            prefixIcon: const Icon(LucideIcons.lock, color: AppTheme.primaryGreen),
+            suffixIcon: IconButton(
+              icon: Icon(
+                obscureText ? LucideIcons.eyeOff : LucideIcons.eye,
+                color: AppTheme.primaryGreen,
+              ),
+              onPressed: onToggleVisibility,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(
+                color: errorText != null
+                    ? Colors.red.shade300
+                    : Theme.of(context).colorScheme.outline,
+                width: 1.5,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(
+                color: errorText != null
+                    ? Colors.red.shade300
+                    : Theme.of(context).colorScheme.outline,
+                width: 1.5,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: AppTheme.inputRadius,
+              borderSide: BorderSide(
+                color: errorText != null
+                    ? Colors.red.shade400
+                    : AppTheme.primaryGreen,
+                width: 2,
+              ),
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
+            contentPadding: const EdgeInsets.symmetric(
+              vertical: 16,
+              horizontal: 16,
+            ),
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6, left: 16),
+            child: Row(
+              children: [
+                Icon(
+                  LucideIcons.triangleAlert,
+                  size: 16,
+                  color: Colors.red.shade500,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    errorText,
+                    softWrap: true,
+                    style: GoogleFonts.poppins(
+                      color: Colors.red.shade500,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRecoverButton() {
     return SizedBox(
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: _isLoading ? null : _sendResetRequest,
+        onPressed: _isLoading ? null : _recover,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.darkGreen,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -535,9 +603,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen>
             : const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.send, size: 20),
+                  Icon(LucideIcons.check, size: 20),
                   SizedBox(width: 10),
-                  Text('Enviar código'),
+                  Text('Recuperar cuenta'),
                 ],
               ),
       ),

@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +20,8 @@ class AccountSettingsScreen extends StatefulWidget {
 }
 
 class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
+  bool _generatingCode = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +32,136 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
         await profileState.loadProfile();
       }
     });
+  }
+
+  Future<void> _regenerateRecoveryCode() async {
+    final confirmed = await SettingsDialog.showConfirm(
+      context: context,
+      title: 'Generar nuevo código',
+      content:
+          'Se generará un nuevo código de recuperación y el anterior dejará de funcionar. '
+          'El código nuevo se mostrará una sola vez, así que guárdalo en un lugar seguro.',
+      confirmText: 'Generar código',
+      titleColor: AppTheme.primaryGreen,
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _generatingCode = true);
+    try {
+      final authState = context.read<AuthState>();
+      final data = await authState.regenerateRecoveryCode();
+      if (!mounted) return;
+      final newCode = data['recovery_code']?.toString() ?? '';
+      await _showNewCodeDialog(newCode);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white),
+              const SizedBox(width: 12),
+              Expanded(child: Text(e.toString())),
+            ],
+          ),
+          backgroundColor: Colors.red.shade400,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _generatingCode = false);
+    }
+  }
+
+  Future<void> _showNewCodeDialog(String code) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Tu nuevo código de recuperación',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
+            fontSize: 17,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Text(
+                  code,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 2,
+                    color: AppTheme.darkGreen,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Este código se mostrará una sola vez. Guarda este código de recuperación en un lugar seguro: te permitirá recuperar tu cuenta si pierdes acceso a tu correo. No lo compartas con nadie.',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(text: code));
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Código copiado'),
+                    backgroundColor: AppTheme.primaryGreen,
+                  ),
+                );
+              }
+            },
+            icon: const Icon(Icons.copy_rounded, size: 18),
+            label: Text(
+              'Copiar',
+              style: GoogleFonts.poppins(
+                color: AppTheme.primaryGreen,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryGreen,
+            ),
+            child: Text(
+              'Entendido',
+              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -129,6 +260,16 @@ class _AccountSettingsScreenState extends State<AccountSettingsScreen> {
                   value: userRole.toUpperCase(),
                   subtitle: 'Solo lectura',
                 ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  icon: Icons.key_rounded,
+                  iconColor: const Color(0xFF00897B),
+                  title: 'Código de recuperación',
+                  subtitle: _generatingCode
+                      ? 'Generando código…'
+                      : 'Ver o generar un nuevo código para recuperar tu cuenta sin correo',
+                  onTap: _generatingCode ? null : _regenerateRecoveryCode,
+                ),
               ],
             ).animate().fadeIn(duration: 300.ms, delay: 100.ms).slideY(begin: 0.02),
 
@@ -163,7 +304,7 @@ class _AccountHeader extends StatelessWidget {
     if (fotoPerfil != null && fotoPerfil.isNotEmpty) {
       final apiService = Provider.of<ApiService>(context, listen: false);
       avatarChild = FutureBuilder<Uint8List>(
-        future: apiService.downloadPrivateImageBytes(fotoPerfil),
+        future: apiService.downloadImageBytes(fotoPerfil),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SizedBox(

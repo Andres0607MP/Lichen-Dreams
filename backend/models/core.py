@@ -30,7 +30,7 @@ class Usuario(Base):
     tipo_documento = Column(String(20))
     numero_documento = Column(String(50))
     correo = Column(String(150), unique=True)
-    contrasena = Column(String)
+    contrasena = Column(String(255))
     telefono = Column(String(20))
     foto_perfil = Column(Text)
     fecha_nacimiento = Column(DateTime)
@@ -38,6 +38,8 @@ class Usuario(Base):
     ultimo_acceso = Column(TIMESTAMP, nullable=True)
     estado_cuenta = Column(String(50), default='active')
     id_rol = Column(Integer, ForeignKey('roles.id_rol'))
+    proveedor = Column(String(50), default='local')
+    proveedor_id = Column(String(255), nullable=True)
     fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     rol = relationship('Role', backref='usuarios')
@@ -107,7 +109,7 @@ class Dataset(Base):
     nombre_dataset = Column(String(100), nullable=False)
     descripcion = Column(Text)
     cantidad_imagenes = Column(Integer)
-    ruta_archivo = Column(String, nullable=True)
+    ruta_archivo = Column(String(255), nullable=True)
     tipo_datos = Column(String(50))
     fuente_dataset = Column(String(255))
     estado_dataset = Column(String(50))
@@ -384,4 +386,21 @@ class EmailVerificationToken(Base):
     __table_args__ = (
         Index('idx_verification_token_hash', 'token_hash'),
         Index('idx_verification_id_usuario', 'id_usuario'),
+    )
+
+
+class RecoveryCode(Base):
+    __tablename__ = 'recovery_codes'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    code_hash = Column(String(255), nullable=False, unique=True)
+    expires_at = Column(TIMESTAMP, nullable=False)
+    used_at = Column(TIMESTAMP, nullable=True)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+    usuario = relationship('Usuario', backref='recovery_codes')
+
+    __table_args__ = (
+        Index('idx_recovery_code_hash', 'code_hash'),
+        Index('idx_recovery_id_usuario', 'id_usuario'),
     )

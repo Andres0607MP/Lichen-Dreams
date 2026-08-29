@@ -3,6 +3,8 @@ class AppRoutes {
   static const register = '/register';
   static const forgotPassword = '/forgot-password';
   static const resetPassword = '/reset-password';
+  static const recoverWithCode = '/recover-with-code';
+  static const recoveryCode = '/recovery-code';
   static const verifyEmail = '/verify-email';
   static const loading = '/loading';
   static const dashboard = '/dashboard';

@@ -8,6 +8,11 @@ class AppConfig {
         ? const String.fromEnvironment('API_BASE_URL')
         : getDefaultBaseUrl();
 
+  /// Client ID Web de Google Cloud Console (público, no es un secreto).
+  /// Se usa como serverClientId en GoogleSignIn y debe coincidir con el
+  /// GOOGLE_CLIENT_ID del backend (será la audiencia del ID token).
+  static const String googleClientId = String.fromEnvironment('GOOGLE_CLIENT_ID');
+
   static Uri buildUri(String path) {
     final normalizedPath = path.startsWith('/') ? path : '/$path';
     return Uri.parse('$baseUrl$normalizedPath');

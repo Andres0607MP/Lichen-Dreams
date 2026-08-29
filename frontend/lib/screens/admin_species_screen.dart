@@ -24,9 +24,11 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
     if (!_isInitialized) {
       _isInitialized = true;
       _catalogState = context.read<CatalogState>();
-      if (_catalogState!.species.isEmpty && !_catalogState!.loadingSpecies) {
-        _catalogState!.loadSpecies();
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _catalogState!.species.isEmpty && !_catalogState!.loadingSpecies) {
+          _catalogState!.loadSpecies();
+        }
+      });
     }
   }
 
@@ -126,10 +128,20 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Agrega la primera especie usando el botón +',
+                      'Agrega la primera especie para comenzar el catálogo',
+                      textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton.tonalIcon(
+                      onPressed: () => _showSpeciesDialog(context),
+                      icon: const Icon(Icons.add_rounded),
+                      label: Text(
+                        'Crear especie',
+                        style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -138,17 +150,25 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: _catalogState!.species.length,
-            itemBuilder: (context, index) {
-              final species = _catalogState!.species[index];
-              return _SpeciesCard(
-                species: species,
-                onEdit: () => _showSpeciesDialog(context, species: species),
-                onDelete: () => _confirmDelete(context, species),
-              );
-            },
+          return Column(
+            children: [
+              if (_catalogState!.mutationPending)
+                const LinearProgressIndicator(minHeight: 2),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _catalogState!.species.length,
+                  itemBuilder: (context, index) {
+                    final species = _catalogState!.species[index];
+                    return _SpeciesCard(
+                      species: species,
+                      onEdit: () => _showSpeciesDialog(context, species: species),
+                      onDelete: () => _confirmDelete(context, species),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -156,128 +176,24 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
   }
 
   Future<void> _showSpeciesDialog(BuildContext context, {Map<String, dynamic>? species}) async {
-    final isEditing = species != null;
-    final formKey = GlobalKey<FormState>();
-    final nombreCientificoController = TextEditingController(text: species?['nombre_cientifico'] ?? '');
-    final nombreComunController = TextEditingController(text: species?['nombre_comun'] ?? '');
-    final descripcionController = TextEditingController(text: species?['descripcion'] ?? '');
-    final colorController = TextEditingController(text: species?['color_predominante'] ?? '');
-    final tipoCrecimientoController = TextEditingController(text: species?['tipo_crecimiento'] ?? '');
-    final toleranciaController = TextEditingController(text: species?['nivel_tolerancia_contaminacion'] ?? '');
-    final indicadorController = TextEditingController(text: species?['indicador_calidad_aire'] ?? '');
-    final habitatController = TextEditingController(text: species?['habitat'] ?? '');
-
-    final result = await showDialog<bool>(
+    final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          isEditing ? 'Editar especie' : 'Nueva especie',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
-        ),
-        content: SingleChildScrollView(
-          child: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  controller: nombreCientificoController,
-                  decoration: const InputDecoration(labelText: 'Nombre científico'),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: nombreComunController,
-                  decoration: const InputDecoration(labelText: 'Nombre común'),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: descripcionController,
-                  decoration: const InputDecoration(labelText: 'Descripción'),
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: colorController,
-                  decoration: const InputDecoration(labelText: 'Color predominante'),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: tipoCrecimientoController,
-                  decoration: const InputDecoration(labelText: 'Tipo de crecimiento'),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: toleranciaController,
-                  decoration: const InputDecoration(labelText: 'Tolerancia a contaminación'),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: indicadorController,
-                  decoration: const InputDecoration(labelText: 'Indicador calidad aire'),
-                ),
-                const SizedBox(height: 8),
-                TextFormField(
-                  controller: habitatController,
-                  decoration: const InputDecoration(labelText: 'Hábitat'),
-                ),
-              ],
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancelar', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(context, true);
-              }
-            },
-            child: Text(isEditing ? 'Guardar' : 'Crear', style: GoogleFonts.poppins()),
-          ),
-        ],
+      barrierDismissible: false,
+      builder: (context) => _SpeciesFormDialog(
+        catalogState: _catalogState!,
+        species: species,
       ),
     );
 
-    if (result == true && mounted) {
-      final data = {
-        'nombre_cientifico': nombreCientificoController.text.isNotEmpty ? nombreCientificoController.text : null,
-        'nombre_comun': nombreComunController.text.isNotEmpty ? nombreComunController.text : null,
-        'descripcion': descripcionController.text.isNotEmpty ? descripcionController.text : null,
-        'color_predominante': colorController.text.isNotEmpty ? colorController.text : null,
-        'tipo_crecimiento': tipoCrecimientoController.text.isNotEmpty ? tipoCrecimientoController.text : null,
-        'nivel_tolerancia_contaminacion': toleranciaController.text.isNotEmpty ? toleranciaController.text : null,
-        'indicador_calidad_aire': indicadorController.text.isNotEmpty ? indicadorController.text : null,
-        'habitat': habitatController.text.isNotEmpty ? habitatController.text : null,
-      };
-
-      try {
-        if (isEditing) {
-          await _catalogState!.updateSpecies(species['id_especie'], data);
-        } else {
-          await _catalogState!.createSpecies(data);
-        }
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(isEditing ? 'Especie actualizada' : 'Especie creada'),
-              backgroundColor: AppTheme.primaryGreen,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      }
+    if (saved == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            species == null ? 'Especie creada correctamente' : 'Especie actualizada correctamente',
+          ),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
     }
   }
 
@@ -328,6 +244,459 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
       }
     }
   }
+}
+
+class _SpeciesFormDialog extends StatefulWidget {
+  final CatalogState catalogState;
+  final Map<String, dynamic>? species;
+
+  const _SpeciesFormDialog({required this.catalogState, this.species});
+
+  @override
+  State<_SpeciesFormDialog> createState() => _SpeciesFormDialogState();
+}
+
+class _SpeciesFormDialogState extends State<_SpeciesFormDialog> {
+  static const int _maxNombreCientifico = 100;
+  static const int _maxNombreComun = 100;
+  static const int _maxDescripcion = 4000;
+  static const int _maxColor = 50;
+  static const int _maxTipoCrecimiento = 50;
+  static const int _maxTolerancia = 100;
+  static const int _maxIndicador = 255;
+  static const int _maxHabitat = 100;
+
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  late final TextEditingController _nombreCientificoController;
+  late final TextEditingController _nombreComunController;
+  late final TextEditingController _descripcionController;
+  late final TextEditingController _colorController;
+  late final TextEditingController _tipoCrecimientoController;
+  late final TextEditingController _toleranciaController;
+  late final TextEditingController _indicadorController;
+  late final TextEditingController _habitatController;
+
+  bool _isSaving = false;
+  bool _autovalidate = false;
+  String? _serverError;
+
+  bool get _isEditing => widget.species != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final s = widget.species;
+    _nombreCientificoController =
+        TextEditingController(text: (s?['nombre_cientifico'] as String?) ?? '');
+    _nombreComunController =
+        TextEditingController(text: (s?['nombre_comun'] as String?) ?? '');
+    _descripcionController =
+        TextEditingController(text: (s?['descripcion'] as String?) ?? '');
+    _colorController =
+        TextEditingController(text: (s?['color_predominante'] as String?) ?? '');
+    _tipoCrecimientoController =
+        TextEditingController(text: (s?['tipo_crecimiento'] as String?) ?? '');
+    _toleranciaController =
+        TextEditingController(text: (s?['nivel_tolerancia_contaminacion'] as String?) ?? '');
+    _indicadorController =
+        TextEditingController(text: (s?['indicador_calidad_aire'] as String?) ?? '');
+    _habitatController = TextEditingController(text: (s?['habitat'] as String?) ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nombreCientificoController.dispose();
+    _nombreComunController.dispose();
+    _descripcionController.dispose();
+    _colorController.dispose();
+    _tipoCrecimientoController.dispose();
+    _toleranciaController.dispose();
+    _indicadorController.dispose();
+    _habitatController.dispose();
+    super.dispose();
+  }
+
+  String? _validarNombreCientifico(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) {
+      return 'El nombre científico es obligatorio';
+    }
+    if (text.length > _maxNombreCientifico) {
+      return 'Máximo $_maxNombreCientifico caracteres';
+    }
+    return null;
+  }
+
+  String? Function(String?) _validarOpcional(int maxLength) {
+    return (String? value) {
+      final text = value?.trim() ?? '';
+      if (text.length > maxLength) {
+        return 'Máximo $maxLength caracteres';
+      }
+      return null;
+    };
+  }
+
+  bool get _isValid {
+    final nombre = _nombreCientificoController.text.trim();
+    return nombre.isNotEmpty &&
+        nombre.length <= _maxNombreCientifico &&
+        _nombreComunController.text.trim().length <= _maxNombreComun &&
+        _descripcionController.text.trim().length <= _maxDescripcion &&
+        _colorController.text.trim().length <= _maxColor &&
+        _tipoCrecimientoController.text.trim().length <= _maxTipoCrecimiento &&
+        _toleranciaController.text.trim().length <= _maxTolerancia &&
+        _indicadorController.text.trim().length <= _maxIndicador &&
+        _habitatController.text.trim().length <= _maxHabitat;
+  }
+
+  String? _trimmed(TextEditingController controller) {
+    final text = controller.text.trim();
+    return text.isEmpty ? null : text;
+  }
+
+  Map<String, dynamic> _buildPayload() {
+    return {
+      'nombre_cientifico': _trimmed(_nombreCientificoController),
+      'nombre_comun': _trimmed(_nombreComunController),
+      'descripcion': _trimmed(_descripcionController),
+      'color_predominante': _trimmed(_colorController),
+      'tipo_crecimiento': _trimmed(_tipoCrecimientoController),
+      'nivel_tolerancia_contaminacion': _trimmed(_toleranciaController),
+      'indicador_calidad_aire': _trimmed(_indicadorController),
+      'habitat': _trimmed(_habitatController),
+    };
+  }
+
+  Future<void> _save() async {
+    setState(() => _autovalidate = true);
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+    setState(() {
+      _isSaving = true;
+      _serverError = null;
+    });
+    try {
+      final catalog = widget.catalogState;
+      if (_isEditing) {
+        await catalog.updateSpecies(widget.species!['id_especie'], _buildPayload());
+      } else {
+        await catalog.createSpecies(_buildPayload());
+      }
+      if (mounted) {
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _serverError = e.toString();
+        });
+      }
+    }
+  }
+
+  Widget _sectionHeader(String title) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 20, bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 4,
+            height: 18,
+            decoration: BoxDecoration(
+              color: AppTheme.especiesPrimary,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            title,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.3,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required bool required,
+    String? hint,
+    int maxLines = 1,
+    int? maxLength,
+    String? Function(String?)? validator,
+    TextInputType? keyboardType,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: TextFormField(
+        controller: controller,
+        maxLines: maxLines,
+        maxLength: maxLength,
+        keyboardType: keyboardType,
+        autovalidateMode: _autovalidate
+            ? AutovalidateMode.onUserInteraction
+            : AutovalidateMode.disabled,
+        validator: validator,
+        onChanged: (_) => setState(() {}),
+        style: GoogleFonts.poppins(fontSize: 14),
+        decoration: InputDecoration(
+          label: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: label),
+                if (required)
+                  TextSpan(
+                    text: ' *',
+                    style: TextStyle(color: colorScheme.error),
+                  ),
+              ],
+            ),
+          ),
+          hintText: hint,
+          counterText: '',
+        ),
+      ),
+    );
+  }
+
+  Widget _errorBanner(String message) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.error_outline_rounded, size: 20, color: colorScheme.error),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: GoogleFonts.poppins(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onErrorContainer,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isEditing = _isEditing;
+    final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: AppTheme.radiusXLBorder),
+      backgroundColor: colorScheme.surfaceContainerLowest,
+      child: AnimatedPadding(
+        duration: AppTheme.animationNormal,
+        padding: EdgeInsets.only(bottom: viewInsets + 12),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppTheme.especiesPrimary.withValues(alpha: 0.12),
+                        borderRadius: AppTheme.radiusMDBorder,
+                      ),
+                      child: Icon(
+                        isEditing ? Icons.edit_rounded : Icons.eco_rounded,
+                        color: AppTheme.especiesPrimary,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isEditing ? 'Editar especie' : 'Nueva especie',
+                            style: GoogleFonts.poppins(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Los campos marcados con * son obligatorios',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (_serverError != null) _errorBanner(_serverError!),
+                Flexible(
+                  child: SingleChildScrollView(
+                    physics: const ClampingScrollPhysics(),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          _sectionHeader('Identificación'),
+                          _field(
+                            controller: _nombreCientificoController,
+                            label: 'Nombre científico',
+                            required: true,
+                            hint: 'Ej.: Xanthoria parietina',
+                            maxLength: _maxNombreCientifico,
+                            validator: _validarNombreCientifico,
+                          ),
+                          _field(
+                            controller: _nombreComunController,
+                            label: 'Nombre común',
+                            required: false,
+                            hint: 'Ej.: Líquen anaranjado',
+                            maxLength: _maxNombreComun,
+                            validator: _validarOpcional(_maxNombreComun),
+                          ),
+                          _sectionHeader('Apariencia'),
+                          _field(
+                            controller: _colorController,
+                            label: 'Color predominante',
+                            required: false,
+                            hint: 'Ej.: Amarillo anaranjado',
+                            maxLength: _maxColor,
+                            validator: _validarOpcional(_maxColor),
+                          ),
+                          _field(
+                            controller: _tipoCrecimientoController,
+                            label: 'Tipo de crecimiento',
+                            required: false,
+                            hint: 'Ej.: Foliáceo',
+                            maxLength: _maxTipoCrecimiento,
+                            validator: _validarOpcional(_maxTipoCrecimiento),
+                          ),
+                          _sectionHeader('Ecología'),
+                          _field(
+                            controller: _toleranciaController,
+                            label: 'Tolerancia a contaminación',
+                            required: false,
+                            hint: 'Ej.: Alta',
+                            maxLength: _maxTolerancia,
+                            validator: _validarOpcional(_maxTolerancia),
+                          ),
+                          _field(
+                            controller: _indicadorController,
+                            label: 'Indicador de calidad del aire',
+                            required: false,
+                            hint: 'Ej.: Buena',
+                            maxLength: _maxIndicador,
+                            validator: _validarOpcional(_maxIndicador),
+                          ),
+                          _field(
+                            controller: _habitatController,
+                            label: 'Hábitat',
+                            required: false,
+                            hint: 'Ej.: Cortezas, rocas',
+                            maxLength: _maxHabitat,
+                            validator: _validarOpcional(_maxHabitat),
+                          ),
+                          _sectionHeader('Descripción'),
+                          _field(
+                            controller: _descripcionController,
+                            label: 'Descripción',
+                            required: false,
+                            hint: 'Características generales de la especie',
+                            maxLines: 4,
+                            maxLength: _maxDescripcion,
+                            validator: _validarOpcional(_maxDescripcion),
+                          ),
+                          const SizedBox(height: 4),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed:
+                            _isSaving ? null : () => Navigator.of(context).pop(false),
+                        child: Text(
+                          'Cancelar',
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: _isSaving || !_isValid ? null : _save,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppTheme.especiesPrimary,
+                        ),
+                        child: _isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                isEditing ? 'Guardar' : 'Crear especie',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
 }
 
 class _SpeciesCard extends StatelessWidget {

@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 venv/
 .venv/
 __pycache__/
@@ -28,12 +28,16 @@ test.db
 .repomixignore
 repomix-output.xml
 
-# Uploaded images — NEVER commit to repository
+# Uploaded images � NEVER commit to repository
 uploads/
+backend/ia/datasets/
 *.jpg
 *.jpeg
 *.png
 *.webp
+# Except frontend assets
+!frontend/assets/**
+!frontend/assets/
 
 # Backend temporary and generated files
 backend/backend/

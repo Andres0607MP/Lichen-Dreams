@@ -315,7 +315,7 @@ class _SettingsUserHeader extends StatelessWidget {
     if (fotoPerfil != null && fotoPerfil.isNotEmpty) {
       final apiService = Provider.of<ApiService>(context, listen: false);
       avatarChild = FutureBuilder<Uint8List>(
-        future: apiService.downloadPrivateImageBytes(fotoPerfil),
+        future: apiService.downloadImageBytes(fotoPerfil),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const SizedBox(

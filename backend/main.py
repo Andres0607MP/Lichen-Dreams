@@ -7,10 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 import os
 from routes.liquenpedia import router as liquen_router
-from config.database import engine
 from config.db import SessionLocal
 from config.settings import BACKEND_URL, UPLOADS_BASE_DIR
-from models.base import Base
 from models.core import Role, Usuario, Analisis, ModeloIA, Dataset, HistorialActividad
 from auth.jwt_handler import create_access_token as create_token
 from auth.password_handler import hash_password
@@ -20,7 +18,10 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para análisis de líquenes")
-Base.metadata.create_all(bind=engine)
+
+# El esquema de la base de datos se gestiona exclusivamente con Alembic
+# (`python -m alembic upgrade head`). No se ejecuta Base.metadata.create_all()
+# en el arranque para evitar compilar/recrear tablas gestionadas por Alembic.
 
 # CORS: permitir peticiones desde el frontend en desarrollo (ajustar en producción)
 app.add_middleware(
@@ -144,10 +145,11 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 
 @app.on_event("startup")
 def startup():
-    # Create missing tables and seed default roles/admin user.
+    # Seed de roles, usuario admin y modelo/dataset de demostración.
+    # El esquema (tablas) lo gestiona Alembic; aquí solo se insertan
+    # registros iniciales si no existen.
     db = None
     try:
-        Base.metadata.create_all(bind=engine)
         db = SessionLocal()
         admin_role = db.query(Role).filter(Role.nombre_rol == 'admin').first()
         if not admin_role:

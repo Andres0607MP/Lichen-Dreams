@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -16,6 +17,7 @@ import '../widgets/common_widgets.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/app_theme.dart';
 import '../state/analysis_state.dart';
+import '../state/dashboard_state.dart';
 import '../state/history_state.dart';
 import '../state/map_state.dart';
 
@@ -1563,7 +1565,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
       await context.read<HistoryState>().deleteRecord(id);
 
       if (mounted) {
+        // Sincronizar el resto de estados que muestran análisis: mapa y
+        // estadísticas del dashboard, para que reflejen la eliminación de
+        // inmediato (sin datos cacheados desactualizados).
         context.read<MapState>().loadPoints();
+        final dashboardState = context.read<DashboardState>();
+        dashboardState.invalidate();
+        unawaited(dashboardState.loadStats(force: true));
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Análisis eliminado correctamente')),
         );

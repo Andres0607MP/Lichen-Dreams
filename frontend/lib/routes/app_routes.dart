@@ -4,6 +4,8 @@ import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/reset_password_screen.dart';
+import '../screens/recover_with_code_screen.dart';
+import '../screens/recovery_code_screen.dart';
 import '../screens/verify_email_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/dashboard_screen.dart';
@@ -35,6 +37,12 @@ class AppRouter {
     AppRoutes.register: (_) => const RegisterScreen(),
     AppRoutes.forgotPassword: (_) => const ForgotPasswordScreen(),
     AppRoutes.resetPassword: (_) => const ResetPasswordScreen(),
+    AppRoutes.recoverWithCode: (_) => const RecoverWithCodeScreen(),
+    AppRoutes.recoveryCode: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final code = args is String ? args : '';
+      return RecoveryCodeScreen(code: code);
+    },
     AppRoutes.verifyEmail: (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       final email = args is String ? args : '';

@@ -288,10 +288,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Center(
               child: Column(
                 children: [
-                  Container(
-                    width: 140,
-                    height: 140,
-                    decoration: BoxDecoration(
+Container(
+                     width: 140,
+                     height: 140,
+                     clipBehavior: Clip.hardEdge,
+                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: [AppTheme.primaryGreen, AppTheme.darkGreen],
@@ -726,13 +727,23 @@ class _CachedProfileImageState extends State<_CachedProfileImage> {
     }
 
     final apiService = Provider.of<ApiService>(context, listen: false);
+
+    // Diagnóstico temporal [GOOGLE-DEBUG]: confirmar qué URL intenta cargarse.
+    final isRemote = widget.imagePath.startsWith('http://') ||
+        widget.imagePath.startsWith('https://');
+    debugPrint('[GOOGLE-DEBUG] Profile image path: ${widget.imagePath} '
+        'isRemote=$isRemote');
+
     try {
-      _bytes = await apiService.downloadPrivateImageBytes(widget.imagePath);
+      _bytes = await apiService.downloadImageBytes(widget.imagePath);
       if (_bytes != null) {
         _cache[widget.imagePath] = _bytes;
+        debugPrint('[GOOGLE-DEBUG] Profile image cargada: '
+            '${_bytes!.length} bytes');
       }
-    } catch (_) {
+    } catch (e) {
       _bytes = null;
+      debugPrint('[GOOGLE-DEBUG] Profile image error: $e');
     }
 
     if (mounted) setState(() => _loading = false);

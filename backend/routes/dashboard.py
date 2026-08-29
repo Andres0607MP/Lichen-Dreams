@@ -7,7 +7,7 @@ from sqlalchemy import func, exists, and_, or_
 
 from auth.auth_service import get_current_user
 from config.db import get_db
-from models.core import Analisis, Usuario, Imagen
+from models.core import Analisis, Usuario, Imagen, HistorialActividad
 
 router = APIRouter()
 
@@ -26,7 +26,13 @@ def get_dashboard_stats(
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    analysis_count = db.query(Analisis).filter(Analisis.id_usuario == current_user.id_usuario).count()
+    # El contador de análisis debe reflejar los mismos registros que se muestran
+    # en el Historial (HistorialActividad). Contar directo la tabla `analisis`
+    # producía desfases (p. ej. análisis huérfanos que ya no aparecen en el
+    # historial o procesos fallidos que jamás se guardaron).
+    analysis_count = db.query(HistorialActividad).filter(
+        HistorialActividad.id_usuario == current_user.id_usuario
+    ).count()
     zone_count = db.query(Analisis.id_ubicacion).filter(
         Analisis.id_usuario == current_user.id_usuario,
         Analisis.id_ubicacion != None,
