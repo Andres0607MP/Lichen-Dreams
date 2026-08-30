@@ -13,6 +13,7 @@ import '../state/map_state.dart';
 import '../state/auth_state.dart';
 import '../state/analysis_state.dart';
 import '../models/map_analysis_point.dart';
+import '../models/developer_map_point.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -207,6 +208,67 @@ class _MapScreenState extends State<MapScreen> {
     }).toSet();
   }
 
+  /// Adaptación mínima de [MapAnalysisPoint] a [DeveloperMapPoint] para poder
+  /// reutilizar la lógica real `calculateZones()` del mapa de desarrollador.
+  ///
+  /// Solo participan las observaciones individuales `good` (saludable) y
+  /// `poor` (contaminada/crítica); `moderate` NO se convierte en un resultado
+  /// individual y no alimenta las zonas de transición.
+  List<DeveloperMapPoint> _buildDeveloperPoints(List<MapAnalysisPoint> points) {
+    final result = <DeveloperMapPoint>[];
+    for (final point in points) {
+      DevMapQuality quality;
+      switch (point.qualityLevel) {
+        case AirQualityLevel.good:
+          quality = DevMapQuality.healthy;
+          break;
+        case AirQualityLevel.poor:
+          quality = DevMapQuality.contaminated;
+          break;
+        case AirQualityLevel.moderate:
+          continue;
+      }
+      result.add(DeveloperMapPoint(
+        latitude: point.lat,
+        longitude: point.lng,
+        quality: quality,
+        airQuality: quality == DevMapQuality.healthy
+            ? DevAirQuality.good
+            : DevAirQuality.bad,
+        contamination: switch (point.contaminationLevelCategory) {
+          ContaminationLevel.low => DevContamination.low,
+          ContaminationLevel.medium => DevContamination.medium,
+          ContaminationLevel.high => DevContamination.high,
+          ContaminationLevel.unknown => DevContamination.low,
+        },
+        confidence: point.confidence,
+        createdAt: point.date,
+      ));
+    }
+    return result;
+  }
+
+  /// Zonas de transición derivadas de la proximidad entre observaciones
+  /// saludables y contaminadas, calculadas con `calculateZones()` REAL.
+  /// Se renderizan únicamente como Circle amarillo (igual que el mapa de
+  /// desarrollador); no reemplazan círculos de precisión ni marcadores.
+  Set<Circle> _buildTransitionCircles(List<MapAnalysisPoint> filteredPoints) {
+    final zones = calculateZones(_buildDeveloperPoints(filteredPoints));
+    final circles = <Circle>{};
+    for (final zone in zones) {
+      if (zone.zoneType != DevMapZoneType.transition) continue;
+      circles.add(Circle(
+        circleId: CircleId('main_transition_${zone.id}'),
+        center: zone.center,
+        radius: zone.radius,
+        fillColor: AppTheme.warningColor.withValues(alpha: 0.18),
+        strokeColor: AppTheme.warningColor.withValues(alpha: 0.5),
+        strokeWidth: 2,
+      ));
+    }
+    return circles;
+  }
+
   Color _qualityColor(AirQualityLevel level) {
     switch (level) {
       case AirQualityLevel.good:
@@ -218,71 +280,84 @@ class _MapScreenState extends State<MapScreen> {
     }
   }
 
-  String _qualityLabel(AirQualityLevel level) {
-    switch (level) {
-      case AirQualityLevel.good:
-        return 'Saludable';
-      case AirQualityLevel.moderate:
-        return 'Moderada';
-      case AirQualityLevel.poor:
-        return 'Contaminada';
-    }
-  }
-
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
   }
 
   Widget _buildLegend() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final itemCount = AirQualityLevel.values.length;
-        final spacing = 10.0;
-        final availableWidth = constraints.maxWidth;
-        final itemWidth = (availableWidth - spacing * (itemCount - 1)) / itemCount;
+    const items = <(Color, String)>[
+      (AppTheme.successColor, 'Saludable'),
+      (Color(0xFFFFC107), 'Zona transición*'),
+      (AppTheme.errorColor, 'Contaminada'),
+    ];
 
-        return Row(
-          children: AirQualityLevel.values.map((level) {
-            final color = _qualityColor(level);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final itemCount = items.length;
+            final spacing = 10.0;
+            final availableWidth = constraints.maxWidth;
+            final itemWidth = (availableWidth - spacing * (itemCount - 1)) / itemCount;
 
-            return SizedBox(
-              width: itemWidth,
-              child: Row(
-                children: [
-                  Container(
-                    width: 10,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: color,
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: color.withValues(alpha: 0.35),
-                          blurRadius: 6,
-                          spreadRadius: 1,
+            return Row(
+              children: items.map((item) {
+                final color = item.$1;
+                final label = item.$2;
+
+                return SizedBox(
+                  width: itemWidth,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: color,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: color.withValues(alpha: 0.35),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      _qualityLabel(level).toUpperCase(),
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textGray,
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          label.toUpperCase(),
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textGray,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                );
+              }).toList(),
             );
-          }).toList(),
-        );
-      },
+          },
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '* Zona de transición derivada de la proximidad entre saludable y contaminado',
+          style: GoogleFonts.poppins(
+            fontSize: 10,
+            fontWeight: FontWeight.w400,
+            color: AppTheme.textGray.withValues(alpha: 0.8),
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 
@@ -1133,6 +1208,10 @@ class _MapScreenState extends State<MapScreen> {
     final communityPoints = _getFilteredCommunityPoints(mapState);
     final markers = _buildMarkers(filteredPoints);
     final circles = mapState.filteredCircles(showZones: _showZones, showOwn: _showMyAnalyses, showCommunity: _showCommunity);
+    final transitionCircles = _showZones
+        ? _buildTransitionCircles(filteredPoints)
+        : const <Circle>{};
+    final allCircles = {...circles, ...transitionCircles};
     final initialPosition = _selectedPoint != null
         ? _selectedPoint!.latLng
         : const LatLng(4.7110, -74.0721);
@@ -1164,7 +1243,7 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 12),
           _buildLegendSection(),
           const SizedBox(height: 12),
-          _buildMapCard(markers, circles, initialPosition, initialZoom),
+          _buildMapCard(markers, allCircles, initialPosition, initialZoom),
           const SizedBox(height: 20),
           if (ownPoints.isNotEmpty)
             _buildAnalysisPanel(

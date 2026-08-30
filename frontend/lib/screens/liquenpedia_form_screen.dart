@@ -4,12 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
-
 import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
 import '../state/articles_state.dart';
+import '../state/auth_state.dart';
+import '../state/profile_state.dart';
 
 class LiquenpediaFormScreen extends StatefulWidget {
   final LiquenpediaArticle? articleToEdit;
@@ -63,7 +64,8 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       text: widget.articleToEdit?.contenido ?? '',
     );
     _autorController = TextEditingController(
-      text: widget.articleToEdit?.autor ?? '',
+      text: widget.articleToEdit?.autor ??
+          context.read<AuthState>().userName ?? '',
     );
     _categoriaController = TextEditingController(
       text: widget.articleToEdit?.categoria ?? '',
@@ -77,14 +79,16 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     _selectedCategoriaId = widget.articleToEdit?.idCategoria;
 
     // Load categories
-    Future.microtask(() {
-      if (mounted) {
-        final articlesState = context.read<ArticlesState>();
-        if (articlesState.categorias.isEmpty) {
-          articlesState.loadCategorias();
-        }
+    if (mounted) {
+      final articlesState = context.read<ArticlesState>();
+      if (articlesState.categorias.isEmpty) {
+        articlesState.loadCategorias();
       }
-    });
+      final profileState = context.read<ProfileState>();
+      if (!profileState.hasFreshData && !profileState.loading) {
+        profileState.loadProfile();
+      }
+    }
   }
 
   @override
@@ -105,6 +109,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       );
       if (pickedFile == null) return;
 
+      if (!mounted) return;
       setState(() {
         _pickedImage = File(pickedFile.path);
         _isLoading = true;
@@ -116,10 +121,13 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       final uploadedUrl = await apiService.uploadImage(image, imageType: 'article');
       if (!mounted) return;
 
+      if (!mounted) return;
       setState(() {
         _imagenController.text = uploadedUrl;
+        _isLoading = false;
       });
 
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Imagen subida correctamente'),
@@ -128,17 +136,14 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error al subir imagen: $e'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -148,12 +153,13 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       return;
     }
 
+    if (!mounted) return;
     setState(() => _isLoading = true);
 
     try {
       final estadoBackend = _translateToBackend(_estadoPublicacion);
       final articlesState = context.read<ArticlesState>();
-      
+
       // Get category name from selected category
       String categoriaNombre = _categoriaController.text;
       if (_selectedCategoriaId != null) {
@@ -166,6 +172,9 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       }
 
       if (widget.articleToEdit == null) {
+        final profileState = context.read<ProfileState>();
+        final fotoPerfilAutor = profileState.profile?['foto_perfil']?.toString() ??
+            widget.articleToEdit?.fotoPerfilAutor;
         await articlesState.createArticle(
           titulo: _tituloController.text,
           contenido: _contenidoController.text,
@@ -176,7 +185,9 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
           imagenArticulo: _imagenController.text.isNotEmpty
               ? _imagenController.text
               : null,
+          fotoPerfilAutor: fotoPerfilAutor,
         );
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Artículo creado exitosamente'),
@@ -196,6 +207,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
               ? _imagenController.text
               : null,
         );
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Artículo actualizado exitosamente'),
@@ -204,8 +216,12 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
         );
       }
 
+      if (!mounted) return;
       Navigator.pop(context, true);
     } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: $e'),
@@ -213,7 +229,9 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
         ),
       );
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -250,7 +268,12 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       ),
       body: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          16 + MediaQuery.of(context).viewInsets.bottom,
+        ),
         child: Form(
           key: _formKey,
           child: Column(
@@ -326,7 +349,6 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                             ),
                           );
                         }
-                        
                         if (articlesState.categoriasError != null) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
@@ -341,7 +363,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                         }
 
                         return DropdownButtonFormField<int?>(
-                          value: _selectedCategoriaId,
+                          initialValue: _selectedCategoriaId,
                           decoration: InputDecoration(
                             labelText: 'Categoría',
                             prefixIcon: const Icon(Icons.category_rounded),
@@ -390,6 +412,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
+                      // Use initialValue instead of value (deprecated)
                       initialValue: _estadoPublicacion,
                       decoration: InputDecoration(
                         labelText: 'Estado de publicación',
@@ -465,7 +488,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                                     AppConfig.getImageUrl(_imagenController.text),
                                     fit: BoxFit.cover,
                                     errorBuilder: (context, error, stackTrace) {
-                                      print('[Image.network error] liquenpedia_form_screen: ${_imagenController.text}\n$error');
+                                      debugPrint('[liquenpedia_form_screen] error de imagen: $error');
                                       return Center(
                                         child: Icon(
                                           Icons.image_rounded,
@@ -478,7 +501,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                                 }(),
                               ),
                             )
-                        else
+                          else
                             Container(
                               padding: const EdgeInsets.symmetric(vertical: 32),
                               decoration: BoxDecoration(
@@ -531,7 +554,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                               foregroundColor: AppTheme.primaryGreen,
                               side: BorderSide(
                                 color: AppTheme.primaryGreen.withValues(alpha: 0.4),
-                                width: 1.5,
+                              width: 1.5,
                               ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
@@ -547,88 +570,88 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                     ),
                   ],
                 ),
-              ).animate().fadeIn(duration: 700.ms),
-              const SizedBox(height: 16),
-              _buildSectionCard(
-                icon: Icons.description_rounded,
-                title: 'Contenido Educativo',
-                subtitle: 'Información detallada sobre el líquen',
-                color: AppTheme.darkGreen,
-                child: Column(
-                  children: [
-                    TextFormField(
-                      controller: _contenidoController,
-                      maxLines: 10,
-                      decoration: InputDecoration(
-                        labelText: 'Descripción detallada',
-                        hintText: 'Escribe información educativa sobre el líquen...',
-                        prefixIcon: const Icon(Icons.description_rounded, size: 20),
-                        alignLabelWithHint: true,
-                        helperText: 'Mínimo 50 caracteres',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                ).animate().fadeIn(duration: 700.ms),
+                const SizedBox(height: 16),
+                _buildSectionCard(
+                  icon: Icons.description_rounded,
+                  title: 'Contenido Educativo',
+                  subtitle: 'Información detallada sobre el líquen',
+                  color: AppTheme.darkGreen,
+                  child: Column(
+                    children: [
+                      TextFormField(
+                        controller: _contenidoController,
+                        maxLines: 10,
+                        decoration: InputDecoration(
+                          labelText: 'Descripción detallada',
+                          hintText: 'Escribe información educativa sobre el líquen...',
+                          prefixIcon: const Icon(Icons.description_rounded, size: 20),
+                          alignLabelWithHint: true,
+                          helperText: 'Mínimo 50 caracteres',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          filled: true,
+                          fillColor: AppTheme.surfaceColor,
+                          contentPadding: const EdgeInsets.all(16),
                         ),
-                        filled: true,
-                        fillColor: AppTheme.surfaceColor,
-                        contentPadding: const EdgeInsets.all(16),
-                      ),
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        height: 1.6,
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'El contenido es requerido';
-                        }
-                        if (value.length < 50) {
-                          return 'El contenido debe tener al menos 50 caracteres';
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn(duration: 800.ms),
-              const SizedBox(height: 24),
-              _isLoading
-                  ? Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Column(
-                          children: [
-                            SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: AppTheme.primaryGreen,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Guardando artículo...',
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.textGray,
-                              ),
-                            ),
-                          ],
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          height: 1.6,
                         ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'El contenido es requerido';
+                          }
+                          if (value.length < 50) {
+                            return 'El contenido debe tener al menos 50 caracteres';
+                          }
+                          return null;
+                        },
                       ),
-                    )
-                  : Column(
-                      children: [
-                        _buildSaveButton(),
-                        const SizedBox(height: 12),
-                        _buildCancelButton(),
-                      ],
-                    ),
-              const SizedBox(height: 32),
-            ],
+                    ],
+                  ),
+                ).animate().fadeIn(duration: 800.ms),
+                const SizedBox(height: 24),
+                _isLoading
+                    ? Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                width: 28,
+                                height: 28,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: AppTheme.primaryGreen,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Guardando artículo...',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppTheme.textGray,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          _buildSaveButton(),
+                          const SizedBox(height: 12),
+                          _buildCancelButton(),
+                        ],
+                      ),
+                const SizedBox(height: 32),
+              ],
+            ),
           ),
         ),
-      ),
     );
   }
 
@@ -717,12 +740,12 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   Widget _buildSaveButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _guardarArticulo,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryGreen,
           foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -757,7 +780,6 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   Widget _buildCancelButton() {
     return SizedBox(
       width: double.infinity,
-      height: 56,
       child: OutlinedButton.icon(
         onPressed: _isLoading ? null : () => Navigator.pop(context),
         icon: const Icon(Icons.close_rounded, size: 18),
@@ -768,6 +790,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
             color: AppTheme.borderColor,
             width: 1.5,
           ),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

@@ -13,6 +13,7 @@ from models.core import LiquenPedia, Usuario, CategoriaArticulo
 from models.validations import ArticuloCreate, ArticuloUpdate
 from auth.auth_service import get_current_user, get_current_user_optional
 from auth.jwt_handler import decode_token
+from services.upload_service import copy_to_article_author_photo
 
 router = APIRouter()
 
@@ -26,6 +27,7 @@ class ArticleResponse(BaseModel):
     autor: Optional[str]
     categoria: Optional[str]
     imagen_articulo: Optional[str] = None
+    foto_perfil_articulo: Optional[str] = None
     estado_publicacion: Optional[str] = None
     fecha_publicacion: datetime
     fecha_actualizacion: Optional[datetime] = None
@@ -102,6 +104,7 @@ def list_articles(
             "id_categoria": art.id_categoria,
             "categoria_nombre": categoria_nombre,
             "imagen_articulo": art.imagen_articulo,
+            "foto_perfil_articulo": art.foto_perfil_articulo,
             "estado_publicacion": art.estado_publicacion,
             "fecha_publicacion": art.fecha_publicacion,
             "fecha_actualizacion": art.fecha_actualizacion
@@ -138,6 +141,17 @@ def create_article(
     db.add(article)
     db.commit()
     db.refresh(article)
+
+    if article.id_articulo and current_user and current_user.foto_perfil:
+        try:
+            article.foto_perfil_articulo = copy_to_article_author_photo(
+                current_user.foto_perfil,
+                current_user.id_usuario,
+            )
+            db.commit()
+            db.refresh(article)
+        except Exception:
+            pass
     
     categoria_nombre = None
     if article.id_categoria:
@@ -154,6 +168,7 @@ def create_article(
         "id_categoria": article.id_categoria,
         "categoria_nombre": categoria_nombre,
         "imagen_articulo": article.imagen_articulo,
+        "foto_perfil_articulo": article.foto_perfil_articulo,
         "estado_publicacion": article.estado_publicacion,
         "fecha_publicacion": article.fecha_publicacion,
         "fecha_actualizacion": article.fecha_actualizacion
@@ -192,6 +207,7 @@ def get_article(
         "id_categoria": art.id_categoria,
         "categoria_nombre": categoria_nombre,
         "imagen_articulo": art.imagen_articulo,
+        "foto_perfil_articulo": art.foto_perfil_articulo,
         "estado_publicacion": art.estado_publicacion,
         "fecha_publicacion": art.fecha_publicacion,
         "fecha_actualizacion": art.fecha_actualizacion
@@ -225,6 +241,8 @@ def update_article(
     for key, value in update_data.items():
         if key == 'imagen_articulo':
             value = normalize_image_path(value)
+        elif key == 'foto_perfil_articulo' and value is not None:
+            value = normalize_image_path(value)
         setattr(art, key, value)
     
     db.commit()
@@ -245,6 +263,7 @@ def update_article(
         "id_categoria": art.id_categoria,
         "categoria_nombre": categoria_nombre,
         "imagen_articulo": art.imagen_articulo,
+        "foto_perfil_articulo": art.foto_perfil_articulo,
         "estado_publicacion": art.estado_publicacion,
         "fecha_publicacion": art.fecha_publicacion,
         "fecha_actualizacion": art.fecha_actualizacion

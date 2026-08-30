@@ -100,17 +100,19 @@ class ArticuloCreate(BaseModel):
     id_categoria: Optional[int] = None
     autor: str = Field(..., min_length=2, max_length=150)
     imagen_articulo: Optional[str] = None
+    foto_perfil_articulo: Optional[str] = None
     estado_publicacion: Optional[str] = Field(None, pattern=r'^(draft|published|archived)$')
 
 
 class ArticuloUpdate(BaseModel):
-    
+     
     titulo: Optional[str] = Field(None, min_length=5, max_length=255)
     contenido: Optional[str] = Field(None, min_length=20, max_length=50000)
     categoria: Optional[str] = Field(None, min_length=3, max_length=100)
     id_categoria: Optional[int] = None
     autor: Optional[str] = Field(None, min_length=2, max_length=150)
     imagen_articulo: Optional[str] = None
+    foto_perfil_articulo: Optional[str] = None
     estado_publicacion: Optional[str] = Field(None, pattern=r'^(draft|published|archived)$')
 
 

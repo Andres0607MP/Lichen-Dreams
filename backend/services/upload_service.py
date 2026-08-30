@@ -168,3 +168,27 @@ def is_private_image_path(relative_path: str) -> bool:
         return False
     rel = normalized[len("/uploads/"):].strip("/")
     return rel.startswith("profiles/") or rel.startswith("analyses/")
+
+
+def copy_to_article_author_photo(source_relative_path: str, user_id: int) -> str:
+    """Copia una imagen de perfil privada a la carpeta publica de articulos
+    para usarla como foto historica del autor. Devuelve la nueva ruta publica.
+    """
+    normalized = normalize_image_path(source_relative_path)
+    if not normalized or not normalized.startswith("/uploads/"):
+        raise ValueError("Ruta de imagen invalida")
+
+    source_path = UPLOADS_BASE_DIR / normalized[len("/uploads/"):]
+    if not source_path.exists():
+        raise FileNotFoundError("Imagen de perfil original no encontrada")
+
+    ext = source_path.suffix
+    unique_name = f"author_{user_id}_{uuid.uuid4().hex}{ext}"
+    dest_dir = UPLOADS_BASE_DIR / "articles"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest_path = dest_dir / unique_name
+
+    import shutil
+    shutil.copy2(source_path, dest_path)
+
+    return f"/uploads/articles/{unique_name}"

@@ -101,7 +101,7 @@ class EnvironmentalQuality {
         normalized.contains('polluted') ||
         normalized.contains('dañado') ||
         normalized.contains('damaged')) {
-      return _values[EnvironmentalQualityLevel.poor]!;
+      return _values[EnvironmentalQualityLevel.critical]!;
     }
     if (normalized.contains('desconocido') ||
         normalized.contains('unknown') ||

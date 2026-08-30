@@ -774,6 +774,7 @@ class ApiService {
       'url_imagen',
       'url',
       'imagen_articulo',
+      'foto_perfil_articulo',
     ];
     for (final key in candidates) {
       if (json.containsKey(key) && json[key] is String) {
@@ -1060,6 +1061,7 @@ class ApiService {
     int? idCategoria,
     required String estadoPublicacion,
     String? imagenArticulo,
+    String? fotoPerfilAutor,
   }) async {
     final response = await _client.post(
       AppConfig.buildUri('/liquenpedia'),
@@ -1072,6 +1074,7 @@ class ApiService {
         'id_categoria': idCategoria,
         'estado_publicacion': estadoPublicacion,
         'imagen_articulo': imagenArticulo,
+        'foto_perfil_articulo': fotoPerfilAutor,
       }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -1095,6 +1098,7 @@ class ApiService {
     int? idCategoria,
     String? estadoPublicacion,
     String? imagenArticulo,
+    String? fotoPerfilAutor,
   }) async {
     final payload = <String, dynamic>{};
     if (titulo != null) payload['titulo'] = titulo;
@@ -1105,6 +1109,7 @@ class ApiService {
     if (estadoPublicacion != null)
       payload['estado_publicacion'] = estadoPublicacion;
     if (imagenArticulo != null) payload['imagen_articulo'] = imagenArticulo;
+    if (fotoPerfilAutor != null) payload['foto_perfil_articulo'] = fotoPerfilAutor;
 
     final response = await _client.put(
       AppConfig.buildUri('/liquenpedia/$id'),

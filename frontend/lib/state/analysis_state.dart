@@ -61,45 +61,56 @@ class AnalysisState extends ChangeNotifier {
         return;
       }
 
-      final analysisId = resultJson['id'] is int
-          ? resultJson['id'] as int
-          : int.tryParse(resultJson['id']?.toString() ?? '') ?? 0;
+final analysisId = resultJson['id'] is int
+           ? resultJson['id'] as int
+           : int.tryParse(resultJson['id']?.toString() ?? '') ?? 0;
 
-      if (analysisId == 0) {
-        _status = 'failed';
-        _error = 'El servidor no devolvió un ID de análisis válido';
-        _stopProgressEstimation();
-        notifyListeners();
-        return;
-      }
+       if (analysisId == 0) {
+         _status = 'failed';
+         _error = 'El servidor no devolvió un ID de análisis válido';
+         _stopProgressEstimation();
+         notifyListeners();
+         return;
+       }
 
-      _activeAnalysisId = analysisId;
+       if (_imageSource == 'gallery' && analysisId < 0) {
+         // Gallery result: treat as completed without persistence
+         _status = 'completed';
+         _lastResult = Map<String, dynamic>.from(resultJson)..['source'] = _imageSource;
+         _dataVersion++;
+         _notifyAnalysisCompleted();
+         notifyListeners();
+         return;
+       }
 
-      final estadoBackend = (resultJson['estado'] ??
-              resultJson['status'] ??
-              resultJson['estado_validacion'] ??
-              resultJson['resultado'])
-          ?.toString()
-          .toLowerCase();
+       // Normal flow for camera/upload
+       _activeAnalysisId = analysisId;
 
-      final isCompleted = estadoBackend == 'completed' ||
-          estadoBackend == 'completado' ||
-          (resultJson['resultado_ia'] != null && resultJson['resultado_ia'].toString().isNotEmpty);
+       final estadoBackend = (resultJson['estado'] ??
+               resultJson['status'] ??
+               resultJson['estado_validacion'] ??
+               resultJson['resultado'])
+           ?.toString()
+           .toLowerCase();
 
-      if (isCompleted) {
-        _status = 'completed';
-        _lastResult = Map<String, dynamic>.from(resultJson)..['source'] = _imageSource;
-        _lastCompletedId = analysisId;
-        NotificationsState.instance.completeAnalysis(analysisId, _extractTitle(resultJson));
-        _dataVersion++;
-        _stopProgressEstimation(completed: true);
-        _notifyAnalysisCompleted();
-        notifyListeners();
-      } else {
-        NotificationsState.instance.trackAnalysis(analysisId, 'Análisis en proceso');
-        _startPolling(analysisId);
-        notifyListeners();
-      }
+       final isCompleted = estadoBackend == 'completed' ||
+           estadoBackend == 'completado' ||
+           (resultJson['resultado_ia'] != null && resultJson['resultado_ia'].toString().isNotEmpty);
+
+       if (isCompleted) {
+         _status = 'completed';
+         _lastResult = Map<String, dynamic>.from(resultJson)..['source'] = _imageSource;
+         _lastCompletedId = analysisId;
+         NotificationsState.instance.completeAnalysis(analysisId, _extractTitle(resultJson));
+         _dataVersion++;
+         _stopProgressEstimation(completed: true);
+         _notifyAnalysisCompleted();
+         notifyListeners();
+       } else {
+         NotificationsState.instance.trackAnalysis(analysisId, 'Análisis en proceso');
+         _startPolling(analysisId);
+         notifyListeners();
+       }
     } catch (e) {
       _status = 'failed';
       _error = e is ApiException ? e.message : e.toString();

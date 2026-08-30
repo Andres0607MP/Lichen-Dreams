@@ -11,6 +11,7 @@ from sqlalchemy import or_
 from config.db import SessionLocal
 from config.settings import normalize_image_path
 from services.upload_service import resolve_file_path
+from services.weather_service import WeatherService
 from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen, Notificacion, ProcesamientoIA
 
 
@@ -147,8 +148,50 @@ class AnalysisService:
                 "mensaje_rechazo": "La imagen no parece corresponder a un liquen. Intenta tomar otra fotografía.",
             }
 
+        if image_source == 'gallery':
+            # For gallery, do not persist anything, return temporary result
+            return {
+                "id": -1,  # temporary id to indicate gallery result
+                "id_usuario": id_usuario,
+                "url_imagen": image_url,
+                "imagen_url": image_url,
+                "image_url": image_url,
+                "imagen_base64": None,
+                "image_base64": None,
+                "resultado": resultado_ia,
+                "categoria": resultado_ia,
+                "confianza": porcentaje_confianza,
+                "nombre_especie": None,  # gallery results do not store species info
+                "estado": estado_validacion,
+                "status": estado_validacion,
+                "humedad": 0.0,
+                "humidity": 0.0,
+                "calidad_del_aire": calidad_aire,
+                "air_quality": calidad_aire,
+                "nivel_contaminacion": nivel_contaminacion,
+                "contamination_level": nivel_contaminacion,
+                "recomendacion": observaciones,
+                "recommendation": observaciones,
+                "fecha_creacion": datetime.utcnow(),
+                "progreso": 100 if estado_validacion == "completed" else 50,
+                "estado_validacion": estado_validacion,
+                "visibilidad": "private",
+            }
+
+        # Persistent flow for camera/upload
         with SessionLocal() as db:
             print(f"[PROCESS] GUARDANDO resultado_ia={resultado_ia} image_source={image_source}")
+            analysis_date = datetime.utcnow()
+            humidity_value = None
+            if id_ubicacion is not None:
+                ubicacion = db.query(Ubicacion).filter(Ubicacion.id_ubicacion == id_ubicacion).first()
+                if ubicacion is not None:
+                    try:
+                        lat = float(ubicacion.latitud)
+                        lng = float(ubicacion.longitud)
+                        humidity_value = WeatherService.get_humidity(lat, lng, analysis_date)
+                    except (ValueError, TypeError, AttributeError):
+                        humidity_value = None
             analysis = Analisis(
                 id_usuario=id_usuario,
                 id_modelo=id_modelo,
@@ -163,8 +206,8 @@ class AnalysisService:
                 estado_validacion=estado_validacion,
                 visibilidad="private",
                 temperatura_ambiente=22.0,
-                humedad_relativa=65.5,
-                fecha=datetime.utcnow(),
+                humedad_relativa=humidity_value,
+                fecha=analysis_date,
                 id_ubicacion=id_ubicacion,
             )
             db.add(analysis)
