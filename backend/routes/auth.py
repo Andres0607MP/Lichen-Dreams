@@ -78,6 +78,7 @@ class UserResponse(BaseModel):
     estado_cuenta: Optional[str] = None
     id_rol: Optional[int]
     rol: Optional[str]
+    proveedor: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -142,7 +143,8 @@ def _issue_auth_tokens(db: Session, user: Usuario) -> dict:
             "telefono": user.telefono,
             "foto_perfil": user.foto_perfil,
             "id_rol": user.id_rol,
-            "rol": user.rol.nombre_rol if user.rol else None
+            "rol": user.rol.nombre_rol if user.rol else None,
+            "proveedor": user.proveedor
         }
     }
 
@@ -392,7 +394,8 @@ def me(current_user: Usuario = Depends(get_current_user)):
         "foto_perfil": current_user.foto_perfil,
         "estado_cuenta": current_user.estado_cuenta,
         "id_rol": current_user.id_rol,
-        "rol": current_user.rol.nombre_rol if current_user.rol else None
+        "rol": current_user.rol.nombre_rol if current_user.rol else None,
+        "proveedor": current_user.proveedor
     }
 
 
@@ -754,6 +757,12 @@ def reset_password(
             detail="La cuenta no está activa. Contacta al administrador."
         )
 
+    if (user.proveedor or "local") == "google":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Esta cuenta utiliza Google y no tiene una contraseña local."
+        )
+
     # Update password
     user.contrasena = hash_password(request.new_password)
 
@@ -803,6 +812,12 @@ def recover_with_code(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Código de recuperación inválido, expirado o ya utilizado."
+        )
+
+    if (user.proveedor or "local") == "google":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Esta cuenta utiliza Google y no tiene una contraseña local."
         )
 
     # Update password using the same bcrypt mechanism as the rest of the system

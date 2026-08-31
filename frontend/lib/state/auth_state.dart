@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
@@ -21,10 +20,12 @@ class AuthState extends ChangeNotifier {
   String? _role;
   String? _userName;
   int? _userId;
+  String? _proveedor;
   bool _loading = false;
 
   static const String _userNameKey = 'user_name';
   static const String _userIdKey = 'user_id';
+  static const String _proveedorKey = 'user_proveedor';
 
   AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
       : _apiService = apiService ?? ApiService(),
@@ -35,6 +36,8 @@ class AuthState extends ChangeNotifier {
   String? get role => _role;
   String? get userName => _userName;
   int? get userId => _userId;
+  String? get proveedor => _proveedor;
+  bool get isGoogleAccount => _proveedor == 'google';
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
   bool get isAdmin => _role == 'admin';
   bool get loading => _loading;
@@ -50,6 +53,7 @@ class AuthState extends ChangeNotifier {
   Future<void> _loadPersistedUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     _userName = prefs.getString(_userNameKey);
+    _proveedor = prefs.getString(_proveedorKey);
     final userIdStr = prefs.getString(_userIdKey);
     if (userIdStr != null && userIdStr.isNotEmpty) {
       _userId = int.tryParse(userIdStr);
@@ -63,6 +67,11 @@ class AuthState extends ChangeNotifier {
     } else {
       await prefs.remove(_userNameKey);
     }
+    if (_proveedor != null) {
+      await prefs.setString(_proveedorKey, _proveedor!);
+    } else {
+      await prefs.remove(_proveedorKey);
+    }
     if (_userId != null) {
       await prefs.setString(_userIdKey, _userId.toString());
     } else {
@@ -74,6 +83,28 @@ class AuthState extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userNameKey);
     await prefs.remove(_userIdKey);
+    await prefs.remove(_proveedorKey);
+  }
+
+  /// Refresca la información canónica de la cuenta (/auth/me) de forma
+  /// best-effort: rol, nombre, id de usuario y proveedor ('local' | 'google').
+  Future<void> syncProvider() async {
+    if (_token == null || _token!.isEmpty) return;
+    try {
+      final me = await _apiService.getMe();
+      final rol = me['rol']?.toString();
+      final nombre = me['nombre']?.toString();
+      final id = _parseUserId(me['id_usuario']);
+      final proveedor = me['proveedor']?.toString();
+      if (rol != null) _role = rol;
+      if (nombre != null) _userName = nombre;
+      if (id != null) _userId = id;
+      if (proveedor != null) _proveedor = proveedor;
+      await _persistUserInfo();
+      notifyListeners();
+    } catch (_) {
+      // best-effort: si la red falla se conserva la información local.
+    }
   }
 
   Future<bool> login(String email, String password) async {
@@ -88,6 +119,7 @@ class AuthState extends ChangeNotifier {
         _role = user['rol']?.toString();
         _userName = user['nombre']?.toString();
         _userId = _parseUserId(user['id_usuario'] ?? user['id']);
+        _proveedor = user['proveedor']?.toString();
       }
       await _persistUserInfo();
       notifyListeners();
@@ -117,6 +149,7 @@ class AuthState extends ChangeNotifier {
         _role = user['rol']?.toString();
         _userName = user['nombre']?.toString();
         _userId = _parseUserId(user['id_usuario'] ?? user['id']);
+        _proveedor = user['proveedor']?.toString();
       }
       await _persistUserInfo();
       notifyListeners();
@@ -175,6 +208,7 @@ class AuthState extends ChangeNotifier {
           _role = user['rol']?.toString();
           _userName = user['nombre']?.toString();
           _userId = _parseUserId(user['id_usuario'] ?? user['id']);
+          _proveedor = user['proveedor']?.toString();
         }
         await _persistUserInfo();
         notifyListeners();
@@ -193,6 +227,7 @@ class AuthState extends ChangeNotifier {
     _role = null;
     _userName = null;
     _userId = null;
+    _proveedor = null;
     await _clearPersistedUserInfo();
     LichenNavigation.instance.reset();
     NotificationsState.instance.reset();
@@ -213,6 +248,7 @@ class AuthState extends ChangeNotifier {
     _role = null;
     _userName = null;
     _userId = null;
+    _proveedor = null;
     await _clearPersistedUserInfo();
     LichenNavigation.instance.reset();
     NotificationsState.instance.reset();

@@ -21,6 +21,40 @@ class AnalysisState extends ChangeNotifier {
   double _estimatedProgress = 0.0;
   Timer? _progressTimer;
 
+  List<Map<String, dynamic>> _availableSpecies = [];
+  bool _speciesLoading = false;
+  String? _speciesError;
+
+  List<Map<String, dynamic>> get availableSpecies =>
+      List.unmodifiable(_availableSpecies);
+  bool get speciesLoading => _speciesLoading;
+  String? get speciesError => _speciesError;
+
+  Future<void> loadSpecies() async {
+    if (_speciesLoading) return;
+    _speciesLoading = true;
+    _speciesError = null;
+    notifyListeners();
+    try {
+      _availableSpecies = await _apiService.getCatalogSpecies();
+    } catch (e) {
+      _speciesError = e.toString();
+    } finally {
+      _speciesLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Guarda la especie seleccionada manualmente por el usuario
+  /// (idEspecie = null para omitir). Devuelve el mapa actualizado del análisis.
+  Future<Map<String, dynamic>> saveAnalysisSpecies(
+    int analysisId,
+    int? idEspecie,
+  ) async {
+    final result = await _apiService.updateAnalysisSpecies(analysisId, idEspecie);
+    return result;
+  }
+
   int? get activeAnalysisId => _activeAnalysisId;
   String get status => _status;
   bool get isProcessing => _status == 'processing';
@@ -209,6 +243,9 @@ final analysisId = resultJson['id'] is int
     _lastCompletedId = null;
     _startedAt = null;
     _estimatedProgress = 0.0;
+    _availableSpecies = [];
+    _speciesLoading = false;
+    _speciesError = null;
     notifyListeners();
     return Future.value();
   }

@@ -141,6 +141,23 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> postProtectedJson(String path, Map<String, dynamic> body) async {
+    final response = await _client.post(
+      AppConfig.buildUri(path),
+      headers: await _headers(authorized: true),
+      body: jsonEncode(body),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al consumir $path',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
   Future<List<dynamic>> getUsers() async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/users'),
@@ -206,6 +223,11 @@ class ApiService {
     }
 
     throw ApiException('Respuesta inesperada al subir imagen');
+  }
+
+  /// Subir imagen de referencia para una especie de liquen.
+  Future<String> uploadSpeciesImage(File imageFile) async {
+    return uploadImage(imageFile, imageType: 'species');
   }
 
   /// Descargar imagen: URLs remotas (http/https, p. ej. lh3.googleusercontent.com)
@@ -494,7 +516,7 @@ class ApiService {
     return token != null && token.isNotEmpty;
   }
 
-  /// Obtener perfil del usuario autenticado
+/// Obtener perfil del usuario autenticado
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _client.get(
       AppConfig.buildUri('/profile'),
@@ -502,13 +524,101 @@ class ApiService {
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
+        _parseResponseMessage(response, 'Error al obtener el perfil'),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Obtener la información de la sesión actual (/auth/me), incluido el
+  /// proveedor de la cuenta ('local' | 'google').
+  Future<Map<String, dynamic>> getMe() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/auth/me'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
         _parseResponseMessage(
           response,
-          'Error ${response.statusCode} al obtener perfil',
+          'Error al obtener la información del usuario',
         ),
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<dynamic>> getReports() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/reports'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener reportes',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as List<dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getReport(int reportId) async {
+    final response = await _client.get(
+      AppConfig.buildUri('/reports/$reportId'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener el reporte',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> createEnvironmentalReport({
+    required String title,
+    String? description,
+  }) async {
+    final response = await _client.post(
+      AppConfig.buildUri('/reports/environmental'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode({
+        'titulo': title,
+        'descripcion': description,
+        'tipo_reporte': 'ambiental',
+        'formato_reporte': 'json',
+      }),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al generar el reporte ambiental',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Eliminar un reporte propio (DELETE /reports/{id}).
+  Future<void> deleteReport(int reportId) async {
+    final response = await _client.delete(
+      AppConfig.buildUri('/reports/$reportId'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al eliminar el reporte',
+        ),
+      );
+    }
   }
 
   /// Actualizar perfil del usuario autenticado
@@ -887,7 +997,7 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
+Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$analysisId/location'),
       headers: await _headers(authorized: true),
@@ -896,7 +1006,49 @@ class ApiService {
       throw ApiException(
         _parseResponseMessage(
           response,
-          'Error ${response.statusCode} al obtener ubicación',
+          'Error ${response.statusCode} al obtener la ubicación',
+        ),
+      );
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  /// Catálogo de especies disponible para usuarios autenticados (lectura).
+  Future<List<Map<String, dynamic>>> getCatalogSpecies() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/catalog/species'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener las especies',
+        ),
+      );
+    }
+    final data = jsonDecode(response.body);
+    if (data is List) {
+      return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    }
+    return [];
+  }
+
+  /// Asocia o quita (idEspecie = null) la especie que el usuario seleccionó.
+  Future<Map<String, dynamic>> updateAnalysisSpecies(
+    int analysisId,
+    int? idEspecie,
+  ) async {
+    final response = await _client.put(
+      AppConfig.buildUri('/analysis/$analysisId/species'),
+      headers: await _headers(authorized: true),
+      body: jsonEncode({'id_especie': idEspecie}),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al guardar la especie',
         ),
       );
     }

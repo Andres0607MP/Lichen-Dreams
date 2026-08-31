@@ -35,13 +35,14 @@ app.add_middleware(
 # Ensure uploads directory structure exists.
 # Public: uploads/articles/ served via StaticFiles.
 # Private: uploads/profiles/ and uploads/analyses/ served via auth-guarded endpoints.
-for subdir in ("articles", "profiles", "analyses"):
+for subdir in ("articles", "profiles", "analyses", "species"):
     (UPLOADS_BASE_DIR / subdir).mkdir(parents=True, exist_ok=True)
 
 # Only expose /uploads/articles as public static files.
 # Private image directories (profiles/, analyses/) are served
 # via auth-guarded endpoints in routes/imagenes.py.
 app.mount("/uploads/articles", StaticFiles(directory=str(UPLOADS_BASE_DIR / "articles")), name="uploads-articles")
+app.mount("/uploads/species", StaticFiles(directory=str(UPLOADS_BASE_DIR / "species")), name="uploads-species")
 
 # Importar y registrar routers
 try:
@@ -52,7 +53,7 @@ except ImportError as e:
 
 try:
     from routes.users import router as users_router
-    app.include_router(user_router, prefix="/api/users", tags=["users"])
+    app.include_router(users_router, prefix="/api/users", tags=["users"])
 except ImportError as e:
     print(f"Warning: users router not found - {e}")
 
@@ -127,6 +128,18 @@ try:
     app.include_router(notificaciones_router, prefix="/notificaciones", tags=["Notificaciones"])
 except ImportError as e:
     print(f"Warning: notificaciones router not found - {e}")
+
+try:
+    from routes.reports import router as reports_router
+    app.include_router(reports_router, prefix="/reports", tags=["Reports"])
+except ImportError as e:
+    print(f"Warning: reports router not found - {e}")
+
+try:
+    from routes.catalog import router as catalog_router
+    app.include_router(catalog_router, prefix="/catalog", tags=["Catalog"])
+except ImportError as e:
+    print(f"Warning: catalog router not found - {e}")
 
 try:
     from routes.maps_route import router as maps_router

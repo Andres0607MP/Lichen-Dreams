@@ -29,9 +29,10 @@ class AppTheme {
   static const Color liquenpediaSecondary = Color(0xFF4A8B6A);
   static const Color liquenpediaIcon = Color(0xFF1E5A3F);
 
-  static const Color especiesPrimary = Color(0xFFB86A5A);
-  static const Color especiesSecondary = Color(0xFFD48A7A);
-  static const Color especiesIcon = Color(0xFF8A4A3A);
+  static const Color especiesPrimary = Color(0xFF3A8A7A);
+  static const Color especiesSecondary = Color(0xFF6FB5A0);
+  static const Color especiesIcon = Color(0xFF2A6A5A);
+  static const Color especiesAccent = Color(0xFFD0E8DC);
 
   static const Color infoColor = Color(0xFF5A6B7A);
   static const Color warningEnvironmental = Color(0xFFB8A43E);

@@ -85,6 +85,8 @@ flutter:
     - assets/audio/analysis_complete.mp3
     - assets/audio/analysis_failed.mp3
     - assets/images/pedia.png
+    - assets/images/licencia.png
+    - assets/images/vitacora.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -22,6 +22,7 @@ from services.upload_service import (
     IMAGE_TYPE_ARTICLE,
     IMAGE_TYPE_PROFILE,
     IMAGE_TYPE_ANALYSIS,
+    IMAGE_TYPE_SPECIES,
 )
 
 router = APIRouter()
@@ -50,6 +51,7 @@ async def upload_image(
     - imagen_tipo=article: guarda en uploads/articles/ (publico)
     - imagen_tipo=profile: guarda en uploads/profiles/user_{id}/ (privado, requiere auth)
     - imagen_tipo=analysis: guarda en uploads/analyses/user_{id}/ (privado, requiere auth)
+    - imagen_tipo=species: guarda en uploads/species/ (publico)
     """
     content, ext = await validate_image(file)
 

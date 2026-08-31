@@ -18,6 +18,18 @@ class SettingsSection extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
+    final childrenWithDividers = <Widget>[];
+    for (int i = 0; i < children.length; i++) {
+      if (i > 0) {
+        childrenWithDividers.add(const Divider(
+          height: 1,
+          indent: 72,
+          endIndent: 16,
+        ));
+      }
+      childrenWithDividers.add(children[i]);
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -47,7 +59,7 @@ class SettingsSection extends StatelessWidget {
             ],
           ),
           child: Column(
-            children: children,
+            children: childrenWithDividers,
           ),
         ),
       ],
@@ -163,16 +175,16 @@ class SettingsTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: titleColor ?? colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                   Text(
+                     title,
+                     style: GoogleFonts.poppins(
+                       fontSize: 15,
+                       fontWeight: FontWeight.w600,
+                       color: titleColor ?? colorScheme.onSurface,
+                     ),
+                     maxLines: 2,
+                     overflow: TextOverflow.ellipsis,
+                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
@@ -253,16 +265,19 @@ class SettingsInfoTile extends StatelessWidget {
                     color: colorScheme.onSurface,
                   ),
                 ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle!,
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+                 if (subtitle != null) ...[
+                   const SizedBox(height: 2),
+                   Text(
+                     subtitle!,
+                     style: GoogleFonts.poppins(
+                       fontSize: 11,
+                       color: colorScheme.onSurfaceVariant,
+                     ),
+                     maxLines: 2,
+                     overflow: TextOverflow.ellipsis,
+                     softWrap: true,
+                   ),
+                 ],
               ],
             ),
           ),
@@ -387,12 +402,14 @@ class SettingsDialog {
             color: colorScheme.onSurface,
           ),
         ),
-        content: Text(
-          content,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: colorScheme.onSurfaceVariant,
-            height: 1.5,
+        content: SingleChildScrollView(
+          child: Text(
+            content,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
           ),
         ),
         actions: [
@@ -434,12 +451,14 @@ class SettingsDialog {
             color: titleColor ?? colorScheme.onSurface,
           ),
         ),
-        content: Text(
-          content,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: colorScheme.onSurfaceVariant,
-            height: 1.5,
+        content: SingleChildScrollView(
+          child: Text(
+            content,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: colorScheme.onSurfaceVariant,
+              height: 1.5,
+            ),
           ),
         ),
         actions: [

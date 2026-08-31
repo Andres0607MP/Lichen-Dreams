@@ -703,6 +703,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     VoidCallback? onChartTap,
   }) {
     final summary = record.summary.isNotEmpty ? record.summary : record.status;
+    final especieCientifica = record.raw['especie_nombre_cientifico']?.toString();
+    final especieComun = record.raw['especie_nombre_comun']?.toString();
 
     return AnimatedOpacity(
       opacity: isDeleting ? 0.0 : 1.0,
@@ -833,6 +835,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               icon: Icons.air_rounded,
                               label: calidadAire,
                               color: AppTheme.textGray,
+                              compact: true,
+                            ),
+                          if (especieCientifica != null && especieCientifica.isNotEmpty)
+                            _InfoChip(
+                              icon: Icons.biotech_rounded,
+                              label:
+                                  '${especieComun ?? especieCientifica} · seleccionada por ti',
+                              color: const Color(0xFF5D4037),
                               compact: true,
                             ),
                         ],

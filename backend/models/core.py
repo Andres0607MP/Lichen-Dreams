@@ -263,6 +263,9 @@ class ZonaAmbiental(Base):
     __tablename__ = 'zonas_ambientales'
     id_zona = Column(Integer, primary_key=True, autoincrement=True)
     nombre_zona = Column(String(100))
+    latitud = Column(DECIMAL(10, 8))
+    longitud = Column(DECIMAL(11, 8))
+    radio_metros = Column(Float)
     nivel_riesgo = Column(String(50))
     calidad_promedio_aire = Column(String(50))
     descripcion = Column(Text)
@@ -333,6 +336,7 @@ class Reporte(Base):
     estado_reporte = Column(String(50))
     fecha_generacion = Column(TIMESTAMP, server_default=func.now())
     id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    datos_reporte = Column(JSON, nullable=True)
     usuario = relationship('Usuario', back_populates='reportes')
 
 

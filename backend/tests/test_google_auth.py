@@ -21,7 +21,7 @@ from fastapi.testclient import TestClient
 
 from config.db import get_db
 from models.base import Base
-from models.core import Sesion, Usuario
+from models.core import PasswordResetToken, Sesion, Usuario
 import routes.auth as auth_routes
 from main import app
 
@@ -281,6 +281,76 @@ def test_refresh_y_logout_con_sesion_google(client, fake_google):
 
     ref2 = client.post("/auth/refresh", json={"refresh_token": refresh})
     assert ref2.status_code in (400, 401, 403)
+
+
+def test_me_devuelve_proveedor_local(client):
+    email = f"me_local+{uuid.uuid4().hex[:8]}@example.com"
+    reg = client.post(
+        "/auth/register",
+        json={"email": email, "password": "Password123!", "name": "Local"},
+    )
+    assert reg.status_code == 201
+    login = client.post(
+        "/auth/login",
+        data={"email": email, "password": "Password123!"},
+    )
+    assert login.status_code == 200
+    me = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+    )
+    assert me.status_code == 200
+    assert me.json()["proveedor"] == "local"
+
+
+def test_me_devuelve_proveedor_google(client, fake_google):
+    claims = _google_claims()
+    fake_google(claims)
+    login = _google_login(client)
+    assert login.status_code == 200
+    me = client.get(
+        "/auth/me",
+        headers={"Authorization": f"Bearer {login.json()['access_token']}"},
+    )
+    assert me.status_code == 200
+    assert me.json()["proveedor"] == "google"
+
+
+def test_reset_password_rechazado_para_cuenta_google(client, fake_google):
+    import hashlib
+    from datetime import datetime, timedelta
+
+    claims = _google_claims()
+    fake_google(claims)
+    assert _google_login(client).status_code == 200
+
+    # Crear un token de reset válido directamente para el usuario de Google
+    db = SessionLocal()
+    try:
+        user = db.query(Usuario).filter(Usuario.proveedor_id == claims["sub"]).first()
+        raw_token = "654321"
+        db.add(PasswordResetToken(
+            id_usuario=user.id_usuario,
+            token_hash=hashlib.sha256(raw_token.encode()).hexdigest(),
+            expires_at=datetime.utcnow() + timedelta(minutes=30),
+        ))
+        db.commit()
+    finally:
+        db.close()
+
+    resp = client.post(
+        "/auth/reset-password",
+        json={"token": raw_token, "new_password": "NuevaPass1!"},
+    )
+    assert resp.status_code == 400
+    assert "Google" in resp.json()["detail"]
+
+    db = SessionLocal()
+    try:
+        user = db.query(Usuario).filter(Usuario.proveedor_id == claims["sub"]).first()
+        assert user.contrasena is None
+    finally:
+        db.close()
 
 
 def test_flujo_email_password_sigue_funcionando(client, fake_google):

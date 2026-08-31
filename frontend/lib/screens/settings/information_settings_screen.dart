@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../widgets/lichen_scaffold.dart';
 import '../../widgets/app_theme.dart';
 import '../../widgets/settings_widgets.dart';
+import '../../routes/route_names.dart';
 
 class InformationSettingsScreen extends StatelessWidget {
   const InformationSettingsScreen({super.key});
@@ -85,7 +86,7 @@ class InformationSettingsScreen extends StatelessWidget {
                   iconColor: const Color(0xFFFF8F00),
                   title: 'Ayuda y soporte',
                   subtitle: 'Preguntas frecuentes y asistencia',
-                  onTap: () => SettingsDialog.showComingSoon(context, 'Sistema de ayuda'),
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.helpSettings),
                 ),
               ],
             ).animate().fadeIn(duration: 300.ms, delay: 200.ms).slideY(begin: 0.02),
@@ -100,7 +101,7 @@ class InformationSettingsScreen extends StatelessWidget {
                   iconColor: const Color(0xFF5D4037),
                   title: 'Licencias',
                   subtitle: 'Información de las dependencias utilizadas',
-                  onTap: () => SettingsDialog.showComingSoon(context, 'Licencias'),
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.licensesSettings),
                 ),
               ],
             ).animate().fadeIn(duration: 300.ms, delay: 300.ms).slideY(begin: 0.02),

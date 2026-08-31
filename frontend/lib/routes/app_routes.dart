@@ -26,9 +26,15 @@ import '../screens/settings/notification_settings_screen.dart';
 import '../screens/settings/appearance_settings_screen.dart';
 import '../screens/settings/information_settings_screen.dart';
 import '../screens/settings/legal_settings_screen.dart';
+import '../screens/settings/terms_conditions_screen.dart';
+import '../screens/settings/environmental_report_screen.dart';
+import '../screens/settings/environmental_reports_screen.dart';
+import '../screens/settings/help_screen.dart';
+import '../screens/settings/licenses_screen.dart';
 import '../screens/catalogs_screen.dart';
 import '../screens/admin_species_screen.dart';
 import '../screens/admin_zones_screen.dart';
+import '../screens/species_detail_screen.dart';
 import 'route_names.dart';
 
 class AppRouter {
@@ -72,9 +78,19 @@ class AppRouter {
     AppRoutes.appearanceSettings: (_) => const AppearanceSettingsScreen(),
     AppRoutes.informationSettings: (_) => const InformationSettingsScreen(),
     AppRoutes.legalSettings: (_) => const LegalSettingsScreen(),
+    AppRoutes.termsConditionsSettings: (_) => const TermsConditionsScreen(),
+    AppRoutes.environmentalReports: (_) => const EnvironmentalReportsScreen(),
+    AppRoutes.environmentalReport: (_) => const EnvironmentalReportScreen(),
+    AppRoutes.helpSettings: (_) => const HelpScreen(),
+    AppRoutes.licensesSettings: (_) => const LicensesScreen(),
     AppRoutes.catalogsSettings: (_) => const CatalogsScreen(),
     AppRoutes.adminSpeciesSettings: (_) => const AdminSpeciesScreen(),
     AppRoutes.adminZonesSettings: (_) => const AdminZonesScreen(),
+    AppRoutes.speciesDetail: (context) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      final species = args is Map<String, dynamic> ? args : <String, dynamic>{};
+      return SpeciesDetailScreen(species: species);
+    },
   };
 
   static Route<dynamic> generateRoute(RouteSettings settings) {

@@ -341,23 +341,33 @@ class EspecieLiquenResponse(BaseModel):
 
 class ZonaAmbientalCreate(BaseModel):
     nombre_zona: str = Field(..., min_length=2, max_length=100)
-    nivel_riesgo: Optional[str] = None
-    calidad_promedio_aire: Optional[str] = None
+    latitud: Optional[float] = Field(None, ge=-90, le=90)
+    longitud: Optional[float] = Field(None, ge=-180, le=180)
+    radio_metros: Optional[float] = Field(None, gt=0)
     descripcion: Optional[str] = None
 
 
 class ZonaAmbientalUpdate(BaseModel):
     nombre_zona: Optional[str] = Field(None, min_length=2, max_length=100)
-    nivel_riesgo: Optional[str] = None
-    calidad_promedio_aire: Optional[str] = None
+    latitud: Optional[float] = Field(None, ge=-90, le=90)
+    longitud: Optional[float] = Field(None, ge=-180, le=180)
+    radio_metros: Optional[float] = Field(None, gt=0)
     descripcion: Optional[str] = None
 
 
 class ZonaAmbientalResponse(BaseModel):
     id_zona: int
     nombre_zona: Optional[str] = None
+    latitud: Optional[float] = None
+    longitud: Optional[float] = None
+    radio_metros: Optional[float] = None
     nivel_riesgo: Optional[str] = None
     calidad_promedio_aire: Optional[str] = None
+    total_analisis: int = 0
+    saludables: int = 0
+    afectados: int = 0
+    desconocidos: int = 0
+    porcentaje_saludable: Optional[float] = None
     descripcion: Optional[str] = None
     fecha_actualizacion: Optional[datetime] = None
 

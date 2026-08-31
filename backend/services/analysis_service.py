@@ -85,6 +85,7 @@ class AnalysisService:
         }
 
     def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1, id_ubicacion: Optional[int] = None, image_source: str = 'upload') -> Dict[str, Any]:
+        ia_result = None
         try:
             from ia.modelos.lichen_classifier import predict
 

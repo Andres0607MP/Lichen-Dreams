@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from auth.auth_service import get_current_user
-from models.core import Analisis, Usuario, HistorialActividad, ProcesamientoIA, Notificacion, Imagen
+from models.core import Analisis, EspecieLiquen, Usuario, HistorialActividad, ProcesamientoIA, Notificacion, Imagen
 from config.db import get_db
 from services.analysis_service import AnalysisService
 from services.upload_service import (
@@ -247,6 +247,9 @@ def get_my_analyses(
             "visibilidad": a.visibilidad,
             "fecha_creacion": a.fecha.isoformat() if a.fecha else None,
             "confianza": a.porcentaje_confianza,
+            "id_especie": a.id_especie,
+            "especie_nombre_cientifico": a.especie.nombre_cientifico if a.especie else None,
+            "especie_nombre_comun": a.especie.nombre_comun if a.especie else None,
         }
         for a in analyses
     ]
@@ -349,9 +352,9 @@ def delete_analysis(
     return None
 
 
-@router.get("/{analysis_id}/species", response_model=dict, summary="Obtener especie de liquen identificada")
+@router.get("/{analysis_id}/species", response_model=dict, summary="Obtener especie asociada a un análisis")
 def get_analysis_species(analysis_id: int, current_user: Usuario = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Devuelve la especie de liquen identificada en un análisis."""
+    """Devuelve la especie asociada manualmente a un análisis (si el usuario la seleccionó)."""
     analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
     if not analysis:
         raise HTTPException(status_code=404, detail="Análisis no encontrado")
@@ -362,6 +365,7 @@ def get_analysis_species(analysis_id: int, current_user: Usuario = Depends(get_c
     if not especie:
         return {
             "id_analisis": analysis_id,
+            "id_especie": None,
             "nombre_cientifico": None,
             "nombre_comun": None,
             "nivel_tolerancia_contaminacion": None,
@@ -370,11 +374,48 @@ def get_analysis_species(analysis_id: int, current_user: Usuario = Depends(get_c
 
     return {
         "id_analisis": analysis_id,
+        "id_especie": especie.id_especie,
         "nombre_cientifico": especie.nombre_cientifico,
         "nombre_comun": especie.nombre_comun,
         "nivel_tolerancia_contaminacion": especie.nivel_tolerancia_contaminacion,
         "indicador_calidad_aire": especie.indicador_calidad_aire,
     }
+
+
+class SpeciesUpdateRequest(BaseModel):
+    id_especie: int | None = None
+
+
+@router.put("/{analysis_id}/species", response_model=dict, summary="Asociar o quitar especie de un análisis")
+def update_analysis_species(
+    analysis_id: int,
+    request: SpeciesUpdateRequest,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Selección MANUAL del usuario: asocia (o quita) una especie del catálogo.
+
+    La especie nunca es un resultado de la IA; esta operación solo persiste la
+    elección del usuario (id_especie o NULL al omitir).
+    """
+    analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análisis no encontrado")
+    if analysis.id_usuario != current_user.id_usuario:
+        raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+
+    if request.id_especie is not None:
+        especie = db.query(EspecieLiquen).filter(
+            EspecieLiquen.id_especie == request.id_especie
+        ).first()
+        if not especie:
+            raise HTTPException(status_code=404, detail="Especie no encontrada")
+        analysis.id_especie = especie.id_especie
+    else:
+        analysis.id_especie = None
+
+    db.commit()
+    return get_analysis_species(analysis_id, current_user, db)
 
 
 @router.get("/{analysis_id}/location", response_model=dict, summary="Obtener ubicación de un análisis")

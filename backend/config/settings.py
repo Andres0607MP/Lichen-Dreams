@@ -66,6 +66,7 @@ ALLOWED_MIME_TYPES = {
 IMAGE_TYPE_ARTICLE = "article"
 IMAGE_TYPE_PROFILE = "profile"
 IMAGE_TYPE_ANALYSIS = "analysis"
+IMAGE_TYPE_SPECIES = "species"
 
 
 def normalize_image_path(value, backend_url=BACKEND_URL):

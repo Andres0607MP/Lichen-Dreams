@@ -9,6 +9,7 @@ import '../../state/notifications_state.dart';
 import '../../widgets/lichen_scaffold.dart';
 import '../../widgets/app_theme.dart';
 import '../../widgets/settings_widgets.dart';
+import '../../routes/route_names.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -120,8 +121,8 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
                   icon: Icons.eco_rounded,
                   iconColor: AppTheme.primaryGreen,
                   title: 'Resumen ambiental',
-                  subtitle: 'Recibe información periódica sobre la calidad ambiental',
-                  onTap: () => SettingsDialog.showComingSoon(context, 'Resumen ambiental'),
+                  subtitle: 'Consulta tus reportes de calidad ambiental',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.environmentalReports),
                 ),
               ],
             ).animate().fadeIn(duration: 300.ms, delay: 200.ms).slideY(begin: 0.02),

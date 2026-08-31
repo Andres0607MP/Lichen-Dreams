@@ -69,24 +69,24 @@ void main() {
     await tester.tap(find.widgetWithIcon(IconButton, Icons.add_rounded));
     await tester.pumpAndSettle();
 
-    final ButtonStyleButton saveButton = tester.widget(
-      find.widgetWithText(ElevatedButton, 'Crear especie'),
+    final saveButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Crear especie'),
     );
-    expect(saveButton.onPressed, isNull, reason: 'Debe estar deshabilitado con el nombre vacÃ­o');
+    expect(saveButton.onPressed, isNull, reason: 'Debe estar deshabilitado con el nombre vacío');
 
     await tester.enterText(find.byType(TextFormField).first, '   ');
     await tester.pump();
-    final emptyAfterSpaces = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Crear especie'),
+    final emptyAfterSpaces = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Crear especie'),
     );
     expect(emptyAfterSpaces.onPressed, isNull, reason: 'Solo espacios no debe habilitar el guardado');
 
     await tester.enterText(find.byType(TextFormField).first, '  Xanthoria parietina  ');
     await tester.pump();
-    final validButton = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Crear especie'),
+    final validButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Crear especie'),
     );
-    expect(validButton.onPressed, isNotNull, reason: 'Con nombre vÃ¡lido debe habilitarse');
+    expect(validButton.onPressed, isNotNull, reason: 'Con nombre válido debe habilitarse');
 
     await tester.tap(find.text('Cancelar'));
     await tester.pumpAndSettle();
@@ -105,8 +105,8 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, '   ');
     await tester.pump();
 
-    final button = tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, 'Crear especie'),
+    final button = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'Crear especie'),
     );
     expect(button.onPressed, isNull);
     expect(api.createCount, 0, reason: 'No debe enviarse peticiÃ³n con nombre invÃ¡lido');
@@ -129,7 +129,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).at(1), 'LÃ­quen pulmonar');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Crear especie'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Crear especie'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
@@ -159,7 +159,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, '  Xanthoria parietina  ');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Crear especie'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Crear especie'));
     await tester.pumpAndSettle();
 
     expect(api.createCount, 1);
@@ -195,7 +195,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, '  Usnea longissima  ');
     await tester.pump();
 
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Guardar'));
+    await tester.tap(find.widgetWithText(FilledButton, 'Guardar cambios'));
     await tester.pumpAndSettle();
 
     expect(api.updateCount, 1);

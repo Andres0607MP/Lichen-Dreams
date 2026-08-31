@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,12 +10,29 @@ import '../../state/auth_state.dart';
 import '../../widgets/lichen_scaffold.dart';
 import '../../widgets/app_theme.dart';
 import '../../widgets/settings_widgets.dart';
+import '../../routes/route_names.dart';
+import 'legal_settings_screen.dart';
 
-class PrivacySettingsScreen extends StatelessWidget {
+class PrivacySettingsScreen extends StatefulWidget {
   const PrivacySettingsScreen({super.key});
 
   @override
+  State<PrivacySettingsScreen> createState() => _PrivacySettingsScreenState();
+}
+
+class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Best-effort: sincroniza rol/nombre/proveedor desde /auth/me.
+    unawaited(context.read<AuthState>().syncProvider());
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthState>();
+    final isGoogle = authState.isGoogleAccount;
+
     return LichenScaffold(
       apiService: Provider.of<ApiService>(context, listen: false),
       showBottomNav: false,
@@ -25,12 +44,16 @@ class PrivacySettingsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text(
-          'Privacidad y seguridad',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+        title: Flexible(
+          child: Text(
+            'Privacidad y seguridad',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppTheme.textDark,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ),
@@ -57,6 +80,16 @@ class PrivacySettingsScreen extends StatelessWidget {
                   subtitle: 'Gestionado por los ajustes del dispositivo',
                   onTap: () => _showLocationPermissionsInfo(context),
                 ),
+                const SizedBox(height: 8),
+                SettingsInfoTile(
+                  icon: Icons.info_outline_rounded,
+                  iconColor: const Color(0xFF00897B),
+                  title: 'Análisis compartidos',
+                  value: 'Autor visible',
+                  subtitle:
+                      'Al compartir un análisis, el mapa muestra tu nombre y foto de perfil '
+                      'como autor, tal como están registrados en el sistema.',
+                ),
               ],
             ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.02),
 
@@ -65,12 +98,22 @@ class PrivacySettingsScreen extends StatelessWidget {
             SettingsSection(
               title: 'Seguridad',
               children: [
+                if (!isGoogle) ...[
+                  SettingsTile(
+                    icon: Icons.lock_rounded,
+                    iconColor: const Color(0xFF00897B),
+                    title: 'Cambiar contraseña',
+                    subtitle: 'Actualiza tu credencial de acceso',
+                    onTap: () => _handleChangePassword(context),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 SettingsTile(
-                  icon: Icons.lock_rounded,
-                  iconColor: const Color(0xFF00897B),
-                  title: 'Cambiar contraseña',
-                  subtitle: 'Actualiza tu credencial de acceso',
-                  onTap: () => _handleChangePassword(context),
+                  icon: Icons.vpn_key_rounded,
+                  iconColor: const Color(0xFF1976D2),
+                  title: 'Método de inicio de sesión',
+                  subtitle: isGoogle ? 'Google' : 'Correo y contraseña',
+                  onTap: () => _showLoginMethodInfo(context, isGoogle),
                 ),
                 const SizedBox(height: 8),
                 SettingsTile(
@@ -82,15 +125,72 @@ class PrivacySettingsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 SettingsTile(
+                  icon: Icons.logout_rounded,
+                  iconColor: AppTheme.textGray,
+                  title: 'Cerrar sesión',
+                  subtitle: 'Cierra tu sesión actual en este dispositivo',
+                  onTap: () async {
+                    await context.read<AuthState>().logout(context);
+                    if (context.mounted) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        AppRoutes.login,
+                        (route) => false,
+                      );
+                    }
+                  },
+                ),
+              ],
+            ).animate().fadeIn(duration: 300.ms, delay: 100.ms).slideY(begin: 0.02),
+
+            const SizedBox(height: 20),
+
+            SettingsSection(
+              title: 'Cuenta',
+              children: [
+                SettingsTile(
                   icon: Icons.delete_outline_rounded,
                   iconColor: AppTheme.errorColor,
                   title: 'Eliminar cuenta',
                   subtitle: 'Desactiva tu cuenta permanentemente',
                   titleColor: AppTheme.errorColor,
-                  onTap: () => _handleDeleteAccount(context),
+                  onTap: () => _handleDeleteAccount(context, isGoogle),
                 ),
               ],
-            ).animate().fadeIn(duration: 300.ms, delay: 100.ms).slideY(begin: 0.02),
+            ).animate().fadeIn(duration: 300.ms, delay: 150.ms).slideY(begin: 0.02),
+
+            const SizedBox(height: 20),
+
+            SettingsSection(
+              title: 'Información',
+              children: [
+                SettingsTile(
+                  icon: Icons.policy_rounded,
+                  iconColor: const Color(0xFF1976D2),
+                  title: 'Política de privacidad',
+                  subtitle: 'Conoce cómo protegemos tu información',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LegalSettingsScreen()),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  icon: Icons.help_outline_rounded,
+                  iconColor: const Color(0xFFFF8F00),
+                  title: 'Ayuda y soporte',
+                  subtitle: 'Preguntas frecuentes y asistencia',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.helpSettings),
+                ),
+                const SizedBox(height: 8),
+                SettingsTile(
+                  icon: Icons.description_rounded,
+                  iconColor: const Color(0xFF5D4037),
+                  title: 'Licencias',
+                  subtitle: 'Información de las dependencias utilizadas',
+                  onTap: () => Navigator.pushNamed(context, AppRoutes.licensesSettings),
+                ),
+              ],
+            ).animate().fadeIn(duration: 300.ms, delay: 200.ms).slideY(begin: 0.02),
 
             const SizedBox(height: 32),
           ],
@@ -139,13 +239,39 @@ class PrivacySettingsScreen extends StatelessWidget {
       if (context.mounted) {
         await context.read<AuthState>().clearAuthState(context);
         if (context.mounted) {
-          Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppRoutes.login,
+            (route) => false,
+          );
         }
       }
     }
   }
 
-  Future<void> _handleDeleteAccount(BuildContext context) async {
+  void _showLoginMethodInfo(BuildContext context, bool isGoogle) {
+    SettingsDialog.showInfo(
+      context: context,
+      title: 'Método de inicio de sesión',
+      content: isGoogle
+          ? 'Tu cuenta está vinculada con Google y no utiliza una contraseña local. '
+              'Por eso la opción "Cambiar contraseña" no está disponible.'
+          : 'Tu cuenta utiliza correo electrónico y contraseña para iniciar sesión.',
+    );
+  }
+
+  Future<void> _handleDeleteAccount(BuildContext context, bool isGoogle) async {
+    if (isGoogle) {
+      SettingsDialog.showInfo(
+        context: context,
+        title: 'Eliminar cuenta de Google',
+        content:
+            'La eliminación de una cuenta de Google requiere una reautenticación con Google '
+            'que actualmente no está disponible. Por seguridad, esta opción permanece '
+            'deshabilitada para cuentas de Google en esta versión.',
+      );
+      return;
+    }
+
     final confirm = await SettingsDialog.showConfirm(
       context: context,
       title: 'Eliminar cuenta',
@@ -167,19 +293,22 @@ class PrivacySettingsScreen extends StatelessWidget {
           final apiService = Provider.of<ApiService>(context, listen: false);
           await apiService.deleteAccount(password: password);
 
-          if (context.mounted) {
-            await context.read<AuthState>().clearAuthState(context);
             if (context.mounted) {
-              SettingsDialog.showInfo(
-                context: context,
-                title: 'Cuenta eliminada',
-                content: 'Tu cuenta ha sido eliminada exitosamente.',
-              );
+              await context.read<AuthState>().clearAuthState(context);
               if (context.mounted) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
+                SettingsDialog.showInfo(
+                  context: context,
+                  title: 'Cuenta eliminada',
+                  content: 'Tu cuenta ha sido eliminada exitosamente.',
+                );
+                if (context.mounted) {
+                  Navigator.of(context).pushNamedAndRemoveUntil(
+                    AppRoutes.login,
+                    (route) => false,
+                  );
+                }
               }
             }
-          }
         } catch (e) {
           if (context.mounted) {
             SettingsDialog.showInfo(
@@ -333,6 +462,8 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
               Text(
                 _error!,
                 style: GoogleFonts.poppins(color: AppTheme.errorColor, fontSize: 12),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
           ],
@@ -384,9 +515,10 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
         'Confirmar eliminación',
         style: GoogleFonts.poppins(fontWeight: FontWeight.w700, color: AppTheme.errorColor),
       ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           Text(
             'Ingresa tu contraseña para confirmar la eliminación de tu cuenta:',
             style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textGray),
@@ -405,6 +537,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
             ),
           ),
         ],
+      ),
       ),
       actions: [
         TextButton(
@@ -468,30 +601,14 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
     final analysisId = analysis['id_analisis'] as int?;
     if (analysisId == null) return;
 
-    final confirmed = await showDialog<bool>(
+    final confirmed = await SettingsDialog.showConfirm(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          '¿Dejar de compartir este análisis?',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
-        ),
-        content: Text(
-          'Este análisis dejará de ser visible para otros usuarios en el mapa comunitario.\n\n¿Quieres continuar?',
-          style: GoogleFonts.poppins(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancelar', style: GoogleFonts.poppins()),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryGreen),
-            child: Text('Dejar de compartir', style: GoogleFonts.poppins(color: Colors.white)),
-          ),
-        ],
-      ),
+      title: '¿Dejar de compartir este análisis?',
+      content:
+          'Este análisis dejará de ser visible para otros usuarios en el mapa comunitario.\n\n'
+          '¿Quieres continuar?',
+      confirmText: 'Dejar de compartir',
+      cancelText: 'Cancelar',
     );
 
     if (confirmed != true || !mounted) return;
@@ -532,13 +649,20 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           'Análisis compartidos',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textDark,
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -815,13 +939,20 @@ class _SessionsScreenState extends State<SessionsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLowest,
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
         title: Text(
           'Sesiones activas',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w700),
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            color: AppTheme.textDark,
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -829,16 +960,24 @@ class _SessionsScreenState extends State<SessionsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : _error != null
               ? Center(
-                  child: Text(
-                    'Error: $_error',
-                    style: GoogleFonts.poppins(color: AppTheme.errorColor),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      'Error: $_error',
+                      style: GoogleFonts.poppins(color: AppTheme.errorColor),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 )
               : _sessions.isEmpty
                   ? Center(
-                      child: Text(
-                        'No hay sesiones',
-                        style: GoogleFonts.poppins(color: AppTheme.textGray),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Text(
+                          'No hay sesiones',
+                          style: GoogleFonts.poppins(color: AppTheme.textGray),
+                          textAlign: TextAlign.center,
+                        ),
                       ),
                     )
                   : ListView.builder(
@@ -852,6 +991,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           child: ListTile(
                             leading: Icon(
                               isActive ? Icons.check_circle : Icons.cancel,

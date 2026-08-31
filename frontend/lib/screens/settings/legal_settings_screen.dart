@@ -7,6 +7,7 @@ import '../../services/api_service.dart';
 import '../../widgets/lichen_scaffold.dart';
 import '../../widgets/app_theme.dart';
 import '../../widgets/settings_widgets.dart';
+import 'terms_conditions_screen.dart';
 
 class LegalSettingsScreen extends StatelessWidget {
   const LegalSettingsScreen({super.key});
@@ -98,10 +99,9 @@ class LegalSettingsScreen extends StatelessWidget {
   }
 
   void _showTermsDialog(BuildContext context) {
-    SettingsDialog.showInfo(
-      context: context,
-      title: 'Términos y condiciones',
-      content: 'Los términos y condiciones estarán disponibles próximamente.',
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TermsConditionsScreen()),
     );
   }
 

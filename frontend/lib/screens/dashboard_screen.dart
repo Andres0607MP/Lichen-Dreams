@@ -21,6 +21,7 @@ import '../state/analysis_state.dart';
 import '../state/notifications_state.dart';
 import '../state/catalog_state.dart';
 import '../screens/dashboard_stats_detail_sheet.dart';
+import '../config/app_config.dart';
 
 const String profileImagePath = 'assets/logo/saludo.png';
 
@@ -1025,6 +1026,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
 
   Widget _buildSpeciesList(BuildContext context, List<Map<String, dynamic>> species, bool isLargeScreen) {
     final displaySpecies = species.take(5).toList();
+    final isAdmin = context.select<AuthState, bool>((a) => a.isAdmin);
     return SizedBox(
       height: 200,
       child: SingleChildScrollView(
@@ -1035,7 +1037,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: displaySpecies
-              .map((s) => _DashboardSpeciesCard(species: s))
+              .map((s) => _DashboardSpeciesCard(species: s, isAdmin: isAdmin))
               .toList(),
         ),
       ),
@@ -1182,8 +1184,9 @@ class _SpeciesSectionData {
 
 class _DashboardSpeciesCard extends StatelessWidget {
   final Map<String, dynamic> species;
+  final bool isAdmin;
 
-  const _DashboardSpeciesCard({required this.species});
+  const _DashboardSpeciesCard({required this.species, this.isAdmin = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1192,83 +1195,195 @@ class _DashboardSpeciesCard extends StatelessWidget {
     final nombreComun = species['nombre_comun']?.toString();
     final tipoCrecimiento = species['tipo_crecimiento']?.toString();
     final colorPredominante = species['color_predominante']?.toString();
+    final imagen = species['imagen_referencia']?.toString();
 
-    return Container(
-      width: 160,
-      height: 200,
-      margin: const EdgeInsets.only(right: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppTheme.especiesPrimary.withValues(alpha: 0.12),
-            AppTheme.especiesSecondary.withValues(alpha: 0.06),
+    return GestureDetector(
+      onTap: isAdmin
+          ? () => _openAdminEdit(context, species)
+          : () => _openSpeciesDetail(context, species),
+      child: Container(
+        width: 160,
+        height: 200,
+        margin: const EdgeInsets.only(right: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.especiesPrimary.withValues(alpha: 0.12),
+              AppTheme.especiesSecondary.withValues(alpha: 0.06),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: AppTheme.especiesPrimary.withValues(alpha: 0.2),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.06),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppTheme.especiesPrimary.withValues(alpha: 0.2),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                height: 90,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: AppTheme.backgroundColor,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: imagen != null && imagen.isNotEmpty
+                      ? Image.network(
+                          AppConfig.getImageUrl(imagen),
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          errorBuilder: (context, error, stackTrace) => _PlaceholderIcon(),
+                        )
+                      : _PlaceholderIcon(),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                nombreCientifico,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (nombreComun != null && nombreComun.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  nombreComun,
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+              const SizedBox(height: 6),
+              if (tipoCrecimiento != null && tipoCrecimiento.isNotEmpty) ...[
+                _buildTag(context, tipoCrecimiento, AppTheme.especiesIcon),
+              ] else if (colorPredominante != null && colorPredominante.isNotEmpty) ...[
+                _buildTag(context, colorPredominante, AppTheme.especiesIcon),
+              ],
+              if (isAdmin) ...[
+                const Spacer(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _openAdminEdit(context, species),
+                        icon: Icon(Icons.edit_rounded, size: 13),
+                        label: Text('Editar', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600)),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppTheme.especiesPrimary,
+                          side: BorderSide(color: AppTheme.especiesPrimary.withValues(alpha: 0.3)),
+                          padding: const EdgeInsets.symmetric(vertical: 5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    IconButton(
+                      onPressed: () => _openAdminDelete(context, species),
+                      icon: Icon(Icons.delete_outline_rounded, size: 15, color: AppTheme.errorColor.withValues(alpha: 0.7)),
+                      tooltip: 'Eliminar',
+                      style: IconButton.styleFrom(
+                        backgroundColor: AppTheme.errorColor.withValues(alpha: 0.06),
+                        padding: const EdgeInsets.all(5),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+      ),
+    );
+  }
+
+  void _openAdminEdit(BuildContext context, Map<String, dynamic> species) {
+    Navigator.pushNamed(context, AppRoutes.adminSpeciesSettings);
+  }
+
+  Future<void> _openAdminDelete(BuildContext context, Map<String, dynamic> species) async {
+    final nombre = species['nombre_cientifico'] ?? species['nombre_comun'] ?? 'esta especie';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        icon: Icon(Icons.delete_outline_rounded, size: 36, color: AppTheme.errorColor.withValues(alpha: 0.7)),
+        title: Text(
+          'Eliminar especie',
+          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          '¿Estás seguro de que deseas eliminar "$nombre"? Esta acción no se puede deshacer.',
+          style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          textAlign: TextAlign.center,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textGray)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('Eliminar', style: GoogleFonts.poppins(color: AppTheme.errorColor, fontWeight: FontWeight.w600)),
           ),
         ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: AppTheme.especiesPrimary.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.eco_rounded,
-                color: AppTheme.especiesPrimary,
-                size: 28,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              nombreCientifico,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurface,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (nombreComun != null && nombreComun.isNotEmpty) ...[
-              const SizedBox(height: 2),
-              Text(
-                nombreComun,
-                style: GoogleFonts.poppins(
-                  fontSize: 11,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-            const SizedBox(height: 8),
-            if (tipoCrecimiento != null && tipoCrecimiento.isNotEmpty) ...[
-              _buildTag(context, tipoCrecimiento, AppTheme.especiesIcon),
-            ] else if (colorPredominante != null && colorPredominante.isNotEmpty) ...[
-              _buildTag(context, colorPredominante, AppTheme.especiesIcon),
-            ],
-          ],
-        ),
-      ),
+    );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final id = species['id_especie'];
+        if (id is int) {
+          await context.read<CatalogState>().deleteSpecies(id);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Especie eliminada'), backgroundColor: AppTheme.successColor),
+            );
+          }
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor),
+          );
+        }
+      }
+    }
+  }
+
+  void _openSpeciesDetail(BuildContext context, Map<String, dynamic> species) {
+    Navigator.pushNamed(
+      context,
+      AppRoutes.speciesDetail,
+      arguments: species,
+    );
+  }
+
+  Widget _PlaceholderIcon() {
+    return Container(
+      color: AppTheme.backgroundColor,
+      child: Icon(Icons.eco_rounded, color: AppTheme.especiesPrimary.withValues(alpha: 0.25), size: 28),
     );
   }
 

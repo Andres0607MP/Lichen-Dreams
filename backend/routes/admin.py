@@ -423,6 +423,29 @@ def delete_species(
 
 # ---------- Zonas Ambientales ----------
 
+def _zona_to_dict(zona: ZonaAmbiental, db: Session) -> dict:
+    """Serializa una zona con sus indicadores calculados (fuente de verdad)."""
+    from services.zones_service import calculate_zone_indicators
+
+    indicators = calculate_zone_indicators(db, zona)
+    return {
+        "id_zona": zona.id_zona,
+        "nombre_zona": zona.nombre_zona,
+        "latitud": float(zona.latitud) if zona.latitud is not None else None,
+        "longitud": float(zona.longitud) if zona.longitud is not None else None,
+        "radio_metros": zona.radio_metros,
+        "nivel_riesgo": indicators["nivel_riesgo"],
+        "calidad_promedio_aire": indicators["calidad_aire"],
+        "total_analisis": indicators["total_analisis"],
+        "saludables": indicators["liquidos_saludables"],
+        "afectados": indicators["liquidos_afectados"],
+        "desconocidos": indicators["liquidos_desconocidos"],
+        "porcentaje_saludable": indicators["porcentaje_saludable"],
+        "descripcion": zona.descripcion,
+        "fecha_actualizacion": zona.fecha_actualizacion,
+    }
+
+
 @router.get("/zones", response_model=List[ZonaAmbientalResponse], summary="Obtener todas las zonas ambientales (Admin)")
 def get_zones(
     skip: int = 0,
@@ -432,7 +455,7 @@ def get_zones(
 ):
     """Lista todas las zonas ambientales (solo administradores)."""
     zones = db.query(ZonaAmbiental).order_by(ZonaAmbiental.nombre_zona).offset(skip).limit(limit).all()
-    return zones
+    return [_zona_to_dict(zona, db) for zona in zones]
 
 
 @router.post("/zones", response_model=ZonaAmbientalResponse, status_code=status.HTTP_201_CREATED, summary="Crear nueva zona ambiental (Admin)")
@@ -441,17 +464,23 @@ def create_zone(
     current_user: Usuario = Depends(verify_admin),
     db: Session = Depends(get_db),
 ):
-    """Crea una nueva zona ambiental (solo administradores)."""
+    """Crea una nueva zona ambiental (solo administradores).
+
+    El administrador define nombre, centro (lat/lng), radio y descripción.
+    La calidad y el riesgo NUNCA se introducen manualmente: se calculan a
+    partir de los análisis reales dentro del radio.
+    """
     zona = ZonaAmbiental(
         nombre_zona=request.nombre_zona,
-        nivel_riesgo=request.nivel_riesgo,
-        calidad_promedio_aire=request.calidad_promedio_aire,
+        latitud=request.latitud,
+        longitud=request.longitud,
+        radio_metros=request.radio_metros,
         descripcion=request.descripcion,
     )
     db.add(zona)
     db.commit()
     db.refresh(zona)
-    return zona
+    return _zona_to_dict(zona, db)
 
 
 @router.put("/zones/{zone_id}", response_model=ZonaAmbientalResponse, summary="Actualizar zona ambiental (Admin)")
@@ -461,24 +490,30 @@ def update_zone(
     current_user: Usuario = Depends(verify_admin),
     db: Session = Depends(get_db),
 ):
-    """Actualiza una zona ambiental existente (solo administradores)."""
+    """Actualiza la definición descriptiva/geográfica de una zona.
+
+    nivel_riesgo y calidad_promedio_aire son valores calculados: no se aceptan
+    desde el administrador y se refrescan con los análisis asociados.
+    """
     zona = db.query(ZonaAmbiental).filter(ZonaAmbiental.id_zona == zone_id).first()
     if not zona:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zona ambiental no encontrada")
 
     if request.nombre_zona is not None:
         zona.nombre_zona = request.nombre_zona
-    if request.nivel_riesgo is not None:
-        zona.nivel_riesgo = request.nivel_riesgo
-    if request.calidad_promedio_aire is not None:
-        zona.calidad_promedio_aire = request.calidad_promedio_aire
+    if request.latitud is not None:
+        zona.latitud = request.latitud
+    if request.longitud is not None:
+        zona.longitud = request.longitud
+    if request.radio_metros is not None:
+        zona.radio_metros = request.radio_metros
     if request.descripcion is not None:
         zona.descripcion = request.descripcion
 
     zona.fecha_actualizacion = datetime.utcnow()
     db.commit()
     db.refresh(zona)
-    return zona
+    return _zona_to_dict(zona, db)
 
 
 @router.delete("/zones/{zone_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar zona ambiental (Admin)")

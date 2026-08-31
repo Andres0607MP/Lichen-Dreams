@@ -156,8 +156,9 @@ class _AdminZonesScreenState extends State<AdminZonesScreen> {
     final isEditing = zone != null;
     final formKey = GlobalKey<FormState>();
     final nombreController = TextEditingController(text: zone?['nombre_zona'] ?? '');
-    final nivelRiesgoController = TextEditingController(text: zone?['nivel_riesgo'] ?? '');
-    final calidadController = TextEditingController(text: zone?['calidad_promedio_aire'] ?? '');
+    final latitudController = TextEditingController(text: zone?['latitud']?.toString() ?? '');
+    final longitudController = TextEditingController(text: zone?['longitud']?.toString() ?? '');
+    final radioController = TextEditingController(text: zone?['radio_metros']?.toString() ?? '');
     final descripcionController = TextEditingController(text: zone?['descripcion'] ?? '');
 
     final result = await showDialog<bool>(
@@ -186,19 +187,37 @@ class _AdminZonesScreenState extends State<AdminZonesScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: nivelRiesgoController,
-                  decoration: const InputDecoration(labelText: 'Nivel de riesgo'),
+                  controller: latitudController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  decoration: const InputDecoration(labelText: 'Latitud (centro)'),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
-                  controller: calidadController,
-                  decoration: const InputDecoration(labelText: 'Calidad promedio del aire'),
+                  controller: longitudController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                  decoration: const InputDecoration(labelText: 'Longitud (centro)'),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(
+                  controller: radioController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: const InputDecoration(labelText: 'Radio (metros)'),
                 ),
                 const SizedBox(height: 8),
                 TextFormField(
                   controller: descripcionController,
                   decoration: const InputDecoration(labelText: 'Descripción'),
                   maxLines: 2,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'La calidad del aire y el nivel de riesgo se calculan '
+                  'automáticamente a partir de los análisis dentro del radio.',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
                 ),
               ],
             ),
@@ -224,14 +243,17 @@ class _AdminZonesScreenState extends State<AdminZonesScreen> {
     if (result == true && mounted) {
       final data = {
         'nombre_zona': nombreController.text,
-        'nivel_riesgo': nivelRiesgoController.text.isNotEmpty ? nivelRiesgoController.text : null,
-        'calidad_promedio_aire': calidadController.text.isNotEmpty ? calidadController.text : null,
-        'descripcion': descripcionController.text.isNotEmpty ? descripcionController.text : null,
+        'latitud': double.tryParse(latitudController.text),
+        'longitud': double.tryParse(longitudController.text),
+        'radio_metros': double.tryParse(radioController.text),
+        'descripcion': descripcionController.text.isNotEmpty
+            ? descripcionController.text
+            : null,
       };
 
       try {
         if (isEditing) {
-          await _catalogState.updateZone(zone!['id_zona'], data);
+          await _catalogState.updateZone(zone['id_zona'], data);
         } else {
           await _catalogState.createZone(data);
         }
@@ -347,11 +369,13 @@ class _ZoneCard extends StatelessWidget {
                       if (nivelRiesgo != null) ...[
                         const SizedBox(height: 2),
                         Text(
-                          'Riesgo: $nivelRiesgo',
+                          'Riesgo: $nivelRiesgo · Calidad: ${zone['calidad_promedio_aire'] ?? 'sin datos'} · ${zone['total_analisis'] ?? 0} análisis',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             color: colorScheme.onSurfaceVariant,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ],
                     ],

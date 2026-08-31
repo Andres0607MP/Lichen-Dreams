@@ -19,6 +19,7 @@ class AppRoutes {
   static const liquenpedia = '/liquenpedia';
   static const location = '/location';
   static const species = '/species';
+  static const speciesDetail = '/species-detail';
   static const configuracion = '/configuracion';
   static const developerMap = '/developer-map';
 
@@ -28,6 +29,11 @@ class AppRoutes {
   static const appearanceSettings = '/settings/appearance';
   static const informationSettings = '/settings/information';
   static const legalSettings = '/settings/legal';
+  static const termsConditionsSettings = '/settings/terms';
+  static const environmentalReports = '/settings/environmental-reports';
+  static const environmentalReport = '/settings/environmental-report';
+  static const helpSettings = '/settings/help';
+  static const licensesSettings = '/settings/licenses';
   static const catalogsSettings = '/settings/catalogs';
   static const adminSpeciesSettings = '/settings/admin-species';
   static const adminZonesSettings = '/settings/admin-zones';

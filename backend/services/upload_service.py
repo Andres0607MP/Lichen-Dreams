@@ -19,6 +19,7 @@ from config.settings import (
     IMAGE_TYPE_ARTICLE,
     IMAGE_TYPE_PROFILE,
     IMAGE_TYPE_ANALYSIS,
+    IMAGE_TYPE_SPECIES,
     normalize_image_path,
 )
 
@@ -107,6 +108,8 @@ def save_file(
         if user_id is None:
             raise ValueError("user_id es requerido para imagenes de analisis")
         subdir = f"analyses/user_{user_id}"
+    elif image_type == IMAGE_TYPE_SPECIES:
+        subdir = "species"
     else:
         raise ValueError(f"image_type '{image_type}' no reconocido")
 
