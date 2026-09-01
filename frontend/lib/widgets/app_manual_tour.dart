@@ -1,114 +1,204 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 
 import '../routes/route_names.dart';
 
+/// Manual interactivo de Lichen Dreams.
+///
+/// Tour secuencial clásico con PageView:
+/// Acceso → Dashboard → Analizar → Imagen → Especie → Ubicación → IA →
+/// Confirmar imagen → Resultado → Guardar → Historial → Mapa → Liquenpedia.
 class AppManualTour {
   static void show(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
-      builder: (context) => const _TourSheet(),
+    final overlay = Overlay.of(context, rootOverlay: true);
+    late final OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => Material(
+        color: Colors.black.withValues(alpha: 0.72),
+        child: SafeArea(child: _TourScreen(onClose: () => entry.remove())),
+      ),
     );
+    overlay.insert(entry);
   }
 }
 
-class _TourSheet extends StatefulWidget {
-  const _TourSheet();
-
+class _TourScreen extends StatefulWidget {
+  final VoidCallback onClose;
+  const _TourScreen({required this.onClose});
   @override
-  State<_TourSheet> createState() => _TourSheetState();
+  State<_TourScreen> createState() => _TourScreenState();
 }
 
-class _TourSheetState extends State<_TourSheet> {
+class _TourScreenState extends State<_TourScreen>
+    with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   bool _showingWelcome = true;
+  bool _navigating = false;
+
+  late final AnimationController _entranceController;
+  late final Animation<double> _entranceFade;
+  late final Animation<double> _entranceScale;
+  late final Animation<Offset> _entranceSlide;
 
   static const List<_TourStep> _steps = [
     _TourStep(
       icon: Icons.login_rounded,
       title: 'Acceso',
-      description:
-          'Inicia sesión o crea una cuenta para comenzar a explorar el mundo de los líquenes.',
+      description: 'Inicia sesión o crea tu cuenta.',
+      details:
+          'Accede con tu correo y contraseña, o con Google. Sin cuenta no puedes '
+          'guardar análisis ni consultar tu historial.',
       route: AppRoutes.login,
     ),
     _TourStep(
       icon: Icons.dashboard_rounded,
       title: 'Dashboard',
-      description:
-          'Tu centro de control. Accede a todas las funcionalidades y consulta tu actividad reciente.',
+      description: 'Tu centro de control principal.',
+      details:
+          'El Dashboard reúne tus estadísticas, accesos rápidos y actividad '
+          'reciente para empezar a analizar en un solo toque.',
       route: AppRoutes.dashboard,
     ),
     _TourStep(
       icon: Icons.document_scanner_rounded,
-      title: 'Analizar un líquen',
-      description:
-          'Captura o selecciona una imagen de un líquen para comenzar el análisis con inteligencia artificial.',
+      title: 'Analizar',
+      description: 'Inicia un análisis con un líquen.',
+      details:
+          'Pulsa "Analizar" para abrir la cámara y comenzar un nuevo análisis '
+          'ambiental del líquen que observas.',
       route: AppRoutes.analisis,
     ),
     _TourStep(
       icon: Icons.camera_alt_rounded,
       title: 'Imagen',
-      description:
-          'Toma una foto con tu cámara o selecciona una imagen de tu galería. La imagen debe mostrar claramente el líquen.',
+      description: 'Captura o selecciona la fotografía.',
+      details:
+          'Toma una foto clara del líquen o selecciónala de tu galería. La '
+          'imagen es la entrada que luego analiza la IA.',
+    ),
+    _TourStep(
+      icon: Icons.category_rounded,
+      title: 'Especie',
+      description: 'Indica la especie que reconoces.',
+      details:
+          'Si reconoces el líquen, selecciónalo del catálogo de especies. '
+          'La especie la eliges TÚ: no es un resultado de la IA.',
     ),
     _TourStep(
       icon: Icons.location_on_rounded,
       title: 'Ubicación',
-      description:
-          'La ubicación contextualiza tu análisis y permite mapear la calidad ambiental de tu zona.',
+      description: 'Registra dónde observaste el líquen.',
+      details:
+          'Agrega el punto GPS donde encontraste el líquen. La ubicación permite '
+          'ubicar el análisis en el mapa y en las zonas ambientales.',
       route: AppRoutes.location,
     ),
     _TourStep(
       icon: Icons.smart_toy_rounded,
-      title: 'Inteligencia Artificial',
-      description:
-          'Nuestro modelo de IA analiza la imagen para identificar la especie y evaluar la calidad ambiental.',
+      title: 'IA',
+      description: 'La IA analiza el estado del líquen.',
+      details:
+          'La IA evalúa si el líquen está saludable, contaminado o desconocido. '
+          'No identifica especies.',
+    ),
+    _TourStep(
+      icon: Icons.image_rounded,
+      title: 'Confirmar imagen',
+      description: 'Revisa que la foto sea correcta.',
+      details:
+          'Antes de enviar, confirma la imagen capturada para asegurar que el '
+          'líquen se vea con claridad.',
     ),
     _TourStep(
       icon: Icons.assessment_rounded,
       title: 'Resultado',
-      description:
-          'Obtén un informe detallado con la especie identificada, nivel de calidad ambiental y recomendaciones.',
+      description: 'Observa el estado ambiental del líquen.',
+      details:
+          'El resultado indica la condición del líquen: saludable, afectado o '
+          'desconocido, junto con el análisis detallado.',
     ),
     _TourStep(
       icon: Icons.save_rounded,
-      title: 'Guardar análisis',
-      description:
-          'Guarda tus análisis para consultarlos después y llevar un registro de tus observaciones.',
+      title: 'Guardar',
+      description: 'El análisis queda guardado.',
+      details:
+          'Al guardar, el análisis se registra para que puedas consultarlo '
+          'después en el historial y verlo en el mapa.',
     ),
     _TourStep(
       icon: Icons.history_rounded,
       title: 'Historial',
-      description:
-          'Consulta todos tus análisis anteriores, filtralos y revisa la evolución ambiental de tus zonas.',
+      description: 'Consulta tus análisis anteriores.',
+      details:
+          'El historial agrupa todos tus análisis para revisar resultados, '
+          'fechas y especies registradas.',
       route: AppRoutes.historial,
     ),
     _TourStep(
       icon: Icons.map_rounded,
       title: 'Mapa',
-      description:
-          'Visualiza tus análisis y los de la comunidad en un mapa interactivo de calidad ambiental.',
+      description: 'Visualiza los análisis en el mapa.',
+      details:
+          'Los análisis compartidos aparecen como puntos ambientales en el mapa '
+          'con su condición y ubicación geográfica.',
       route: AppRoutes.mapa,
     ),
     _TourStep(
       icon: Icons.menu_book_rounded,
       title: 'Liquenpedia',
-      description:
-          'Consulta artículos, estudios y el conocimiento colectivo sobre especies de líquenes.',
+      description: 'Aprende sobre los líquenes.',
+      details:
+          'Liquenpedia es la enciclopedia educativa del proyecto: descubre '
+          'especies, hábitats y cómo interpretar la calidad del aire.',
       route: AppRoutes.liquenpedia,
     ),
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _entranceController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    _entranceFade = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+    _entranceScale = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _entranceController,
+        curve: const Interval(0.0, 0.7, curve: Curves.easeOutBack),
+      ),
+    );
+    _entranceSlide =
+        Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _entranceController,
+            curve: const Interval(0.2, 0.8, curve: Curves.easeOutCubic),
+          ),
+        );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (!MediaQuery.of(context).disableAnimations) {
+        _entranceController.forward();
+      } else {
+        _entranceController.value = 1.0;
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _pageController.dispose();
+    _entranceController.dispose();
     super.dispose();
   }
+
+  bool get _disableAnimations => MediaQuery.of(context).disableAnimations;
 
   void _nextPage() {
     if (_currentPage < _steps.length - 1) {
@@ -136,83 +226,225 @@ class _TourSheetState extends State<_TourSheet> {
     );
   }
 
-  void _close() => Navigator.of(context).pop();
+  void _close() {
+    if (_navigating) return;
+    _navigating = true;
+    widget.onClose();
+  }
 
   void _goToSection(String route) {
-    Navigator.of(context).pop();
-    Navigator.of(context).pushNamed(route);
+    if (_navigating) return;
+    _navigating = true;
+    final navigator = Navigator.of(context, rootNavigator: true);
+    widget.onClose();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_navigating) return;
+      try {
+        navigator.pushNamed(route);
+      } catch (_) {
+        // Ruta no disponible: mantenemos la app abierta sin crashear.
+      }
+      _navigating = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final cs = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    return Container(
-      height: MediaQuery.of(context).size.height * 0.85,
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: _showingWelcome
-            ? _WelcomeScreen(
-                onStart: () => setState(() => _showingWelcome = false),
-                onClose: _close,
-              )
-            : _buildTourContent(colorScheme, bottomPadding),
+    return Padding(
+      padding: EdgeInsets.all(isMobile ? 8 : 12),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              height: size.height * 0.85,
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: SafeArea(
+                top: false,
+                child: _showingWelcome
+                    ? _buildWelcome()
+                    : _buildTourContent(cs, isMobile, bottomPadding),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildTourContent(ColorScheme colorScheme, double bottomPadding) {
+  Widget _buildWelcome() {
+    final cs = Theme.of(context).colorScheme;
+    final size = MediaQuery.of(context).size;
+    final isMobile = size.width < 600;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
+    return Stack(
+      children: [
+        Positioned(top: 8, right: 8, child: _CloseButton(onClose: _close)),
+        Padding(
+          padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + bottomPadding),
+          child: AnimatedBuilder(
+            animation: _entranceController,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _entranceFade.value,
+                child: Transform.scale(
+                  scale: _entranceScale.value,
+                  child: SlideTransition(
+                    position: _entranceSlide,
+                    child: child,
+                  ),
+                ),
+              );
+            },
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.topRight,
+                  child: const SizedBox(height: 56),
+                ),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: isMobile ? 80 : 100,
+                        height: isMobile ? 80 : 100,
+                        decoration: BoxDecoration(
+                          gradient: RadialGradient(
+                            colors: [
+                              cs.primary.withValues(alpha: 0.65),
+                              cs.primary.withValues(alpha: 0.18),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: cs.primary.withValues(alpha: 0.35),
+                              blurRadius: 28,
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.eco_rounded,
+                          size: isMobile ? 40 : 48,
+                          color: cs.onPrimaryContainer,
+                        ),
+                      ),
+                      SizedBox(height: isMobile ? 24 : 32),
+                      Text(
+                        'Conoce Lichen Dreams',
+                        style: GoogleFonts.poppins(
+                          fontSize: isMobile ? 22 : 26,
+                          fontWeight: FontWeight.w700,
+                          color: cs.onSurface,
+                          letterSpacing: -0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Descubre, en pocos pasos, cómo funciona el análisis '
+                        'ambiental de líquenes en Lichen Dreams.',
+                        style: GoogleFonts.poppins(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w400,
+                          color: cs.onSurfaceVariant,
+                          height: 1.5,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: isMobile ? 28 : 40),
+                      FilledButton(
+                        onPressed: () {
+                          setState(() => _showingWelcome = false);
+                          if (!_disableAnimations) {
+                            _entranceController.forward(from: 0);
+                          }
+                        },
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 40,
+                            vertical: 16,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          'Comenzar',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTourContent(
+    ColorScheme cs,
+    bool isMobile,
+    double bottomPadding,
+  ) {
     return Column(
       children: [
-        _buildHeader(colorScheme),
-        _buildProgressIndicator(colorScheme),
+        _buildHeader(cs),
+        _buildProgressIndicator(cs),
         Expanded(
           child: PageView.builder(
             controller: _pageController,
             itemCount: _steps.length,
             onPageChanged: (index) => setState(() => _currentPage = index),
-            itemBuilder: (context, index) => _buildStepCard(colorScheme, index),
+            itemBuilder: (context, index) =>
+                _buildStepCard(cs, index, isMobile),
           ),
         ),
-        _buildNavigationBar(colorScheme, bottomPadding),
+        _buildNavigationBar(cs, isMobile, bottomPadding),
       ],
     );
   }
 
-  Widget _buildHeader(ColorScheme colorScheme) {
+  Widget _buildHeader(ColorScheme cs) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 12, 0),
+      padding: EdgeInsets.fromLTRB(20, isMobile ? 12 : 16, 12, 0),
       child: Row(
         children: [
           Expanded(
             child: Text(
-              'Recorrido',
+              'Manual interactivo',
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: colorScheme.onSurface,
+                color: cs.onSurface,
               ),
             ),
           ),
-          IconButton(
-            onPressed: _close,
-            icon: Icon(
-              Icons.close_rounded,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            tooltip: 'Cerrar',
-          ),
+          _CloseButton(onClose: _close),
         ],
       ),
     );
   }
 
-  Widget _buildProgressIndicator(ColorScheme colorScheme) {
+  Widget _buildProgressIndicator(ColorScheme cs) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Row(
@@ -220,140 +452,126 @@ class _TourSheetState extends State<_TourSheet> {
           final isActive = index == _currentPage;
           final isCompleted = index < _currentPage;
           return Expanded(
-            child:
-                Container(
-                      height: 3,
-                      margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                      decoration: BoxDecoration(
-                        color: isActive || isCompleted
-                            ? colorScheme.primary
-                            : colorScheme.outlineVariant,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    )
-                    .animate(target: isActive ? 1 : 0)
-                    .scaleX(
-                      begin: index == _currentPage ? 0.5 : 1,
-                      duration: 200.ms,
-                    ),
+            child: Container(
+              height: 3,
+              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+              decoration: BoxDecoration(
+                color: isActive || isCompleted ? cs.primary : cs.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
           );
         }),
       ),
     );
   }
 
-  Widget _buildStepCard(ColorScheme colorScheme, int index) {
+  Widget _buildStepCard(ColorScheme cs, int index, bool isMobile) {
     final step = _steps[index];
     final hasRoute = step.route != null;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SizedBox(height: 20),
-          _buildStepIcon(colorScheme, step, index),
-          const SizedBox(height: 24),
+          SizedBox(height: isMobile ? 16 : 24),
+          _buildStepIcon(cs, step, isMobile),
+          SizedBox(height: isMobile ? 20 : 24),
           Text(
             step.title,
             style: GoogleFonts.poppins(
-              fontSize: 22,
+              fontSize: isMobile ? 20 : 22,
               fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
+              color: cs.onSurface,
             ),
             textAlign: TextAlign.center,
-          ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0),
+          ),
           const SizedBox(height: 12),
           Text(
-                step.description,
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  color: colorScheme.onSurfaceVariant,
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              )
-              .animate()
-              .fadeIn(duration: 300.ms, delay: 100.ms)
-              .slideY(begin: 0.1, end: 0),
+            step.description,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: cs.onSurface,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            step.details,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              color: cs.onSurfaceVariant,
+              height: 1.5,
+            ),
+            textAlign: TextAlign.center,
+          ),
           if (hasRoute) ...[
-            const SizedBox(height: 28),
+            SizedBox(height: isMobile ? 20 : 28),
             FilledButton.icon(
-                  onPressed: () => _goToSection(step.route!),
-                  icon: const Icon(Icons.arrow_forward_rounded, size: 18),
-                  label: Text(
-                    'Ir allí',
-                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                  ),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                )
-                .animate()
-                .fadeIn(duration: 300.ms, delay: 200.ms)
-                .slideY(begin: 0.1, end: 0),
+              onPressed: () => _goToSection(step.route!),
+              icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              label: Text(
+                'Explorar esta función',
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
           ],
-          const SizedBox(height: 20),
+          SizedBox(height: isMobile ? 16 : 20),
           if (_currentPage < _steps.length - 1)
-            _buildNextStepsPreview(colorScheme, index),
+            _buildNextStepsPreview(cs, index),
         ],
       ),
     );
   }
 
-  Widget _buildStepIcon(ColorScheme colorScheme, _TourStep step, int index) {
+  Widget _buildStepIcon(ColorScheme cs, _TourStep step, bool isMobile) {
     return Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                colorScheme.primary.withValues(alpha: 0.15),
-                colorScheme.primary.withValues(alpha: 0.05),
-              ],
-            ),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: colorScheme.primary.withValues(alpha: 0.3),
-              width: 2,
-            ),
-          ),
-          child: Icon(step.icon, size: 36, color: colorScheme.primary),
-        )
-        .animate()
-        .scale(
-          begin: const Offset(0.8, 0.8),
-          end: const Offset(1, 1),
-          duration: 400.ms,
-          curve: Curves.elasticOut,
-        )
-        .fadeIn(duration: 300.ms);
+      width: isMobile ? 64 : 80,
+      height: isMobile ? 64 : 80,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            cs.primary.withValues(alpha: 0.15),
+            cs.primary.withValues(alpha: 0.05),
+          ],
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(color: cs.primary.withValues(alpha: 0.3), width: 2),
+      ),
+      child: Icon(step.icon, size: isMobile ? 28 : 36, color: cs.primary),
+    );
   }
 
-  Widget _buildNextStepsPreview(ColorScheme colorScheme, int currentIndex) {
+  Widget _buildNextStepsPreview(ColorScheme cs, int currentIndex) {
     final nextSteps = _steps.skip(currentIndex + 1).take(3).toList();
     if (nextSteps.isEmpty) return const SizedBox.shrink();
 
     return Column(
       children: [
         const SizedBox(height: 16),
-        Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        Divider(color: cs.outlineVariant.withValues(alpha: 0.5)),
         const SizedBox(height: 16),
         Text(
           'Próximos pasos',
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: colorScheme.onSurfaceVariant,
+            color: cs.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 12),
@@ -361,17 +579,12 @@ class _TourSheetState extends State<_TourSheet> {
           spacing: 8,
           runSpacing: 8,
           alignment: WrapAlignment.center,
-          children: nextSteps.asMap().entries.map((entry) {
-            final step = entry.value;
+          children: nextSteps.map((step) {
             return ActionChip(
-              avatar: Icon(
-                step.icon,
-                size: 16,
-                color: colorScheme.onSurfaceVariant,
-              ),
+              avatar: Icon(step.icon, size: 16, color: cs.onSurfaceVariant),
               label: Text(step.title, style: GoogleFonts.poppins(fontSize: 11)),
-              backgroundColor: colorScheme.surfaceContainerHighest,
-              side: BorderSide(color: colorScheme.outlineVariant),
+              backgroundColor: cs.surfaceContainerHighest,
+              side: BorderSide(color: cs.outlineVariant),
               onPressed: () => _goToStep(_steps.indexOf(step)),
             );
           }).toList(),
@@ -380,191 +593,100 @@ class _TourSheetState extends State<_TourSheet> {
     );
   }
 
-  Widget _buildNavigationBar(ColorScheme colorScheme, double bottomPadding) {
+  Widget _buildNavigationBar(
+    ColorScheme cs,
+    bool isMobile,
+    double bottomPadding,
+  ) {
     return Container(
-      padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomPadding),
+      padding: EdgeInsets.fromLTRB(
+        isMobile ? 16 : 20,
+        12,
+        isMobile ? 16 : 20,
+        12 + bottomPadding,
+      ),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-          ),
+          top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.5)),
         ),
       ),
-      child: Row(
-        children: [
-          if (_currentPage > 0)
-            TextButton.icon(
-              onPressed: _previousPage,
-              icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: Text(
-                'Anterior',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            if (_currentPage > 0)
+              TextButton.icon(
+                onPressed: _previousPage,
+                icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                label: Text(
+                  'Anterior',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                ),
+              )
+            else
+              const SizedBox(width: 100),
+            const Spacer(),
+            Text(
+              '${_currentPage + 1} / ${_steps.length}',
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: cs.onSurfaceVariant,
               ),
-            )
-          else
-            const SizedBox(width: 100),
-          const Spacer(),
-          Text(
-            '${_currentPage + 1} / ${_steps.length}',
-            style: GoogleFonts.poppins(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurfaceVariant,
             ),
-          ),
-          const Spacer(),
-          if (_currentPage < _steps.length - 1)
-            TextButton.icon(
-              onPressed: _nextPage,
-              icon: Text(
-                'Siguiente',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-              ),
-              label: const Icon(Icons.arrow_forward_rounded, size: 18),
-            )
-          else
-            FilledButton(
-              onPressed: _close,
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            const Spacer(),
+            if (_currentPage < _steps.length - 1)
+              TextButton.icon(
+                onPressed: _nextPage,
+                icon: Text(
+                  'Siguiente',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                ),
+                label: const Icon(Icons.arrow_forward_rounded, size: 18),
+              )
+            else
+              FilledButton(
+                onPressed: _close,
+                style: FilledButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  'Finalizar',
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                 ),
               ),
-              child: Text(
-                'Finalizar',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _WelcomeScreen extends StatelessWidget {
-  final VoidCallback onStart;
+class _CloseButton extends StatelessWidget {
   final VoidCallback onClose;
-
-  const _WelcomeScreen({required this.onStart, required this.onClose});
+  const _CloseButton({required this.onClose});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24, 16, 24, 24 + bottomPadding),
-      child: Column(
-        children: [
-          Align(
-            alignment: Alignment.topRight,
-            child: IconButton(
-              onPressed: onClose,
-              icon: Icon(
-                Icons.close_rounded,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              tooltip: 'Cerrar',
-            ),
+    final cs = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      label: 'Cerrar manual',
+      child: Material(
+        color: cs.surfaceContainer.withValues(alpha: 0.85),
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onClose,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 52,
+            height: 52,
+            alignment: Alignment.center,
+            child: Icon(Icons.close_rounded, size: 26, color: cs.onSurface),
           ),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [
-                            colorScheme.primary.withValues(alpha: 0.2),
-                            colorScheme.primary.withValues(alpha: 0.05),
-                          ],
-                        ),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: colorScheme.primary.withValues(alpha: 0.3),
-                          width: 2,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: colorScheme.primary.withValues(alpha: 0.1),
-                            blurRadius: 20,
-                            spreadRadius: 4,
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.eco_rounded,
-                        size: 48,
-                        color: colorScheme.primary,
-                      ),
-                    )
-                    .animate()
-                    .scale(
-                      begin: const Offset(0.5, 0.5),
-                      end: const Offset(1, 1),
-                      duration: 600.ms,
-                      curve: Curves.elasticOut,
-                    )
-                    .fadeIn(duration: 400.ms),
-                const SizedBox(height: 32),
-                Text(
-                      'Conoce Lichen Dreams',
-                      style: GoogleFonts.poppins(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w700,
-                        color: colorScheme.onSurface,
-                        letterSpacing: -0.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    )
-                    .animate()
-                    .fadeIn(duration: 400.ms, delay: 200.ms)
-                    .slideY(begin: 0.1, end: 0),
-                const SizedBox(height: 12),
-                Text(
-                      'Te mostramos paso a paso cómo aprovechar la aplicación.',
-                      style: GoogleFonts.poppins(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w400,
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    )
-                    .animate()
-                    .fadeIn(duration: 400.ms, delay: 300.ms)
-                    .slideY(begin: 0.1, end: 0),
-                const SizedBox(height: 40),
-                FilledButton(
-                      onPressed: onStart,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: Text(
-                        'Comenzar recorrido',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    )
-                    .animate()
-                    .fadeIn(duration: 400.ms, delay: 400.ms)
-                    .slideY(begin: 0.1, end: 0),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -574,12 +696,14 @@ class _TourStep {
   final IconData icon;
   final String title;
   final String description;
+  final String details;
   final String? route;
 
   const _TourStep({
     required this.icon,
     required this.title,
     required this.description,
+    required this.details,
     this.route,
   });
 }
