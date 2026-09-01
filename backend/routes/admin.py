@@ -34,6 +34,7 @@ class AdminUserResponse(BaseModel):
     id_rol: Optional[int]
     estado_cuenta: Optional[str]
     fecha_registro: datetime
+    rol: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -61,6 +62,16 @@ class AdminUserUpdate(BaseModel):
     id_rol: Optional[int] = None
     estado_cuenta: Optional[str] = None
     active: Optional[bool] = None
+
+
+class RoleResponse(BaseModel):
+    id_rol: int
+    nombre_rol: str
+    descripcion: Optional[str] = None
+    nivel_acceso: Optional[int] = None
+
+    class Config:
+        from_attributes = True
 
 
 class ReportResponse(BaseModel):
@@ -95,6 +106,36 @@ class NotificationCreateResponse(BaseModel):
     destino: str
 
 
+@router.get("/roles/admin", response_model=RoleResponse, summary="Obtener el rol admin")
+def get_admin_role(
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Devuelve el rol 'admin' para asignarlo a otros usuarios."""
+    role = db.query(Role).filter(Role.nombre_rol == 'admin').first()
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rol admin no encontrado",
+        )
+    return role
+
+
+@router.get("/roles/user", response_model=RoleResponse, summary="Obtener el rol usuario normal")
+def get_user_role(
+    current_user: Usuario = Depends(verify_admin),
+    db: Session = Depends(get_db),
+):
+    """Devuelve el rol 'user' para asignarlo a otros usuarios."""
+    role = db.query(Role).filter(Role.nombre_rol == 'user').first()
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Rol usuario no encontrado",
+        )
+    return role
+
+
 @router.get("/users", response_model=List[AdminUserResponse], summary="Obtener todos los usuarios (Admin)")
 def get_all_users(
     skip: int = 0,
@@ -103,8 +144,29 @@ def get_all_users(
     db: Session = Depends(get_db),
 ):
     """Lista todos los usuarios registrados (solo administradores)."""
-    users = db.query(Usuario).filter(Usuario.estado_cuenta != 'eliminado').offset(skip).limit(limit).all()
-    return users
+    users = (
+        db.query(Usuario)
+        .options(joinedload(Usuario.rol))
+        .filter(
+            Usuario.estado_cuenta != 'eliminado',
+            Usuario.id_usuario != current_user.id_usuario,
+        )
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return [
+        AdminUserResponse(
+            id_usuario=u.id_usuario,
+            correo=u.correo,
+            nombre=u.nombre,
+            id_rol=u.id_rol,
+            estado_cuenta=u.estado_cuenta,
+            fecha_registro=u.fecha_registro,
+            rol=u.rol.nombre_rol if u.rol else None,
+        )
+        for u in users
+    ]
 
 
 @router.post("/users", response_model=AdminUserResponse, status_code=status.HTTP_201_CREATED, summary="Crear nuevo usuario (Admin)")
@@ -128,7 +190,15 @@ def create_user(
     db.add(nuevo)
     db.commit()
     db.refresh(nuevo)
-    return nuevo
+    return AdminUserResponse(
+        id_usuario=nuevo.id_usuario,
+        correo=nuevo.correo,
+        nombre=nuevo.nombre,
+        id_rol=nuevo.id_rol,
+        estado_cuenta=nuevo.estado_cuenta,
+        fecha_registro=nuevo.fecha_registro,
+        rol=nuevo.rol.nombre_rol if nuevo.rol else None,
+    )
 
 
 @router.put("/users/{user_id}", response_model=AdminUserResponse, summary="Actualizar usuario (Admin)")
@@ -139,11 +209,23 @@ def update_user(
     db: Session = Depends(get_db),
 ):
     """Actualiza un usuario existente (solo administradores)."""
-    user = db.query(Usuario).filter(Usuario.id_usuario == user_id).first()
+    user = (
+        db.query(Usuario)
+        .options(joinedload(Usuario.rol))
+        .filter(Usuario.id_usuario == user_id)
+        .first()
+    )
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
 
+    if current_user.id_usuario == user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El administrador no puede modificarse a sí mismo",
+        )
+
     estado_anterior = user.estado_cuenta
+    old_id_rol = user.id_rol
 
     if request.email is not None:
         user.correo = request.email
@@ -162,9 +244,37 @@ def update_user(
             Sesion.estado_sesion == "active"
         ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
 
+    if request.id_rol is not None and request.id_rol != old_id_rol:
+        admin_role = db.query(Role).filter(Role.nombre_rol == "admin").first()
+        admin_role_id = admin_role.id_rol if admin_role else None
+
+        if admin_role_id is not None:
+            es_admin = request.id_rol == admin_role_id
+            mensaje = (
+                "Tu cuenta ahora tiene permisos de administrador."
+                if es_admin
+                else "Tu cuenta ha sido cambiada a usuario normal."
+            )
+            notificacion = Notificacion(
+                id_usuario=user.id_usuario,
+                titulo="Cambio de rol",
+                mensaje=mensaje,
+                tipo_notificacion="system",
+                estado_notificacion="pendiente",
+            )
+            db.add(notificacion)
+
     db.commit()
     db.refresh(user)
-    return user
+    return AdminUserResponse(
+        id_usuario=user.id_usuario,
+        correo=user.correo,
+        nombre=user.nombre,
+        id_rol=user.id_rol,
+        estado_cuenta=user.estado_cuenta,
+        fecha_registro=user.fecha_registro,
+        rol=user.rol.nombre_rol if user.rol else None,
+    )
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar usuario (Admin, soft delete)")

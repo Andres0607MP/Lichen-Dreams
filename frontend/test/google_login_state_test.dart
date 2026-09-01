@@ -7,10 +7,15 @@ import 'package:frontend/services/google_auth_service.dart';
 class MockApiService extends ApiService {
   String? idTokenToFail;
   String? idTokenReceived;
+  String? modoReceived;
 
   @override
-  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
+  Future<Map<String, dynamic>> loginWithGoogle(
+    String idToken, {
+    String modo = 'registro',
+  }) async {
     idTokenReceived = idToken;
+    modoReceived = modo;
     if (idTokenToFail != null && idToken == idTokenToFail) {
       throw ApiException('Token de Google inválido o expirado.');
     }
@@ -77,6 +82,7 @@ void main() {
 
       expect(success, isTrue);
       expect(mockApi.idTokenReceived, 'id_token_fake');
+      expect(mockApi.modoReceived, 'login');
       expect(authState.token, 'google_access_token');
       expect(authState.refreshToken, 'google_refresh_token');
       expect(authState.role, 'user');
@@ -108,6 +114,18 @@ void main() {
         throwsA(isA<Exception>()),
       );
       expect(authState.token, isNull);
+    });
+
+    test('modo registro se envía al backend desde Crear cuenta', () async {
+      final mockApi = MockApiService();
+      final mockGoogle = MockGoogleAuthService()
+        ..tokenToReturn = 'id_token_fake';
+      final authState = AuthState(apiService: mockApi, googleAuth: mockGoogle);
+
+      final success = await authState.loginWithGoogle(registrar: true);
+
+      expect(success, isTrue);
+      expect(mockApi.modoReceived, 'registro');
     });
   });
 }

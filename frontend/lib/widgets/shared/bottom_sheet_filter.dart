@@ -71,7 +71,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -105,7 +105,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
                       });
                     },
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.textGray,
+                      foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                       side: BorderSide(color: AppTheme.borderColor),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -155,7 +155,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -179,7 +179,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
               labelStyle: GoogleFonts.poppins(
                 color: _selectedCategoryIds.isEmpty
                     ? AppTheme.primaryGreen
-                    : AppTheme.textGray,
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             ...articlesState.categorias.map((categoria) {
@@ -200,7 +200,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
                 labelStyle: GoogleFonts.poppins(
                   color: _selectedCategoryIds.contains(categoria.idCategoria)
                       ? AppTheme.primaryGreen
-                      : AppTheme.textGray,
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               );
             }),
@@ -219,7 +219,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -241,7 +241,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
               labelStyle: GoogleFonts.poppins(
                 color: _selectedStatus == null
                     ? AppTheme.primaryGreen
-                    : AppTheme.textGray,
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             ..._statusOptions.map((status) {
@@ -261,7 +261,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
                 labelStyle: GoogleFonts.poppins(
                   color: _selectedStatus == status
                       ? AppTheme.primaryGreen
-                      : AppTheme.textGray,
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               );
             }).toList(),
@@ -280,7 +280,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),

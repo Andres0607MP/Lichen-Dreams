@@ -38,7 +38,7 @@ class ArticleCard extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -94,7 +94,7 @@ class ArticleCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                           height: 1.3,
                         ),
                         maxLines: 2,

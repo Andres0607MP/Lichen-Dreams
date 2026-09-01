@@ -10,6 +10,7 @@ import '../models/analysis_record.dart';
 import '../models/environmental_quality.dart';
 import '../widgets/modern_widgets.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
 import '../state/analysis_state.dart';
@@ -476,28 +477,21 @@ class _ResultScreenState extends State<ResultScreen> {
           _speciesImageRef = idEspecie == null ? null : imageRef;
           _savingSpecies = false;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              idEspecie == null
-                  ? 'Especie omitida'
-                  : 'Especie seleccionada correctamente',
-            ),
-            backgroundColor:
-                idEspecie == null ? AppTheme.textGray : AppTheme.primaryGreen,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppNotification.show(
+          context,
+          message: idEspecie == null
+              ? 'Especie omitida'
+              : 'Especie seleccionada correctamente',
+          isError: idEspecie == null,
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _savingSpecies = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('No se pudo guardar la especie: $e'),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
+        AppNotification.show(
+          context,
+          message: 'No se pudo guardar la especie',
+          isError: true,
         );
       }
     }
@@ -637,7 +631,7 @@ class _ResultScreenState extends State<ResultScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -647,7 +641,7 @@ class _ResultScreenState extends State<ResultScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -700,7 +694,7 @@ class _ResultScreenState extends State<ResultScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -711,7 +705,7 @@ class _ResultScreenState extends State<ResultScreen> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w400,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.5,
           ),
         ),
@@ -731,24 +725,16 @@ class _ResultScreenState extends State<ResultScreen> {
       if (isGallery) {
         message = 'Los análisis desde galería no se pueden compartir en el mapa.';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      AppNotification.show(context, message: message, isError: true);
       return;
     }
 
     if (!_hasLocation) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Este análisis no tiene ubicación asociada. No se puede compartir en el mapa.'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
+      AppNotification.show(
+        context,
+        message: 'Este análisis no tiene ubicación asociada. No se puede compartir en el mapa.',
+        isError: true,
       );
       return;
     }
@@ -757,13 +743,7 @@ class _ResultScreenState extends State<ResultScreen> {
     try {
       await apiService.shareAnalysis(analysisId);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Compartido en mapa'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      AppNotification.show(context, message: 'Compartido en mapa');
       if (mounted) {
         setState(() => _isShared = true);
         try {
@@ -772,11 +752,10 @@ class _ResultScreenState extends State<ResultScreen> {
       }
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error is ApiException ? error.message : 'Error al compartir análisis'),
-          backgroundColor: Colors.red,
-        ),
+      AppNotification.show(
+        context,
+        message: error is ApiException ? error.message : 'Error al compartir análisis',
+        isError: true,
       );
     } finally {
       if (mounted) setState(() => _isSharing = false);
@@ -792,13 +771,7 @@ class _ResultScreenState extends State<ResultScreen> {
       if (isGallery) {
         message = 'Los análisis desde galería no están disponibles en el mapa.';
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      AppNotification.show(context, message: message, isError: true);
       return;
     }
     Navigator.pushNamed(
@@ -831,7 +804,7 @@ class _ResultScreenState extends State<ResultScreen> {
                    style: GoogleFonts.poppins(
                      fontSize: 14,
                      fontWeight: FontWeight.w700,
-                     color: AppTheme.textDark,
+                     color: Theme.of(context).colorScheme.onSurface,
                    ),
                  ),
                ),
@@ -843,7 +816,7 @@ class _ResultScreenState extends State<ResultScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.45,
             ),
           ),
@@ -851,7 +824,7 @@ class _ResultScreenState extends State<ResultScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -862,7 +835,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -871,7 +844,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                 ),
@@ -888,7 +861,7 @@ class _ResultScreenState extends State<ResultScreen> {
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withValues(alpha: 0.6),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4), width: 1),
       ),
@@ -897,7 +870,7 @@ class _ResultScreenState extends State<ResultScreen> {
         children: [
            Row(
              children: [
-               Icon(Icons.info_outline_rounded, color: AppTheme.textGray, size: 20),
+               Icon(Icons.info_outline_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant, size: 20),
                const SizedBox(width: 10),
                Expanded(
                  child: Text(
@@ -905,7 +878,7 @@ class _ResultScreenState extends State<ResultScreen> {
                    style: GoogleFonts.poppins(
                      fontSize: 14,
                      fontWeight: FontWeight.w700,
-                     color: AppTheme.textDark,
+                     color: Theme.of(context).colorScheme.onSurface,
                    ),
                  ),
                ),
@@ -917,7 +890,7 @@ class _ResultScreenState extends State<ResultScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.45,
             ),
           ),
@@ -927,7 +900,7 @@ class _ResultScreenState extends State<ResultScreen> {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray.withValues(alpha: 0.8),
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
               height: 1.4,
             ),
           ),
@@ -968,7 +941,7 @@ class _ResultScreenState extends State<ResultScreen> {
                      style: GoogleFonts.poppins(
                        fontSize: 15,
                        fontWeight: FontWeight.w700,
-                       color: AppTheme.textDark,
+                       color: Theme.of(context).colorScheme.onSurface,
                      ),
                    ),
                  ),
@@ -1006,7 +979,7 @@ class _ResultScreenState extends State<ResultScreen> {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.4,
             ),
             textAlign: TextAlign.center,

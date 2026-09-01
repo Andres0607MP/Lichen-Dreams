@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/api_service.dart';
+import '../widgets/app_notification.dart';
 import '../widgets/common_widgets.dart';
 
 class LocationScreen extends StatefulWidget {
@@ -54,12 +55,7 @@ class _LocationScreenState extends State<LocationScreen> {
       final apiService = Provider.of<ApiService>(context, listen: false);
       await apiService.saveLocation(locationData);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ubicación guardada correctamente'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      AppNotification.show(context, message: 'Ubicación guardada correctamente');
       Navigator.pop(context);
     } catch (error) {
       _showMessage(error is ApiException ? error.message : 'Error al guardar ubicación');
@@ -72,11 +68,10 @@ class _LocationScreenState extends State<LocationScreen> {
 
   void _showMessage(String message, {bool success = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ),
+    AppNotification.show(
+      context,
+      message: message,
+      isError: !success,
     );
   }
 

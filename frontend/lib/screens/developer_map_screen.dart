@@ -527,7 +527,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.92),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: statusColor.withValues(alpha: 0.35),
@@ -565,7 +565,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -607,7 +607,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.92),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: statusColor.withValues(alpha: 0.35),
@@ -645,7 +645,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -683,7 +683,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
             boxShadow: [
@@ -720,7 +720,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -781,7 +781,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
             },
             tooltip: _showEnvironmentalMarkers ? 'Ocultar puntos ambientales' : 'Mostrar puntos ambientales',
             active: _showEnvironmentalMarkers,
-            iconColor: _showEnvironmentalMarkers ? AppTheme.primaryGreen : AppTheme.textGray,
+            iconColor: _showEnvironmentalMarkers ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           if (_selectedZone != null) ...[
             const SizedBox(height: 8),
@@ -817,7 +817,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.96),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
             boxShadow: [
@@ -839,7 +839,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 16),
@@ -867,12 +867,12 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor.withValues(alpha: 0.6),
+                  color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.visibility_rounded, size: 16, color: AppTheme.textGray),
+                    Icon(Icons.visibility_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -880,7 +880,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -917,7 +917,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -953,7 +953,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                         style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.textGray,
+                        foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                         side: const BorderSide(color: AppTheme.borderColor, width: 1.5),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
@@ -993,7 +993,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor.withValues(alpha: 0.4),
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -1006,7 +1006,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -1015,7 +1015,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -1037,7 +1037,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         const SizedBox(height: 8),
@@ -1055,7 +1055,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppTheme.primaryGreen.withValues(alpha: 0.12)
-                        : AppTheme.backgroundColor.withValues(alpha: 0.5),
+                        : Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.5),
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: isSelected
@@ -1072,7 +1072,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                             ? Icons.radio_button_checked_rounded
                             : Icons.radio_button_unchecked_rounded,
                         size: 18,
-                        color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+                        color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -1080,7 +1080,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                          color: isSelected ? AppTheme.primaryGreen : AppTheme.textDark,
+                          color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -1107,7 +1107,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.96),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
             boxShadow: [
@@ -1176,7 +1176,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1184,7 +1184,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                 '${_zoneStatusLabel(zone)} · ${zone.points.length} análisis',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -1229,7 +1229,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                 icon: Icons.map_rounded,
                 label: 'Registros',
                 value: '${zone.points.length}',
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -1252,7 +1252,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.4,
                   ),
                 ),
@@ -1295,7 +1295,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: AppTheme.backgroundColor.withValues(alpha: 0.4),
+              color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -1308,7 +1308,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -1317,7 +1317,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -1328,13 +1328,13 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.backgroundColor.withValues(alpha: 0.6),
+            color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
               Icon(Icons.developer_mode_rounded,
-                  size: 16, color: AppTheme.textGray),
+                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1342,7 +1342,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -1356,7 +1356,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 12,
             height: 1.5,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -1372,7 +1372,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor.withValues(alpha: 0.6),
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1389,7 +1389,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1398,7 +1398,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -1489,7 +1489,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1500,7 +1500,7 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -1527,11 +1527,11 @@ class _DeveloperMapScreenState extends State<DeveloperMapScreen> {
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _openLocationSettings,
-              icon: Icon(Icons.settings_rounded, color: AppTheme.textGray),
+              icon: Icon(Icons.settings_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
               label: Text(
                 'Abrir ajustes de ubicación',
                 style: GoogleFonts.poppins(
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),

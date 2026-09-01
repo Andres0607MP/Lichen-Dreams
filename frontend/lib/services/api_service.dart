@@ -21,6 +21,7 @@ class ApiService {
   ApiService({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
+  bool _refreshingToken = false;
   static const String _tokenKey = 'auth_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userRoleKey = 'user_role';
@@ -117,7 +118,14 @@ class ApiService {
   Future<Map<String, String>> _headers({bool authorized = false}) async {
     final headers = {'Content-Type': 'application/json'};
     if (authorized) {
-      final token = await getToken();
+      var token = await getToken();
+      // Sin access token local pero con refresh disponible: intentar UNA
+      // renovación antes de enviar la petición (evita loops y peticiones
+      // autenticadas con tokens ausentes/expirados).
+      if ((token == null || token.isEmpty) && !_refreshingToken) {
+        final ok = await refreshSession();
+        if (ok) token = await getToken();
+      }
       if (token != null && token.isNotEmpty) {
         headers['Authorization'] = 'Bearer $token';
       }
@@ -280,12 +288,14 @@ class ApiService {
     String? name,
     String? phone,
     bool? active,
+    int? idRol,
   }) async {
     final payload = <String, dynamic>{};
     if (email != null) payload['email'] = email;
     if (name != null) payload['name'] = name;
     if (phone != null) payload['phone'] = phone;
     if (active != null) payload['active'] = active;
+    if (idRol != null) payload['id_rol'] = idRol;
 
     final response = await _client.put(
       AppConfig.buildUri('/admin/users/$id'),
@@ -301,6 +311,40 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<int> getAdminRoleId() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/admin/roles/admin'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener rol admin',
+        ),
+      );
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['id_rol'] as int;
+  }
+
+  Future<int> getUserRoleId() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/admin/roles/user'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(
+          response,
+          'Error ${response.statusCode} al obtener rol usuario',
+        ),
+      );
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return data['id_rol'] as int;
   }
 
   /// Login con email y contraseña
@@ -350,14 +394,20 @@ class ApiService {
     }
   }
 
-  /// Login con el ID token de Google obtenido por google_sign_in
-  Future<Map<String, dynamic>> loginWithGoogle(String idToken) async {
+  /// Login/registro con el ID token de Google obtenido por google_sign_in.
+  ///
+  /// [modo] = 'login' → solo autentica cuentas Google ya registradas.
+  /// [modo] = 'registro' → crea la cuenta si el Google no existe.
+  Future<Map<String, dynamic>> loginWithGoogle(
+    String idToken, {
+    String modo = 'registro',
+  }) async {
     try {
       final response = await _client
           .post(
             AppConfig.buildUri('/auth/google'),
             headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'id_token': idToken}),
+            body: jsonEncode({'id_token': idToken, 'modo': modo}),
           )
           .timeout(const Duration(seconds: 15));
 
@@ -387,11 +437,20 @@ class ApiService {
       if (response.statusCode == 401) {
         throw ApiException('La sesión de Google no fue autorizada. Intenta de nuevo.');
       }
+      if (response.statusCode == 404) {
+        throw ApiException(
+          _parseResponseMessage(
+            response,
+            'Esta cuenta de Google no está registrada. '
+            'Crea una cuenta usando "Continuar con Google".',
+          ),
+        );
+      }
       if (response.statusCode == 409) {
         throw ApiException(
           _parseResponseMessage(
             response,
-            'Ya existe una cuenta con este correo. Usa tu correo y contraseña.',
+            'Esta cuenta de Google ya está registrada. Inicia sesión para continuar.',
           ),
         );
       }
@@ -502,8 +561,67 @@ class ApiService {
     await prefs.setString(_refreshTokenKey, token);
   }
 
-  /// Cerrar sesión
+  /// Renueva el access token con el refresh token almacenado (`POST /auth/refresh`).
+  ///
+  /// Protegido contra loops: si ya hay una renovación en curso, no lanza otra.
+  /// Devuelve `true` si se obtuvo un access token nuevo.
+  Future<bool> refreshSession() async {
+    final refresh = await getRefreshToken();
+    if (refresh == null || refresh.isEmpty) return false;
+    if (_refreshingToken) return false;
+    _refreshingToken = true;
+    try {
+      final response = await _client.post(
+        AppConfig.buildUri('/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refresh_token': refresh}),
+      );
+      if (response.statusCode != 200) return false;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final access = data['access_token'];
+      if (access is String && access.isNotEmpty) {
+        await _saveToken(access);
+        return true;
+      }
+      return false;
+    } catch (_) {
+      return false;
+    } finally {
+      _refreshingToken = false;
+    }
+  }
+
+  /// Cerrar sesión: revoca la sesión en backend (best-effort) y SIEMPRE
+  /// limpia las credenciales locales para no bloquear al usuario.
   Future<void> logout() async {
+    final access = await getToken();
+    final refresh = await getRefreshToken();
+
+    if (access != null && access.isNotEmpty) {
+      try {
+        await _client.post(
+          AppConfig.buildUri('/auth/logout'),
+          headers: {
+            'Authorization': 'Bearer $access',
+            'Content-Type': 'application/json',
+          },
+        );
+      } catch (_) {
+        // Best-effort: sin conexión no debe bloquear el cierre local.
+      }
+    }
+    if (refresh != null && refresh.isNotEmpty) {
+      try {
+        await _client.post(
+          AppConfig.buildUri('/auth/logout_refresh'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'refresh_token': refresh}),
+        );
+      } catch (_) {
+        // Best-effort.
+      }
+    }
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     await prefs.remove(_refreshTokenKey);

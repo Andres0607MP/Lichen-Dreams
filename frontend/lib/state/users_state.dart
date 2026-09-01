@@ -40,6 +40,20 @@ class UsersState extends ChangeNotifier {
     await refresh();
   }
 
+  Future<void> makeUserAdmin(int id) async {
+    final adminRoleId = await _apiService.getAdminRoleId();
+    await _apiService.updateUser(id, idRol: adminRoleId);
+    await refresh();
+  }
+
+  Future<void> setUserRole(int id, bool makeAdmin) async {
+    final roleId = makeAdmin
+        ? await _apiService.getAdminRoleId()
+        : await _apiService.getUserRoleId();
+    await _apiService.updateUser(id, idRol: roleId);
+    await refresh();
+  }
+
   void clear() {
     _users = [];
     _error = null;

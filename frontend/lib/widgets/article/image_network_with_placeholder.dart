@@ -8,7 +8,6 @@ class ImageNetworkWithPlaceholder extends StatelessWidget {
   final double? width;
   final BoxFit fit;
   final double borderRadius;
-
   const ImageNetworkWithPlaceholder({
     Key? key,
     required this.imageUrl,
@@ -17,7 +16,6 @@ class ImageNetworkWithPlaceholder extends StatelessWidget {
     this.fit = BoxFit.cover,
     this.borderRadius = 0,
   }) : super(key: key);
-
   String? _resolveUrl(String? url) {
     if (url == null || url.isEmpty) return null;
     return AppConfig.getImageUrl(url);
@@ -29,7 +27,6 @@ class ImageNetworkWithPlaceholder extends StatelessWidget {
     if (resolved == null) {
       return _buildPlaceholder();
     }
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: Image.network(
@@ -71,19 +68,12 @@ class ImageNetworkWithPlaceholder extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceColor,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: AppTheme.borderColor,
-          width: 1,
-        ),
+        border: Border.all(color: AppTheme.borderColor, width: 1),
       ),
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.image_outlined,
-            size: 48,
-            color: AppTheme.textGray,
-          ),
+          Icon(Icons.image_outlined, size: 48, color: AppTheme.textGray),
           SizedBox(height: 8),
           Text(
             'Sin imagen',
@@ -103,10 +93,7 @@ class ImageNetworkWithPlaceholder extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.errorColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: AppTheme.errorColor,
-          width: 1,
-        ),
+        border: Border.all(color: AppTheme.errorColor, width: 1),
       ),
       child: const Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -119,10 +106,7 @@ class ImageNetworkWithPlaceholder extends StatelessWidget {
           SizedBox(height: 8),
           Text(
             'Error al cargar imagen',
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.errorColor,
-            ),
+            style: TextStyle(fontSize: 12, color: AppTheme.errorColor),
           ),
         ],
       ),

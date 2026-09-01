@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../routes/route_names.dart';
 
 class RecoveryCodeScreen extends StatefulWidget {
@@ -66,12 +67,7 @@ class _RecoveryCodeScreenState extends State<RecoveryCodeScreen>
     await Clipboard.setData(ClipboardData(text: widget.code));
     if (mounted) {
       setState(() => _copied = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Código copiado. Guárdalo en un lugar seguro.'),
-          backgroundColor: AppTheme.primaryGreen,
-        ),
-      );
+      AppNotification.show(context, message: 'Código copiado. Guárdalo en un lugar seguro.');
     }
   }
 

@@ -32,7 +32,7 @@ class ModernCard extends StatelessWidget {
                   ? LinearGradient(colors: g, begin: Alignment.topLeft, end: Alignment.bottomRight)
                   : null;
             }(),
-          color: gradient == null ? (backgroundColor ?? AppTheme.surfaceColor) : null,
+          color: gradient == null ? (backgroundColor ?? Theme.of(context).colorScheme.surface) : null,
           borderRadius: borderRadius ?? AppTheme.cardRadius,
           boxShadow: const [AppTheme.baseShadow],
         ),
@@ -199,7 +199,7 @@ class _ModernTextFieldState extends State<ModernTextField> {
         prefixIcon: widget.prefixIcon,
         suffixIcon: widget.suffixIcon,
         filled: true,
-        fillColor: _isFocused ? AppTheme.surfaceColor : AppTheme.backgroundColor,
+        fillColor: _isFocused ? Theme.of(context).colorScheme.surface : Theme.of(context).scaffoldBackgroundColor,
         border: OutlineInputBorder(
           borderRadius: AppTheme.inputRadius,
           borderSide: const BorderSide(color: AppTheme.borderColor),
@@ -255,7 +255,7 @@ class StatsCard extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 2),
@@ -264,7 +264,7 @@ class StatsCard extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -319,7 +319,7 @@ class FeatureCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -330,7 +330,7 @@ class FeatureCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -521,8 +521,8 @@ class _QuickActionCardState extends State<QuickActionCard> with TickerProviderSt
                           end: Alignment.bottomCenter,
                           colors: [
                             effectiveColor.withValues(alpha: 0.08 + 0.04 * _hoverAnimation.value + 0.03 * _pressAnimation.value),
-                            AppTheme.surfaceColor,
-                            AppTheme.surfaceColor,
+                            Theme.of(context).colorScheme.surface,
+                            Theme.of(context).colorScheme.surface,
                           ],
                         ),
                         borderRadius: BorderRadius.circular(22),
@@ -603,7 +603,7 @@ class _QuickActionCardState extends State<QuickActionCard> with TickerProviderSt
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.2,
               ),
               textAlign: TextAlign.center,
@@ -619,7 +619,7 @@ class _QuickActionCardState extends State<QuickActionCard> with TickerProviderSt
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w400,
-                  color: AppTheme.textGray.withValues(alpha: 0.8),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                   height: 1.3,
                 ),
                 textAlign: TextAlign.center,
@@ -664,7 +664,7 @@ class SectionHeader extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             if (sub != null) ...[
@@ -674,7 +674,7 @@ class SectionHeader extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -739,7 +739,7 @@ class EmptyState extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -749,7 +749,7 @@ class EmptyState extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w400,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           if (actionCb != null && actionLbl != null) ...[

@@ -45,7 +45,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),

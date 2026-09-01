@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 import '../routes/route_names.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/map_controls.dart';
 import '../services/api_service.dart';
@@ -250,12 +251,10 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     if (analysisId == 0) {
       debugPrint('SHARE ERROR: analysisId inválido');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Este análisis no se puede compartir: id inválido.'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
+      AppNotification.show(
+        context,
+        message: 'Este análisis no se puede compartir: id inválido.',
+        isError: true,
       );
       return;
     }
@@ -263,12 +262,10 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     if (point.lat == 0 && point.lng == 0) {
       debugPrint('SHARE ERROR: sin ubicación válida');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Este análisis no tiene ubicación asociada. No se puede compartir en el mapa.'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
+      AppNotification.show(
+        context,
+        message: 'Este análisis no tiene ubicación asociada. No se puede compartir en el mapa.',
+        isError: true,
       );
       return;
     }
@@ -287,23 +284,17 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
       setState(() {
         _selectedPoint = refreshedPoint;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Compartido en mapa'),
-          backgroundColor: Colors.green,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      if (mounted) {
+        AppNotification.show(context, message: 'Compartido en mapa');
+      }
     } catch (e, stack) {
       debugPrint('SHARE ERROR: $e');
       debugPrint('SHARE STACK: $stack');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al compartir: $e'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
+      AppNotification.show(
+        context,
+        message: 'Error al compartir análisis',
+        isError: true,
       );
     }
   }
@@ -514,7 +505,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textDark,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 8),
@@ -522,7 +513,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                           'Verifica tu conexión e intenta nuevamente',
                           style: GoogleFonts.poppins(
                             fontSize: 13,
-                            color: AppTheme.textGray,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -651,7 +642,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.92),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: statusColor.withValues(alpha: 0.35),
@@ -689,7 +680,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -740,7 +731,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.92),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: aggregateColor.withValues(alpha: 0.35),
@@ -778,7 +769,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -821,7 +812,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.92),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: statusColor.withValues(alpha: 0.35),
@@ -859,7 +850,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -885,7 +876,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
         boxShadow: [
@@ -921,7 +912,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: active ? color.withValues(alpha: 0.15) : AppTheme.backgroundColor.withValues(alpha: 0.4),
+          color: active ? color.withValues(alpha: 0.15) : Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: active ? color.withValues(alpha: 0.6) : AppTheme.borderColor.withValues(alpha: 0.4),
@@ -934,7 +925,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             Icon(
               icon ?? (active ? Icons.visibility_rounded : Icons.visibility_off_rounded),
               size: 14,
-              color: active ? color : AppTheme.textGray,
+              color: active ? color : Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 4),
             Text(
@@ -942,7 +933,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: active ? color : AppTheme.textGray,
+                color: active ? color : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -964,7 +955,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
             boxShadow: [
@@ -1017,7 +1008,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
           style: GoogleFonts.poppins(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -1107,7 +1098,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.96),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
             boxShadow: [
@@ -1147,7 +1138,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor.withValues(alpha: 0.96),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
             boxShadow: [
@@ -1218,7 +1209,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -1253,7 +1244,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -1261,7 +1252,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                       '${level.statusLabel} · ${point.species}',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -1311,7 +1302,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                 icon: Icons.biotech_rounded,
                 label: 'Especie',
                 value: point.species,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -1343,19 +1334,19 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
           icon: Icons.calendar_today_rounded,
           label: 'Fecha',
           value: _formatDateTime(point.date),
-          color: AppTheme.textDark,
+          color: Theme.of(context).colorScheme.onSurface,
         ),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppTheme.backgroundColor.withValues(alpha: 0.6),
+            color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
             children: [
               Icon(Icons.psychology_rounded,
-                  size: 16, color: AppTheme.textGray),
+                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -1363,7 +1354,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ),
@@ -1378,7 +1369,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
           style: GoogleFonts.poppins(
             fontSize: 12,
             height: 1.5,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -1412,7 +1403,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 2),
@@ -1420,7 +1411,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                 '${zone.type.label} · ${zone.points.length} análisis',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -1465,7 +1456,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                 icon: Icons.map_rounded,
                 label: 'Registros',
                 value: '${zone.points.length}',
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
           ],
@@ -1488,7 +1479,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.4,
                   ),
                 ),
@@ -1530,7 +1521,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             margin: const EdgeInsets.only(bottom: 6),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             decoration: BoxDecoration(
-              color: AppTheme.backgroundColor.withValues(alpha: 0.4),
+              color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.4),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -1543,7 +1534,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -1552,7 +1543,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -1598,7 +1589,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor.withValues(alpha: 0.6),
+        color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -1615,7 +1606,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1624,7 +1615,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -1719,7 +1710,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -1730,7 +1721,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -1757,11 +1748,11 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             const SizedBox(height: 12),
             TextButton.icon(
               onPressed: _openLocationSettings,
-              icon: Icon(Icons.settings_rounded, color: AppTheme.textGray),
+              icon: Icon(Icons.settings_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
               label: Text(
                 'Abrir ajustes de ubicación',
                 style: GoogleFonts.poppins(
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
               ),

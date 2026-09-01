@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 
 class SettingsSection extends StatelessWidget {
   final String title;
@@ -489,18 +490,6 @@ class SettingsDialog {
   }
 
   static void showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          '$feature estará disponible próximamente',
-          style: GoogleFonts.poppins(),
-        ),
-        backgroundColor: AppTheme.primaryGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
+    AppNotification.show(context, message: '$feature estará disponible próximamente');
   }
 }

@@ -35,7 +35,7 @@ class AuthorInfo extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 2),
@@ -44,7 +44,7 @@ class AuthorInfo extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -58,7 +58,7 @@ class AuthorInfo extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: AppTheme.borderColor,
@@ -70,7 +70,7 @@ class AuthorInfo extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -199,7 +199,7 @@ class _CachedAuthorImageState extends State<_CachedAuthorImage> {
         height: widget.size,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           border: Border.all(
             color: AppTheme.borderColor,
             width: 1,

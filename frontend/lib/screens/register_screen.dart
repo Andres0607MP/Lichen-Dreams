@@ -184,7 +184,7 @@ void _showMessage(String message, {bool isError = false}) {
     final authState = context.read<AuthState>();
     setState(() => _googleLoading = true);
     try {
-      final success = await authState.loginWithGoogle();
+      final success = await authState.loginWithGoogle(registrar: true);
       if (success && mounted) {
         _goToDashboard();
       }
@@ -579,7 +579,7 @@ void _showMessage(String message, {bool isError = false}) {
                                             style: GoogleFonts.poppins(
                                               fontSize: 12,
                                               fontWeight: FontWeight.w600,
-                                              color: AppTheme.textGray,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                                             ),
                                           ),
                                         ),
@@ -657,7 +657,7 @@ void _showMessage(String message, {bool isError = false}) {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
 
           decoration: InputDecoration(
@@ -672,7 +672,7 @@ void _showMessage(String message, {bool isError = false}) {
             ),
 
             labelStyle: GoogleFonts.poppins(
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -794,7 +794,7 @@ void _showMessage(String message, {bool isError = false}) {
             isExpanded: true,
             icon: Icon(Icons.arrow_drop_down, color: AppTheme.primaryGreen),
             style: GoogleFonts.poppins(
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -802,7 +802,7 @@ void _showMessage(String message, {bool isError = false}) {
             hint: Text(
               label,
               style: GoogleFonts.poppins(
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontSize: 16,
               ),
             ),
@@ -892,7 +892,7 @@ void _showMessage(String message, {bool isError = false}) {
                         label,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -903,7 +903,7 @@ void _showMessage(String message, {bool isError = false}) {
                             : 'Selecciona una fecha',
                         style: TextStyle(
                           fontSize: 16,
-                          color: selectedDate != null ? AppTheme.textDark : AppTheme.textGray,
+                          color: selectedDate != null ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -1039,7 +1039,7 @@ class _AnimatedTitle extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 6),
@@ -1048,7 +1048,7 @@ class _AnimatedTitle extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -1252,7 +1252,7 @@ class _DatosAdicionalesSection extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             children: [

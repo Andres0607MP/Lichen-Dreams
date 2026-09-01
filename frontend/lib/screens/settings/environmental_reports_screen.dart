@@ -194,7 +194,7 @@ class _EnvironmentalReportsScreenState extends State<EnvironmentalReportsScreen>
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -499,7 +499,7 @@ class _RecentReportCard extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           onTap: onTap,
@@ -556,7 +556,7 @@ class _RecentReportCard extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 17,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textDark,
+                              color: Theme.of(context).colorScheme.onSurface,
                               height: 1.25,
                             ),
                             maxLines: 2,
@@ -736,7 +736,7 @@ class _ModernStatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
       ),
@@ -752,7 +752,7 @@ class _ModernStatChip extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -763,7 +763,7 @@ class _ModernStatChip extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 11,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -805,7 +805,7 @@ class _PreviousReportCard extends StatelessWidget {
         ],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: onTap,
@@ -847,7 +847,7 @@ class _PreviousReportCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -863,7 +863,7 @@ class _PreviousReportCard extends StatelessWidget {
                             _formatDate(fecha),
                             style: GoogleFonts.poppins(
                               fontSize: 11,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -893,7 +893,7 @@ class _PreviousReportCard extends StatelessWidget {
                     ),
                   ),
                 const SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, size: 18, color: AppTheme.textGray.withValues(alpha: 0.7)),
+                Icon(Icons.chevron_right_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
               ],
             ),
           ),
@@ -927,7 +927,7 @@ class _CompactMetric extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         Text(
@@ -935,7 +935,7 @@ class _CompactMetric extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 10,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],

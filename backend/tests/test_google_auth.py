@@ -86,8 +86,8 @@ def client():
     app.dependency_overrides.clear()
 
 
-def _google_login(client, id_token="x"):
-    return client.post("/auth/google", json={"id_token": id_token})
+def _google_login(client, id_token="x", modo="registro"):
+    return client.post("/auth/google", json={"id_token": id_token, "modo": modo})
 
 
 def test_token_google_invalido_rechazado(client, fake_google):
@@ -131,12 +131,12 @@ def test_usuario_google_nuevo_se_crea(client, fake_google):
 def test_google_existente_actualiza_foto(client, fake_google):
     claims = _google_claims()
     fake_google(claims)
-    assert _google_login(client).status_code == 200
+    assert _google_login(client, modo="registro").status_code == 200
 
-    # Segunda sesión con otra foto de Google: debe actualizarse en BD
+    # Segundo inicio de sesión con otra foto de Google: debe actualizarse en BD
     claims2 = dict(claims, picture="https://lh3.googleusercontent.com/nueva-foto")
     fake_google(claims2)
-    assert _google_login(client).status_code == 200
+    assert _google_login(client, modo="login").status_code == 200
 
     db = SessionLocal()
     try:
@@ -149,7 +149,7 @@ def test_google_existente_actualiza_foto(client, fake_google):
 def test_google_no_sobrescribe_foto_personalizada(client, fake_google):
     claims = _google_claims()
     fake_google(claims)
-    assert _google_login(client).status_code == 200
+    assert _google_login(client, modo="registro").status_code == 200
 
     # Simular que el usuario subió una foto personalizada en Lichen Dreams
     db = SessionLocal()
@@ -164,7 +164,7 @@ def test_google_no_sobrescribe_foto_personalizada(client, fake_google):
     # NO debe reemplazar la foto personalizada local.
     claims2 = dict(claims, picture="https://lh3.googleusercontent.com/otra")
     fake_google(claims2)
-    assert _google_login(client).status_code == 200
+    assert _google_login(client, modo="login").status_code == 200
 
     db = SessionLocal()
     try:
@@ -177,7 +177,7 @@ def test_google_no_sobrescribe_foto_personalizada(client, fake_google):
 def test_google_sin_foto_no_borra_la_existente(client, fake_google):
     claims = _google_claims()
     fake_google(claims)
-    assert _google_login(client).status_code == 200
+    assert _google_login(client, modo="registro").status_code == 200
 
     db = SessionLocal()
     try:
@@ -191,7 +191,7 @@ def test_google_sin_foto_no_borra_la_existente(client, fake_google):
     claims2 = dict(claims)
     claims2.pop("picture", None)
     fake_google(claims2)
-    assert _google_login(client).status_code == 200
+    assert _google_login(client, modo="login").status_code == 200
 
     db = SessionLocal()
     try:
@@ -205,8 +205,8 @@ def test_segundo_login_mismo_sub_no_duplica_usuario(client, fake_google):
     claims = _google_claims()
     fake_google(claims)
 
-    first = _google_login(client)
-    second = _google_login(client)
+    first = _google_login(client, modo="registro")   # crear cuenta
+    second = _google_login(client, modo="login")     # iniciar sesión
 
     assert first.status_code == 200
     assert second.status_code == 200
@@ -379,3 +379,65 @@ def test_flujo_email_password_sigue_funcionando(client, fake_google):
         data={"email": email, "password": "NuevaPass1!"},
     )
     assert login2.status_code == 200
+
+def test_login_google_inexistente_rechazado(client, fake_google):
+    claims = _google_claims()
+    fake_google(claims)
+
+    resp = _google_login(client, modo="login")
+    assert resp.status_code == 404
+    assert "no est" in resp.json()["detail"]
+
+    db = SessionLocal()
+    try:
+        assert db.query(Usuario).filter(Usuario.proveedor_id == claims["sub"]).count() == 0
+        assert db.query(Sesion).count() == 0
+    finally:
+        db.close()
+
+
+def test_registro_google_inexistente_crea_cuenta(client, fake_google):
+    claims = _google_claims()
+    fake_google(claims)
+
+    resp = _google_login(client, modo="registro")
+    assert resp.status_code == 200
+    db = SessionLocal()
+    try:
+        user = db.query(Usuario).filter(Usuario.proveedor_id == claims["sub"]).first()
+        assert user is not None
+        assert user.proveedor == "google"
+    finally:
+        db.close()
+
+
+def test_registro_google_existente_rechazado(client, fake_google):
+    claims = _google_claims()
+    fake_google(claims)
+
+    first = _google_login(client, modo="registro")
+    assert first.status_code == 200
+
+    second = _google_login(client, modo="registro")
+    assert second.status_code == 409
+    assert "ya est" in second.json()["detail"]
+
+    db = SessionLocal()
+    try:
+        count = db.query(Usuario).filter(Usuario.proveedor_id == claims["sub"]).count()
+        assert count == 1
+    finally:
+        db.close()
+
+
+def test_login_google_existente_autentica(client, fake_google):
+    claims = _google_claims()
+    fake_google(claims)
+    assert _google_login(client, modo="registro").status_code == 200
+
+    login = _google_login(client, modo="login")
+    assert login.status_code == 200
+    data = login.json()
+    assert data["access_token"]
+    assert data["refresh_token"]
+    assert data["user"]["correo"] == claims["email"].lower()

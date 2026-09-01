@@ -8,6 +8,7 @@ import '../models/liquenpedia_article.dart';
 import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../state/articles_state.dart';
 import '../state/auth_state.dart';
 import '../state/profile_state.dart';
@@ -128,21 +129,15 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       });
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Imagen subida correctamente'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
+      AppNotification.show(context, message: 'Imagen subida correctamente');
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error al subir imagen: $e'),
-          backgroundColor: AppTheme.errorColor,
-        ),
+      AppNotification.show(
+        context,
+        message: 'Error al subir imagen',
+        isError: true,
       );
     }
   }
@@ -188,12 +183,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
           fotoPerfilAutor: fotoPerfilAutor,
         );
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Artículo creado exitosamente'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
+        AppNotification.show(context, message: 'Artículo creado exitosamente');
       } else {
         await articlesState.updateArticle(
           widget.articleToEdit?.id ?? 0,
@@ -208,12 +198,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
               : null,
         );
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Artículo actualizado exitosamente'),
-            backgroundColor: AppTheme.successColor,
-          ),
-        );
+        AppNotification.show(context, message: 'Artículo actualizado exitosamente');
       }
 
       if (!mounted) return;
@@ -222,11 +207,10 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
       if (!mounted) return;
       setState(() => _isLoading = false);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppTheme.errorColor,
-        ),
+      AppNotification.show(
+        context,
+        message: 'Error al guardar artículo',
+        isError: true,
       );
     } finally {
       if (mounted) {
@@ -238,7 +222,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +234,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             Text(
@@ -258,7 +242,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -297,7 +281,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         filled: true,
-                        fillColor: AppTheme.surfaceColor,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       maxLength: 150,
                       validator: (value) {
@@ -319,7 +303,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         filled: true,
-                        fillColor: AppTheme.surfaceColor,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
@@ -372,7 +356,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                               borderRadius: BorderRadius.circular(14),
                             ),
                             filled: true,
-                            fillColor: AppTheme.surfaceColor,
+                            fillColor: Theme.of(context).colorScheme.surface,
                           ),
                           items: [
                             const DropdownMenuItem<int?>(
@@ -422,7 +406,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         filled: true,
-                        fillColor: AppTheme.surfaceColor,
+                        fillColor: Theme.of(context).colorScheme.surface,
                       ),
                       items: const [
                         DropdownMenuItem(
@@ -457,7 +441,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: _imagenController.text.isNotEmpty
@@ -520,7 +504,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                                     'Toca para subir una imagen',
                                     style: GoogleFonts.poppins(
                                       fontSize: 13,
-                                      color: AppTheme.textGray,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ],
@@ -538,7 +522,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                                 borderSide: BorderSide.none,
                               ),
                               filled: true,
-                              fillColor: AppTheme.backgroundColor,
+                              fillColor: Theme.of(context).scaffoldBackgroundColor,
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 14,
@@ -592,7 +576,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                             borderRadius: BorderRadius.circular(16),
                           ),
                           filled: true,
-                          fillColor: AppTheme.surfaceColor,
+                          fillColor: Theme.of(context).colorScheme.surface,
                           contentPadding: const EdgeInsets.all(16),
                         ),
                         style: GoogleFonts.poppins(
@@ -633,7 +617,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.textGray,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
@@ -714,7 +698,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
@@ -722,7 +706,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 11,
                         fontWeight: FontWeight.w400,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -785,7 +769,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
         icon: const Icon(Icons.close_rounded, size: 18),
         label: const Text('Cancelar'),
         style: OutlinedButton.styleFrom(
-          foregroundColor: AppTheme.textGray,
+          foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
           side: BorderSide(
             color: AppTheme.borderColor,
             width: 1.5,

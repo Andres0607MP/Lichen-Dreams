@@ -39,7 +39,7 @@ class MapControlButton extends StatelessWidget {
           width: 44,
           height: 44,
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: AppTheme.radiusMDBorder,
             border: Border.all(
               color: active ? color : AppTheme.borderColor,
@@ -49,7 +49,7 @@ class MapControlButton extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            color: active ? color : AppTheme.textDark,
+            color: active ? color : Theme.of(context).colorScheme.onSurface,
             size: AppTheme.iconLG,
           ),
         ),
@@ -138,7 +138,7 @@ class MapCompass extends StatelessWidget {
               width: 44,
               height: 44,
               decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
+                color: Theme.of(context).colorScheme.surface,
                 shape: BoxShape.circle,
                 border: Border.all(color: AppTheme.borderColor, width: 1),
                 boxShadow: [AppTheme.shadowMedium],
@@ -188,7 +188,7 @@ class MapTypeSelector extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppTheme.spaceSM, vertical: AppTheme.spaceXS),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: AppTheme.radiusMDBorder,
         border: Border.all(color: AppTheme.borderColor, width: 1),
           boxShadow: [AppTheme.shadowMedium],
@@ -224,13 +224,13 @@ class MapTypeSelector extends StatelessWidget {
                         Icon(
                           option.icon,
                           size: AppTheme.iconSM,
-                          color: selected ? AppTheme.primaryGreen : AppTheme.textGray,
+                          color: selected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: AppTheme.spaceXS),
                         Text(
                           option.label,
                           style: (selected ? textTheme.labelMedium : textTheme.bodySmall)?.copyWith(
-                            color: selected ? AppTheme.primaryGreen : AppTheme.textGray,
+                            color: selected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -287,14 +287,14 @@ class MapInfoPanel extends StatelessWidget {
           Icon(
             gpsEnabled ? Icons.gps_fixed_rounded : Icons.gps_off_rounded,
             size: AppTheme.iconSM,
-            color: gpsEnabled ? AppTheme.successColor : AppTheme.textGray,
+            color: gpsEnabled ? AppTheme.successColor : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: AppTheme.spaceXS),
           Text(
             'Zoom: ${zoom.toStringAsFixed(1)}',
             style: textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(width: AppTheme.spaceSM),
@@ -311,7 +311,7 @@ class MapInfoPanel extends StatelessWidget {
             '$pointsCount puntos',
             style: textTheme.bodySmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],

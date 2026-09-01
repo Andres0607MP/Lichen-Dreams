@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../models/dashboard_stats_detail.dart';
 import '../state/history_state.dart';
 import '../state/dashboard_state.dart';
@@ -10,7 +9,6 @@ import '../widgets/modern_widgets.dart';
 
 class DashboardStatsDetailSheet extends StatelessWidget {
   const DashboardStatsDetailSheet({super.key});
-
   static void show(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -28,9 +26,9 @@ class DashboardStatsDetailSheet extends StatelessWidget {
       maxChildSize: 0.95,
       builder: (context, scrollController) {
         return Container(
-          decoration: const BoxDecoration(
-            color: AppTheme.backgroundColor,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).scaffoldBackgroundColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: const _StatsDetailContent(),
         );
@@ -41,7 +39,6 @@ class DashboardStatsDetailSheet extends StatelessWidget {
 
 class _StatsDetailContent extends StatelessWidget {
   const _StatsDetailContent();
-
   @override
   Widget build(BuildContext context) {
     return Consumer2<HistoryState, DashboardState>(
@@ -49,16 +46,13 @@ class _StatsDetailContent extends StatelessWidget {
         if (historyState.loading && historyState.history.isEmpty) {
           return const _LoadingView();
         }
-
         if (historyState.error != null && historyState.history.isEmpty) {
           return _ErrorView(error: historyState.error!);
         }
-
         final detail = DashboardStatsDetail.fromHistory(
           history: historyState.history,
           stats: dashboardState.stats,
         );
-
         return Column(
           children: [
             _buildHeader(context),
@@ -70,11 +64,12 @@ class _StatsDetailContent extends StatelessWidget {
                   const SizedBox(height: 16),
                   _ActivityChart(detail: detail),
                   const SizedBox(height: 16),
-                  _EnvironmentalDistributionChart(distribution: detail.environmentalDistribution),
+                  _EnvironmentalDistributionChart(
+                    distribution: detail.environmentalDistribution,
+                  ),
                   const SizedBox(height: 16),
                   _MetricsGrid(detail: detail),
-                  if (detail.totalAnalyses == 0)
-                    _EmptyState(),
+                  if (detail.totalAnalyses == 0) _EmptyState(),
                 ],
               ),
             ),
@@ -93,7 +88,7 @@ class _StatsDetailContent extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             AppTheme.historialPrimary.withValues(alpha: 0.08),
-            AppTheme.backgroundColor,
+            Theme.of(context).scaffoldBackgroundColor,
           ],
         ),
         border: const Border(
@@ -108,7 +103,11 @@ class _StatsDetailContent extends StatelessWidget {
               color: AppTheme.historialPrimary.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.eco_rounded, size: 24, color: AppTheme.historialPrimary),
+            child: const Icon(
+              Icons.eco_rounded,
+              size: 24,
+              color: AppTheme.historialPrimary,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -120,14 +119,14 @@ class _StatsDetailContent extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Text(
                   'Estado general de tus exploraciones',
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -136,7 +135,7 @@ class _StatsDetailContent extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close_rounded, size: 24),
             onPressed: () => Navigator.pop(context),
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ],
       ),
@@ -146,14 +145,13 @@ class _StatsDetailContent extends StatelessWidget {
 
 class _HeroCard extends StatelessWidget {
   final DashboardStatsDetail detail;
-
   const _HeroCard({required this.detail});
-
   @override
   Widget build(BuildContext context) {
-    final predominantQuality = _getPredominantQuality(detail.environmentalDistribution);
+    final predominantQuality = _getPredominantQuality(
+      detail.environmentalDistribution,
+    );
     final lastActivityText = _getLastActivityText(detail.lastAnalysisDate);
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -196,7 +194,11 @@ class _HeroCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: Icon(predominantQuality.icon, color: Colors.white, size: 28),
+                child: Icon(
+                  predominantQuality.icon,
+                  color: Colors.white,
+                  size: 28,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -216,7 +218,7 @@ class _HeroCard extends StatelessWidget {
                       'análisis realizados',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -228,7 +230,9 @@ class _HeroCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppTheme.surfaceColor.withValues(alpha: 0.6),
+              color: Theme.of(
+                context,
+              ).colorScheme.surface.withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -241,7 +245,7 @@ class _HeroCard extends StatelessWidget {
                         'Calidad predominante',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -256,11 +260,7 @@ class _HeroCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 32,
-                  color: AppTheme.borderColor,
-                ),
+                Container(width: 1, height: 32, color: AppTheme.borderColor),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -270,7 +270,7 @@ class _HeroCard extends StatelessWidget {
                         'Última actividad',
                         style: GoogleFonts.poppins(
                           fontSize: 10,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -279,7 +279,7 @@ class _HeroCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ],
@@ -293,8 +293,11 @@ class _HeroCard extends StatelessWidget {
     );
   }
 
-  _PredominantQualityInfo _getPredominantQuality(EnvironmentalDistribution distribution) {
-    if (distribution.healthy >= distribution.moderate && distribution.healthy >= distribution.critical) {
+  _PredominantQualityInfo _getPredominantQuality(
+    EnvironmentalDistribution distribution,
+  ) {
+    if (distribution.healthy >= distribution.moderate &&
+        distribution.healthy >= distribution.critical) {
       return _PredominantQualityInfo(
         label: 'Saludable',
         color: AppTheme.articleHealthy,
@@ -335,7 +338,6 @@ class _PredominantQualityInfo {
   final String label;
   final Color color;
   final IconData icon;
-
   _PredominantQualityInfo({
     required this.label,
     required this.color,
@@ -345,51 +347,50 @@ class _PredominantQualityInfo {
 
 class _MetricsGrid extends StatelessWidget {
   final DashboardStatsDetail detail;
-
   const _MetricsGrid({required this.detail});
-
   @override
   Widget build(BuildContext context) {
     final metrics = <Widget>[];
-
     if (detail.zoneCount > 0) {
-      metrics.add(_MetricItem(
-        icon: Icons.location_on_rounded,
-        label: 'Zonas',
-        value: '${detail.zoneCount}',
-        subtitle: 'exploradas',
-        color: AppTheme.mapaPrimary,
-      ));
+      metrics.add(
+        _MetricItem(
+          icon: Icons.location_on_rounded,
+          label: 'Zonas',
+          value: '${detail.zoneCount}',
+          subtitle: 'exploradas',
+          color: AppTheme.mapaPrimary,
+        ),
+      );
     }
-
     if (detail.averageHumidity != null) {
       final humidityText = detail.averageHumidity! % 1 == 0
           ? detail.averageHumidity!.toInt().toString()
           : detail.averageHumidity!.toStringAsFixed(1);
-      metrics.add(_MetricItem(
-        icon: Icons.water_drop_rounded,
-        label: 'Humedad',
-        value: '$humidityText%',
-        subtitle: 'promedio',
-        color: AppTheme.infoColor,
-      ));
+      metrics.add(
+        _MetricItem(
+          icon: Icons.water_drop_rounded,
+          label: 'Humedad',
+          value: '$humidityText%',
+          subtitle: 'promedio',
+          color: AppTheme.infoColor,
+        ),
+      );
     }
-
     if (detail.averageConfidence != null) {
       final confidenceText = detail.averageConfidence! % 1 == 0
           ? detail.averageConfidence!.toInt().toString()
           : detail.averageConfidence!.toStringAsFixed(1);
-      metrics.add(_MetricItem(
-        icon: Icons.psychology_rounded,
-        label: 'Confianza',
-        value: '$confidenceText%',
-        subtitle: 'modelo IA',
-        color: AppTheme.infoColor,
-      ));
+      metrics.add(
+        _MetricItem(
+          icon: Icons.psychology_rounded,
+          label: 'Confianza',
+          value: '$confidenceText%',
+          subtitle: 'modelo IA',
+          color: AppTheme.infoColor,
+        ),
+      );
     }
-
     if (metrics.isEmpty) return const SizedBox.shrink();
-
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -409,7 +410,6 @@ class _MetricItem extends StatelessWidget {
   final String value;
   final String subtitle;
   final Color color;
-
   const _MetricItem({
     required this.icon,
     required this.label,
@@ -417,7 +417,6 @@ class _MetricItem extends StatelessWidget {
     required this.subtitle,
     required this.color,
   });
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -440,7 +439,7 @@ class _MetricItem extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -465,7 +464,9 @@ class _MetricItem extends StatelessWidget {
             subtitle,
             style: GoogleFonts.poppins(
               fontSize: 10,
-              color: AppTheme.textGray.withValues(alpha: 0.7),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -476,7 +477,6 @@ class _MetricItem extends StatelessWidget {
 
 class _LoadingView extends StatelessWidget {
   const _LoadingView();
-
   @override
   Widget build(BuildContext context) {
     return const Center(
@@ -490,9 +490,7 @@ class _LoadingView extends StatelessWidget {
 
 class _ErrorView extends StatelessWidget {
   final String error;
-
   const _ErrorView({required this.error});
-
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -501,14 +499,20 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline_rounded, size: 48, color: AppTheme.textGray.withValues(alpha: 0.5)),
+            Icon(
+              Icons.error_outline_rounded,
+              size: 48,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
             const SizedBox(height: 16),
             Text(
               'No se pudieron cargar las estadísticas',
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -517,7 +521,7 @@ class _ErrorView extends StatelessWidget {
               error,
               style: GoogleFonts.poppins(
                 fontSize: 12,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -530,9 +534,7 @@ class _ErrorView extends StatelessWidget {
 
 class _ActivityChart extends StatelessWidget {
   final DashboardStatsDetail detail;
-
   const _ActivityChart({required this.detail});
-
   @override
   Widget build(BuildContext context) {
     return ModernCard(
@@ -547,7 +549,11 @@ class _ActivityChart extends StatelessWidget {
                   color: AppTheme.historialPrimary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.show_chart_rounded, size: 20, color: AppTheme.historialPrimary),
+                child: const Icon(
+                  Icons.show_chart_rounded,
+                  size: 20,
+                  color: AppTheme.historialPrimary,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -559,14 +565,14 @@ class _ActivityChart extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     Text(
                       'Análisis realizados a lo largo del tiempo',
                       style: GoogleFonts.poppins(
                         fontSize: 11,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -576,7 +582,9 @@ class _ActivityChart extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           if (detail.dailyActivity.isEmpty)
-            _buildNoDataMessage('Necesitas más análisis para mostrar una tendencia.')
+            _buildNoDataMessage(
+              'Necesitas más análisis para mostrar una tendencia.',
+            )
           else
             _buildChart(),
           const SizedBox(height: 12),
@@ -587,13 +595,16 @@ class _ActivityChart extends StatelessWidget {
   }
 
   Widget _buildChart() {
-    final maxCount = detail.dailyActivity.map((e) => e.count).reduce((a, b) => a > b ? a : b);
-
+    final maxCount = detail.dailyActivity
+        .map((e) => e.count)
+        .reduce((a, b) => a > b ? a : b);
     return LayoutBuilder(
       builder: (context, constraints) {
         final barCount = detail.dailyActivity.length;
-        final chartHeight = (constraints.maxWidth / barCount * 0.6).clamp(60.0, 100.0);
-
+        final chartHeight = (constraints.maxWidth / barCount * 0.6).clamp(
+          60.0,
+          100.0,
+        );
         return SizedBox(
           height: chartHeight + 24,
           child: Row(
@@ -615,7 +626,10 @@ class _ActivityChart extends StatelessWidget {
                               gradient: const LinearGradient(
                                 begin: Alignment.topCenter,
                                 end: Alignment.bottomCenter,
-                                colors: [AppTheme.historialPrimary, AppTheme.historialIcon],
+                                colors: [
+                                  AppTheme.historialPrimary,
+                                  AppTheme.historialIcon,
+                                ],
                               ),
                               borderRadius: BorderRadius.circular(4),
                             ),
@@ -629,7 +643,9 @@ class _ActivityChart extends StatelessWidget {
                           '${stat.date.day}',
                           style: GoogleFonts.poppins(
                             fontSize: 9,
-                            color: AppTheme.textGray,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ),
@@ -645,16 +661,19 @@ class _ActivityChart extends StatelessWidget {
   }
 
   Widget _buildInterpretation() {
-    final total = detail.dailyActivity.fold<int>(0, (sum, stat) => sum + stat.count);
+    final total = detail.dailyActivity.fold<int>(
+      0,
+      (sum, stat) => sum + stat.count,
+    );
     String text;
     if (detail.dailyActivity.isEmpty) {
       text = 'Sin datos suficientes.';
     } else if (detail.dailyActivity.length == 1) {
       text = '$total análisis en el último día.';
     } else {
-      text = '$total análisis en los últimos ${detail.dailyActivity.length} días.';
+      text =
+          '$total análisis en los últimos ${detail.dailyActivity.length} días.';
     }
-
     return Text(
       text,
       style: GoogleFonts.poppins(
@@ -671,10 +690,7 @@ class _ActivityChart extends StatelessWidget {
       child: Center(
         child: Text(
           message,
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: AppTheme.textGray,
-          ),
+          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textGray),
           textAlign: TextAlign.center,
         ),
       ),
@@ -684,9 +700,7 @@ class _ActivityChart extends StatelessWidget {
 
 class _EnvironmentalDistributionChart extends StatelessWidget {
   final EnvironmentalDistribution distribution;
-
   const _EnvironmentalDistributionChart({required this.distribution});
-
   @override
   Widget build(BuildContext context) {
     return ModernCard(
@@ -701,7 +715,11 @@ class _EnvironmentalDistributionChart extends StatelessWidget {
                   color: AppTheme.articleHealthy.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.pie_chart_outline_rounded, size: 20, color: AppTheme.articleHealthy),
+                child: const Icon(
+                  Icons.pie_chart_outline_rounded,
+                  size: 20,
+                  color: AppTheme.articleHealthy,
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -709,7 +727,7 @@ class _EnvironmentalDistributionChart extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -730,10 +748,7 @@ class _EnvironmentalDistributionChart extends StatelessWidget {
       child: Center(
         child: Text(
           'Realiza análisis para ver la distribución ambiental.',
-          style: GoogleFonts.poppins(
-            fontSize: 12,
-            color: AppTheme.textGray,
-          ),
+          style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textGray),
           textAlign: TextAlign.center,
         ),
       ),
@@ -752,19 +767,20 @@ class _EnvironmentalDistributionChart extends StatelessWidget {
 
   Widget _buildDonutChart() {
     final total = distribution.total.toDouble();
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = constraints.maxWidth;
         final donutSize = (availableWidth * 0.3).clamp(80.0, 120.0);
-
         return Wrap(
           crossAxisAlignment: WrapCrossAlignment.center,
           spacing: 16,
           children: [
             CustomPaint(
               size: Size(donutSize, donutSize),
-              painter: _DonutChartPainter(distribution: distribution, total: total),
+              painter: _DonutChartPainter(
+                distribution: distribution,
+                total: total,
+              ),
             ),
             Column(
               mainAxisSize: MainAxisSize.min,
@@ -775,7 +791,7 @@ class _EnvironmentalDistributionChart extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Flexible(
@@ -783,7 +799,7 @@ class _EnvironmentalDistributionChart extends StatelessWidget {
                     'análisis totales',
                     style: GoogleFonts.poppins(
                       fontSize: 11,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -823,25 +839,19 @@ class _EnvironmentalDistributionChart extends StatelessWidget {
 class _DonutChartPainter extends CustomPainter {
   final EnvironmentalDistribution distribution;
   final double total;
-
   _DonutChartPainter({required this.distribution, required this.total});
-
   @override
   void paint(Canvas canvas, Size size) {
     if (total <= 0) return;
-
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 8;
     const strokeWidth = 20.0;
-
     final segments = <_Segment>[
       _Segment(AppTheme.articleHealthy, distribution.healthy / total),
       _Segment(AppTheme.articleModerate, distribution.moderate / total),
       _Segment(AppTheme.articleCritical, distribution.critical / total),
     ];
-
     double startAngle = -90 * 3.14159 / 180;
-
     for (final segment in segments) {
       if (segment.fraction <= 0) continue;
       final sweepAngle = segment.fraction * 2 * 3.14159;
@@ -850,7 +860,6 @@ class _DonutChartPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = strokeWidth
         ..strokeCap = StrokeCap.round;
-
       canvas.drawArc(
         Rect.fromCircle(center: center, radius: radius),
         startAngle,
@@ -869,7 +878,6 @@ class _DonutChartPainter extends CustomPainter {
 class _Segment {
   final Color color;
   final double fraction;
-
   _Segment(this.color, this.fraction);
 }
 
@@ -877,13 +885,11 @@ class _LegendItem extends StatelessWidget {
   final Color color;
   final String label;
   final int count;
-
   const _LegendItem({
     required this.color,
     required this.label,
     required this.count,
   });
-
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -902,7 +908,7 @@ class _LegendItem extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const Spacer(),
@@ -911,7 +917,7 @@ class _LegendItem extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],
@@ -927,14 +933,20 @@ class _EmptyState extends StatelessWidget {
         padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(Icons.analytics_outlined, size: 48, color: AppTheme.textGray.withValues(alpha: 0.4)),
+            Icon(
+              Icons.analytics_outlined,
+              size: 48,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 16),
             Text(
               'Realiza algunos análisis para comenzar a ver tus estadísticas.',
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),

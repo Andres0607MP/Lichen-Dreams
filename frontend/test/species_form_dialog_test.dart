@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:frontend/screens/admin_species_screen.dart';
 import 'package:frontend/services/api_service.dart';
+import 'package:frontend/state/auth_state.dart';
 import 'package:frontend/state/catalog_state.dart';
 
 class _FakeApiService extends ApiService {
@@ -50,11 +51,13 @@ void main() {
 
   CatalogState catalog() => CatalogState(apiService: _FakeApiService());
 
-  Widget app(CatalogState state) {
+  Widget app(CatalogState state, {AuthState? auth}) {
     return MultiProvider(
       providers: [
         Provider<ApiService>.value(value: _FakeApiService()),
         ChangeNotifierProvider<CatalogState>.value(value: state),
+        // AdminSpeciesScreen depende de AuthState.isAdmin (necesario para la UI).
+        ChangeNotifierProvider.value(value: auth ?? AuthState()),
       ],
       child: const MaterialApp(home: AdminSpeciesScreen()),
     );
@@ -179,11 +182,17 @@ void main() {
         },
       ];
     final state = CatalogState(apiService: api);
-    await tester.pumpWidget(app(state));
+
+    // El botón de acciones de la card solo se muestra a administradores.
+    SharedPreferences.setMockInitialValues({'user_role': 'admin'});
+    final auth = AuthState();
+    await auth.initialize();
+
+    await tester.pumpWidget(app(state, auth: auth));
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.edit_rounded));
+    await tester.tap(find.text('Editar'));
     await tester.pumpAndSettle();
 
     expect(find.text('Editar especie'), findsOneWidget);

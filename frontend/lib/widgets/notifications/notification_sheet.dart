@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../../models/analysis_record.dart';
 import '../../screens/result_screen.dart';
 import '../../services/api_service.dart';
@@ -15,7 +14,6 @@ import 'notification_empty.dart';
 
 class NotificationSheet extends StatefulWidget {
   const NotificationSheet({super.key});
-
   @override
   State<NotificationSheet> createState() => _NotificationSheetState();
 }
@@ -23,7 +21,6 @@ class NotificationSheet extends StatefulWidget {
 class _NotificationSheetState extends State<NotificationSheet> {
   String _selectedFilter = 'all';
   bool _clearing = false;
-
   @override
   void initState() {
     super.initState();
@@ -48,7 +45,7 @@ class _NotificationSheetState extends State<NotificationSheet> {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         content: Text(
@@ -56,7 +53,7 @@ class _NotificationSheetState extends State<NotificationSheet> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w400,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.4,
           ),
         ),
@@ -65,14 +62,16 @@ class _NotificationSheetState extends State<NotificationSheet> {
             onPressed: () => Navigator.pop(context, false),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: Text(
               'Cancelar',
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -81,7 +80,9 @@ class _NotificationSheetState extends State<NotificationSheet> {
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.errorColor,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: Text(
               'Eliminar',
@@ -96,13 +97,14 @@ class _NotificationSheetState extends State<NotificationSheet> {
       ),
     );
     if (confirmed != true) return;
-
     setState(() => _clearing = true);
     try {
       await notificationsState.clearAllFromBackend();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Notificaciones eliminadas correctamente')),
+        const SnackBar(
+          content: Text('Notificaciones eliminadas correctamente'),
+        ),
       );
     } catch (e) {
       if (!mounted) return;
@@ -119,20 +121,30 @@ class _NotificationSheetState extends State<NotificationSheet> {
   ) {
     switch (_selectedFilter) {
       case 'analysis':
-        return notifications.where((n) => n['tipo']?.toString() == 'analysis').toList();
+        return notifications
+            .where((n) => n['tipo']?.toString() == 'analysis')
+            .toList();
       case 'system':
-        return notifications.where((n) => n['tipo']?.toString() != 'analysis').toList();
+        return notifications
+            .where((n) => n['tipo']?.toString() != 'analysis')
+            .toList();
       case 'all':
       default:
         return notifications;
     }
   }
 
-  List<Map<String, dynamic>> _sortByDateDesc(List<Map<String, dynamic>> notifications) {
+  List<Map<String, dynamic>> _sortByDateDesc(
+    List<Map<String, dynamic>> notifications,
+  ) {
     final sorted = List<Map<String, dynamic>>.from(notifications);
     sorted.sort((a, b) {
-      final dateA = DateTime.tryParse(a['fecha']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final dateB = DateTime.tryParse(b['fecha']?.toString() ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final dateA =
+          DateTime.tryParse(a['fecha']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      final dateB =
+          DateTime.tryParse(b['fecha']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0);
       return dateB.compareTo(dateA);
     });
     return sorted;
@@ -153,19 +165,18 @@ class _NotificationSheetState extends State<NotificationSheet> {
     final estado = notification['estado']?.toString() ?? '';
     final analysisId = notification['analysis_id'];
     final notificationId = notification['id']?.toString() ?? '';
-
     if (tipo == 'analysis' && estado == 'completed' && analysisId != null) {
       try {
-        final analysisJson = await apiService.getAnalysisResult(analysisId as int);
+        final analysisJson = await apiService.getAnalysisResult(
+          analysisId as int,
+        );
         if (!context.mounted) return;
         final record = AnalysisRecord.fromJson(analysisJson);
         await notificationsState.markAsRead(notificationId);
         if (!context.mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(
-            builder: (_) => ResultScreen(analysis: record),
-          ),
+          MaterialPageRoute(builder: (_) => ResultScreen(analysis: record)),
         );
       } catch (e) {
         if (!context.mounted) return;
@@ -197,11 +208,12 @@ class _NotificationSheetState extends State<NotificationSheet> {
     final analysisState = context.watch<AnalysisState>();
     final apiService = Provider.of<ApiService>(context, listen: false);
     final unreadCount = notificationsState.unreadCount;
-    final filteredNotifications = _applyFilter(notificationsState.notifications);
+    final filteredNotifications = _applyFilter(
+      notificationsState.notifications,
+    );
     final sortedNotifications = _sortByDateDesc(filteredNotifications);
     final showActiveCard = _shouldShowActiveCard(analysisState);
     final hasNotifications = sortedNotifications.isNotEmpty;
-
     return Padding(
       padding: EdgeInsets.only(
         bottom: MediaQuery.of(context).viewInsets.bottom,
@@ -211,7 +223,7 @@ class _NotificationSheetState extends State<NotificationSheet> {
           maxHeight: MediaQuery.of(context).size.height * 0.72,
         ),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           boxShadow: [
             BoxShadow(
@@ -225,7 +237,12 @@ class _NotificationSheetState extends State<NotificationSheet> {
           mainAxisSize: MainAxisSize.min,
           children: [
             _buildHandle(),
-            _buildHeader(context, notificationsState, unreadCount, hasNotifications),
+            _buildHeader(
+              context,
+              notificationsState,
+              unreadCount,
+              hasNotifications,
+            ),
             _buildFilters(),
             const SizedBox(height: 4),
             if (showActiveCard)
@@ -257,53 +274,57 @@ class _NotificationSheetState extends State<NotificationSheet> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.primaryGreen.withValues(alpha: 0.08),
-                      AppTheme.lightGreen.withValues(alpha: 0.04),
-                    ],
-                  ),
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppTheme.borderColor.withValues(alpha: 0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  Icons.notifications_off_outlined,
-                  size: 36,
-                  color: AppTheme.textGray.withValues(alpha: 0.35),
-                ),
-              )
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppTheme.primaryGreen.withValues(alpha: 0.08),
+                          AppTheme.lightGreen.withValues(alpha: 0.04),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppTheme.borderColor.withValues(alpha: 0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.notifications_off_outlined,
+                      size: 36,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
+                    ),
+                  )
                   .animate()
                   .fadeIn(duration: 500.ms)
-                  .scale(begin: const Offset(0.8, 0.8), end: const Offset(1, 1), duration: 500.ms),
+                  .scale(
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1, 1),
+                    duration: 500.ms,
+                  ),
               const SizedBox(height: 20),
-               Text(
-                 'Sin notificaciones del sistema',
-                 textAlign: TextAlign.center,
-                 style: GoogleFonts.poppins(
-                   fontSize: 16,
-                   fontWeight: FontWeight.w600,
-                   color: AppTheme.textDark,
-                 ),
-               ).animate().fadeIn(duration: 400.ms, delay: 150.ms),
-               const SizedBox(height: 6),
-               Text(
-                 'No hay avisos generales en este momento',
-                 textAlign: TextAlign.center,
-                 style: GoogleFonts.poppins(
-                   fontSize: 13,
-                   fontWeight: FontWeight.w400,
-                   color: AppTheme.textGray.withValues(alpha: 0.8),
-                   height: 1.4,
-                 ),
-               ).animate().fadeIn(duration: 400.ms, delay: 220.ms),
+              Text(
+                'Sin notificaciones del sistema',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ).animate().fadeIn(duration: 400.ms, delay: 150.ms),
+              const SizedBox(height: 6),
+              Text(
+                'No hay avisos generales en este momento',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                  height: 1.4,
+                ),
+              ).animate().fadeIn(duration: 400.ms, delay: 220.ms),
             ],
           ),
         ),
@@ -322,20 +343,19 @@ class _NotificationSheetState extends State<NotificationSheet> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(strokeWidth: 2.2, color: AppTheme.primaryGreen),
+            CircularProgressIndicator(
+              strokeWidth: 2.2,
+              color: AppTheme.primaryGreen,
+            ),
             SizedBox(height: 14),
             Text(
               'Cargando notificaciones...',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppTheme.textGray,
-              ),
+              style: TextStyle(fontSize: 13, color: AppTheme.textGray),
             ),
           ],
         ),
       );
     }
-
     final error = notificationsState.error;
     if (error != null && !notificationsState.loading) {
       return Center(
@@ -364,7 +384,7 @@ class _NotificationSheetState extends State<NotificationSheet> {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                   height: 1.35,
                 ),
               ),
@@ -375,14 +395,19 @@ class _NotificationSheetState extends State<NotificationSheet> {
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.35,
                 ),
               ),
               const SizedBox(height: 18),
               ElevatedButton.icon(
-                onPressed: () => notificationsState.loadNotifications(force: true),
-                icon: Icon(Icons.refresh_rounded, size: 18, color: Colors.white),
+                onPressed: () =>
+                    notificationsState.loadNotifications(force: true),
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  size: 18,
+                  color: Colors.white,
+                ),
                 label: Text(
                   'Reintentar',
                   style: GoogleFonts.poppins(
@@ -394,8 +419,13 @@ class _NotificationSheetState extends State<NotificationSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryGreen,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
             ],
@@ -403,13 +433,11 @@ class _NotificationSheetState extends State<NotificationSheet> {
         ),
       );
     }
-
     if (sortedNotifications.isEmpty) {
       return _selectedFilter == 'system'
           ? _buildSystemEmpty()
           : const NotificationEmpty();
     }
-
     return ListView.builder(
       shrinkWrap: true,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -434,14 +462,17 @@ class _NotificationSheetState extends State<NotificationSheet> {
 
   Widget _buildHandle() {
     return Container(
-      width: 48,
-      height: 5,
-      margin: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: AppTheme.borderColor.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(3),
-      ),
-    ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.1, end: 0, duration: 400.ms);
+          width: 48,
+          height: 5,
+          margin: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: AppTheme.borderColor.withValues(alpha: 0.4),
+            borderRadius: BorderRadius.circular(3),
+          ),
+        )
+        .animate()
+        .fadeIn(duration: 300.ms)
+        .slideY(begin: 0.1, end: 0, duration: 400.ms);
   }
 
   Widget _buildHeader(
@@ -451,87 +482,96 @@ class _NotificationSheetState extends State<NotificationSheet> {
     bool hasNotifications,
   ) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.primaryGreen.withValues(alpha: 0.12),
-                  AppTheme.lightGreen.withValues(alpha: 0.06),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppTheme.primaryGreen.withValues(alpha: 0.2),
-                width: 1,
-              ),
-            ),
-            child: const Icon(
-              Icons.notifications_rounded,
-              color: AppTheme.primaryGreen,
-              size: 22,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Centro de actividad',
-                  style: GoogleFonts.poppins(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.12),
+                      AppTheme.lightGreen.withValues(alpha: 0.06),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppTheme.primaryGreen.withValues(alpha: 0.2),
+                    width: 1,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  unreadCount > 0
-                      ? '$unreadCount pendiente${unreadCount == 1 ? '' : 's'}'
-                      : 'Todo al día',
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: unreadCount > 0
-                        ? AppTheme.warningColor
-                        : AppTheme.textGray.withValues(alpha: 0.6),
+                child: const Icon(
+                  Icons.notifications_rounded,
+                  color: AppTheme.primaryGreen,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Centro de actividad',
+                      style: GoogleFonts.poppins(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      unreadCount > 0
+                          ? '$unreadCount pendiente${unreadCount == 1 ? '' : 's'}'
+                          : 'Todo al día',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: unreadCount > 0
+                            ? AppTheme.warningColor
+                            : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (hasNotifications)
+                TextButton.icon(
+                  onPressed: _clearing
+                      ? null
+                      : () => _handleClear(notificationsState),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  icon: Icon(
+                    Icons.delete_outline_rounded,
+                    size: 16,
+                    color: _clearing
+                        ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
+                        : AppTheme.errorColor,
+                  ),
+                  label: Text(
+                    _clearing ? 'Eliminando...' : 'Limpiar',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: _clearing
+                          ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.4)
+                          : AppTheme.errorColor,
+                    ),
                   ),
                 ),
-              ],
-            ),
+            ],
           ),
-          if (hasNotifications)
-            TextButton.icon(
-              onPressed: _clearing ? null : () => _handleClear(notificationsState),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                minimumSize: const Size(0, 0),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              icon: Icon(
-                Icons.delete_outline_rounded,
-                size: 16,
-                color: _clearing ? AppTheme.textGray.withValues(alpha: 0.4) : AppTheme.errorColor,
-              ),
-              label: Text(
-                _clearing ? 'Eliminando...' : 'Limpiar',
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _clearing ? AppTheme.textGray.withValues(alpha: 0.4) : AppTheme.errorColor,
-                ),
-              ),
-            ),
-        ],
-      ),
-    )
+        )
         .animate()
         .fadeIn(duration: 400.ms, delay: 80.ms)
         .slideY(begin: 0.08, end: 0, duration: 400.ms);
@@ -543,7 +583,6 @@ class _NotificationSheetState extends State<NotificationSheet> {
       {'key': 'analysis', 'label': 'Análisis'},
       {'key': 'system', 'label': 'Sistema'},
     ];
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: SingleChildScrollView(
@@ -554,9 +593,7 @@ class _NotificationSheetState extends State<NotificationSheet> {
             final filter = entry.value;
             final isSelected = _selectedFilter == filter['key'];
             return Padding(
-              padding: EdgeInsets.only(
-                left: idx == 0 ? 0 : 10,
-              ),
+              padding: EdgeInsets.only(left: idx == 0 ? 0 : 10),
               child: _FilterChip(
                 label: filter['label']!,
                 isSelected: isSelected,
@@ -574,13 +611,11 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
-
   const _FilterChip({
     required this.label,
     required this.isSelected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -591,7 +626,7 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppTheme.primaryGreen.withValues(alpha: 0.12)
-              : AppTheme.backgroundColor,
+              : Theme.of(context).scaffoldBackgroundColor,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
@@ -605,7 +640,7 @@ class _FilterChip extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-            color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+            color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),

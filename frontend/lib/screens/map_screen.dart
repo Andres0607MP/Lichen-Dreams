@@ -333,7 +333,7 @@ class _MapScreenState extends State<MapScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textGray,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -352,7 +352,7 @@ class _MapScreenState extends State<MapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 10,
             fontWeight: FontWeight.w400,
-            color: AppTheme.textGray.withValues(alpha: 0.8),
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -370,7 +370,7 @@ class _MapScreenState extends State<MapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 24,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 6),
@@ -379,7 +379,7 @@ class _MapScreenState extends State<MapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w400,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.4,
           ),
         ),
@@ -387,7 +387,7 @@ class _MapScreenState extends State<MapScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
           ),
@@ -396,7 +396,7 @@ class _MapScreenState extends State<MapScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -408,7 +408,7 @@ class _MapScreenState extends State<MapScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
       ),
@@ -452,7 +452,7 @@ class _MapScreenState extends State<MapScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: AppTheme.surfaceColor.withValues(alpha: 0.95),
+                      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
                         color: AppTheme.borderColor.withValues(alpha: 0.4),
@@ -463,7 +463,7 @@ class _MapScreenState extends State<MapScreen> {
                         Icon(
                           Icons.info_outline_rounded,
                           size: 18,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
@@ -471,7 +471,7 @@ class _MapScreenState extends State<MapScreen> {
                             _locationStatusMessage!,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -490,7 +490,7 @@ class _MapScreenState extends State<MapScreen> {
                     constraints: const BoxConstraints(maxWidth: 400),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
                         boxShadow: [
@@ -584,14 +584,14 @@ class _MapScreenState extends State<MapScreen> {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    AppTheme.backgroundColor.withValues(alpha: 0.0),
-                    AppTheme.backgroundColor.withValues(alpha: 0.95),
+                    Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.0),
+                    Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
                   ],
                 ),
               ),
               child: Icon(
                 Icons.chevron_right_rounded,
-                color: AppTheme.textGray.withValues(alpha: 0.6),
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
                 size: 18,
               ),
             ),
@@ -637,7 +637,7 @@ class _MapScreenState extends State<MapScreen> {
                 Icon(
                   icon,
                   size: 14,
-                  color: isActive ? AppTheme.primaryGreen : AppTheme.textGray,
+                  color: isActive ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 4),
               ],
@@ -646,7 +646,7 @@ class _MapScreenState extends State<MapScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isActive ? AppTheme.primaryGreen : AppTheme.textGray,
+                  color: isActive ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -672,7 +672,7 @@ class _MapScreenState extends State<MapScreen> {
             maxHeight: MediaQuery.of(context).size.height * 0.75,
           ),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
@@ -691,7 +691,7 @@ class _MapScreenState extends State<MapScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                       ),
                     ),
@@ -704,13 +704,13 @@ class _MapScreenState extends State<MapScreen> {
                           tempDateRange = DateRange.all;
                         });
                       },
-                      icon: Icon(Icons.refresh_rounded, size: 18, color: AppTheme.textGray),
+                      icon: Icon(Icons.refresh_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       label: Text(
                         'Limpiar',
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -894,7 +894,7 @@ class _MapScreenState extends State<MapScreen> {
       style: GoogleFonts.poppins(
         fontSize: 13,
         fontWeight: FontWeight.w600,
-        color: AppTheme.textDark,
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -922,7 +922,7 @@ class _MapScreenState extends State<MapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+            color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ),
@@ -951,7 +951,7 @@ class _MapScreenState extends State<MapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 4),
@@ -960,7 +960,7 @@ class _MapScreenState extends State<MapScreen> {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w400,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             height: 1.4,
           ),
         ),
@@ -1016,13 +1016,13 @@ class _MapScreenState extends State<MapScreen> {
                   _expandedAnalysisId = null;
                 });
               },
-              icon: Icon(Icons.close_rounded, size: 18, color: AppTheme.textGray),
+              icon: Icon(Icons.close_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
               label: Text(
                 'Limpiar selección',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -1039,7 +1039,7 @@ class _MapScreenState extends State<MapScreen> {
           Icon(
             Icons.eco_rounded,
             size: 40,
-            color: AppTheme.textGray.withValues(alpha: 0.35),
+            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
           ),
           const SizedBox(height: 12),
           Text(
@@ -1047,7 +1047,7 @@ class _MapScreenState extends State<MapScreen> {
             style: GoogleFonts.poppins(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1056,7 +1056,7 @@ class _MapScreenState extends State<MapScreen> {
             'Los análisis aparecerán aquí cuando los usuarios decidan compartirlos en el mapa ambiental.',
             style: GoogleFonts.poppins(
               fontSize: 12,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1171,7 +1171,7 @@ class _MapScreenState extends State<MapScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1179,7 +1179,7 @@ class _MapScreenState extends State<MapScreen> {
                   'Verifica tu conexión e intenta nuevamente',
                   style: GoogleFonts.poppins(
                     fontSize: 13,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -1346,7 +1346,7 @@ class _QualityGroupState extends State<_QualityGroup> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.35)),
         boxShadow: [
@@ -1386,7 +1386,7 @@ class _QualityGroupState extends State<_QualityGroup> {
                       style: GoogleFonts.poppins(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1414,7 +1414,7 @@ class _QualityGroupState extends State<_QualityGroup> {
                     child: Icon(
                       Icons.expand_more_rounded,
                       size: 18,
-                      color: AppTheme.textGray.withValues(alpha: 0.7),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -1456,7 +1456,7 @@ class _QualityGroupState extends State<_QualityGroup> {
                                   ? Icons.keyboard_arrow_up
                                   : Icons.keyboard_arrow_down,
                               size: 18,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             label: Text(
                               _showAll
@@ -1465,7 +1465,7 @@ class _QualityGroupState extends State<_QualityGroup> {
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textGray,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -1553,7 +1553,7 @@ class _AnalysisCard extends StatelessWidget {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1589,7 +1589,7 @@ class _AnalysisCard extends StatelessWidget {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textDark,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1599,7 +1599,7 @@ class _AnalysisCard extends StatelessWidget {
                           point.species,
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: AppTheme.textGray,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1613,7 +1613,7 @@ class _AnalysisCard extends StatelessWidget {
                     child: Icon(
                       Icons.expand_more_rounded,
                       size: 18,
-                      color: AppTheme.textGray.withValues(alpha: 0.7),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -1627,7 +1627,7 @@ class _AnalysisCard extends StatelessWidget {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -1722,7 +1722,7 @@ class _DetailRow extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -1734,7 +1734,7 @@ class _DetailRow extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             textAlign: TextAlign.end,
             maxLines: 2,

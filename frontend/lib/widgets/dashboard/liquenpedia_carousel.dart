@@ -120,7 +120,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
         height: 200,
         margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(24),
         ),
         child: const Center(
@@ -162,7 +162,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -273,7 +273,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
               colors: [
                 categoryColor.withValues(alpha: 0.08),
                 categoryColor.withValues(alpha: 0.04),
-                AppTheme.surfaceColor,
+                Theme.of(context).colorScheme.surface,
               ],
             ),
             borderRadius: BorderRadius.circular(24),
@@ -329,7 +329,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
                         style: GoogleFonts.poppins(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark,
+                          color: Theme.of(context).colorScheme.onSurface,
                           height: 1.3,
                         ),
                         maxLines: 2,
@@ -366,7 +366,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
                         style: GoogleFonts.poppins(
                           fontSize: 11,
                           fontWeight: FontWeight.w400,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.3,
                         ),
                         maxLines: 2,
@@ -379,7 +379,7 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
                         style: GoogleFonts.poppins(
                           fontSize: 10,
                           fontWeight: FontWeight.w400,
-                          color: AppTheme.textGray.withValues(alpha: 0.7),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

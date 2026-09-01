@@ -30,7 +30,7 @@ class InformationSettingsScreen extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -132,7 +132,7 @@ class InformationSettingsScreen extends StatelessWidget {
           'Desarrollado con',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         content: const Column(
@@ -189,7 +189,7 @@ class _TechItem extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ],

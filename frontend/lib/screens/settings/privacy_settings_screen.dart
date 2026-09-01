@@ -9,6 +9,7 @@ import '../../services/api_service.dart';
 import '../../state/auth_state.dart';
 import '../../widgets/lichen_scaffold.dart';
 import '../../widgets/app_theme.dart';
+import '../../widgets/app_notification.dart';
 import '../../widgets/settings_widgets.dart';
 import '../../routes/route_names.dart';
 import 'legal_settings_screen.dart';
@@ -50,7 +51,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -126,7 +127,7 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
                 const SizedBox(height: 8),
                 SettingsTile(
                   icon: Icons.logout_rounded,
-                  iconColor: AppTheme.textGray,
+                  iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
                   title: 'Cerrar sesión',
                   subtitle: 'Cierra tu sesión actual en este dispositivo',
                   onTap: () async {
@@ -521,7 +522,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
           children: [
           Text(
             'Ingresa tu contraseña para confirmar la eliminación de tu cuenta:',
-            style: GoogleFonts.poppins(fontSize: 14, color: AppTheme.textGray),
+            style: GoogleFonts.poppins(fontSize: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 16),
           TextField(
@@ -619,24 +620,15 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
       final apiService = Provider.of<ApiService>(context, listen: false);
       await apiService.updateAnalysisVisibility(analysisId, 'private');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('El análisis ya no es público.', style: GoogleFonts.poppins()),
-            backgroundColor: AppTheme.primaryGreen,
-          ),
-        );
+        AppNotification.show(context, message: 'El análisis ya no es público.');
         await _loadAnalyses();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'No se pudo actualizar la visibilidad del análisis. Inténtalo nuevamente.',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: AppTheme.errorColor,
-          ),
+        AppNotification.show(
+          context,
+          message: 'No se pudo actualizar la visibilidad del análisis. Inténtalo nuevamente.',
+          isError: true,
         );
       }
     } finally {
@@ -658,7 +650,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
           'Análisis compartidos',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         leading: IconButton(
@@ -709,7 +701,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
         'y ser visibles para otros usuarios.',
         style: GoogleFonts.poppins(
           fontSize: 13,
-          color: AppTheme.textGray,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
     );
@@ -725,7 +717,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
             Icon(
               Icons.share_outlined,
               size: 64,
-              color: AppTheme.textGray.withValues(alpha: 0.5),
+              color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
             ),
             const SizedBox(height: 16),
             Text(
@@ -733,7 +725,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -742,7 +734,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
               'Cuando compartas un análisis desde tu historial, aparecerá aquí para que puedas administrar su visibilidad.',
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -787,7 +779,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -814,31 +806,31 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
                 especie,
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.calendar_today_rounded, size: 14, color: AppTheme.textGray),
+                Icon(Icons.calendar_today_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text(
                   fecha,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 if (calidadAire != null) ...[
                   const SizedBox(width: 16),
-                  Icon(Icons.air_rounded, size: 14, color: AppTheme.textGray),
+                  Icon(Icons.air_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   const SizedBox(width: 4),
                   Text(
                     calidadAire,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -859,7 +851,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
                 label: Text(
                   'Dejar de compartir',
                   style: GoogleFonts.poppins(
-                    color: isProcessing ? AppTheme.textGray : AppTheme.errorColor,
+                    color: isProcessing ? Theme.of(context).colorScheme.onSurfaceVariant : AppTheme.errorColor,
                   ),
                 ),
                 style: TextButton.styleFrom(
@@ -918,12 +910,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
       await apiService.revokeSession(sessionId);
       await _loadSessions();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sesión revocada', style: GoogleFonts.poppins()),
-            backgroundColor: AppTheme.primaryGreen,
-          ),
-        );
+        AppNotification.show(context, message: 'Sesión revocada');
       }
     } catch (e) {
       if (mounted) {
@@ -948,7 +935,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
           'Sesiones activas',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         leading: IconButton(
@@ -975,7 +962,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                         padding: const EdgeInsets.all(24),
                         child: Text(
                           'No hay sesiones',
-                          style: GoogleFonts.poppins(color: AppTheme.textGray),
+                          style: GoogleFonts.poppins(color: Theme.of(context).colorScheme.onSurfaceVariant),
                           textAlign: TextAlign.center,
                         ),
                       ),
@@ -995,7 +982,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                           child: ListTile(
                             leading: Icon(
                               isActive ? Icons.check_circle : Icons.cancel,
-                              color: isActive ? AppTheme.primaryGreen : AppTheme.textGray,
+                              color: isActive ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             title: Text(
                               dispositivo,
@@ -1003,7 +990,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                             ),
                             subtitle: Text(
                               fechaInicio,
-                              style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.textGray),
+                              style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             ),
                             trailing: isActive
                                 ? TextButton(

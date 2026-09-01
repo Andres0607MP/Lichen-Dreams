@@ -241,7 +241,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -250,7 +250,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 13,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -276,7 +276,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ).animate().fadeIn(duration: 400.ms, curve: Curves.easeOut).slideY(begin: 0.08, end: 0, duration: 400.ms, curve: Curves.easeOut),
@@ -287,7 +287,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -423,7 +423,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 24,
                     fontWeight: FontWeight.w800,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -433,7 +433,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -499,7 +499,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: 14),
           Row(
             children: [
-              Icon(Icons.schedule_rounded, size: 16, color: AppTheme.textGray),
+              Icon(Icons.schedule_rounded, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -507,7 +507,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -579,7 +579,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
@@ -605,19 +605,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
               hintStyle: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
-              prefixIcon: Icon(Icons.search_rounded, size: 20, color: AppTheme.textGray),
+              prefixIcon: Icon(Icons.search_rounded, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
               suffixIcon: query.isNotEmpty
                   ? IconButton(
                       onPressed: () => onSearchChanged(''),
-                      icon: Icon(Icons.clear_rounded, size: 18, color: AppTheme.textGray),
+                      icon: Icon(Icons.clear_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     )
                   : null,
               filled: true,
-              fillColor: AppTheme.surfaceColor,
+              fillColor: Theme.of(context).colorScheme.surface,
               contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -637,14 +637,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.sort_rounded, size: 18, color: AppTheme.textGray),
+              Icon(Icons.sort_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
               const SizedBox(width: 8),
               Text(
                 'Ordenar:',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(width: 8),
@@ -652,7 +652,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
-                    color: AppTheme.surfaceColor,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.6)),
                   ),
@@ -660,11 +660,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: DropdownButton<String>(
                       value: sortMode,
                       isDense: true,
-                      icon: Icon(Icons.arrow_drop_down_rounded, size: 18, color: AppTheme.textGray),
+                      icon: Icon(Icons.arrow_drop_down_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       items: const [
                         DropdownMenuItem(value: 'recent', child: Text('Más recientes')),
@@ -727,15 +727,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                AppTheme.surfaceColor,
-                AppTheme.surfaceColor.withValues(alpha: 0.94),
+                Theme.of(context).colorScheme.surface,
+                Theme.of(context).colorScheme.surface.withValues(alpha: 0.94),
               ],
             ),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.8), width: 1.1),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.textGray.withValues(alpha: 0.08),
+                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.08),
                 blurRadius: 14,
                 offset: const Offset(0, 4),
               ),
@@ -761,7 +761,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               style: GoogleFonts.poppins(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
-                                color: AppTheme.textDark,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -778,12 +778,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           if (ubicacion != null && ubicacion.isNotEmpty) ...[
                             const SizedBox(width: 10),
-                            Icon(Icons.place_rounded, size: 12, color: AppTheme.textGray),
+                            Icon(Icons.place_rounded, size: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
@@ -791,7 +791,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: AppTheme.textGray,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -805,7 +805,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                           height: 1.3,
                         ),
                         maxLines: 1,
@@ -834,7 +834,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             _InfoChip(
                               icon: Icons.air_rounded,
                               label: calidadAire,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               compact: true,
                             ),
                           if (especieCientifica != null && especieCientifica.isNotEmpty)
@@ -928,13 +928,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 20,
                             fontWeight: FontWeight.w800,
-                            color: AppTheme.textDark,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const Spacer(),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: Icon(Icons.close_rounded, color: AppTheme.textGray),
+                          icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
@@ -958,8 +958,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   'Cond.',
                                 ],
                                 colors: chartMetrics.map((m) => m.color).toList(),
-                                gridColor: AppTheme.textGray.withValues(alpha: 0.55),
-                                textColor: AppTheme.textDark,
+                                gridColor: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.55),
+                                textColor: Theme.of(context).colorScheme.onSurface,
                               ),
                           ),
                         );
@@ -989,7 +989,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                             style: GoogleFonts.poppins(
                                               fontSize: 10,
                                               fontWeight: FontWeight.w700,
-                                              color: AppTheme.textDark,
+                                              color: Theme.of(context).colorScheme.onSurface,
                                             ),
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -1284,7 +1284,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
@@ -1295,7 +1295,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
@@ -1327,7 +1327,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             style: GoogleFonts.poppins(
               fontSize: 20,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ).animate().fadeIn(duration: 400.ms, curve: Curves.easeOut).slideY(begin: 0.1, end: 0, duration: 400.ms, curve: Curves.easeOut),
@@ -1338,7 +1338,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 20),
@@ -1370,7 +1370,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.7)),
       ),
@@ -1390,13 +1390,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     setState(() => _filter = item.key);
                   }
                 },
-                backgroundColor: AppTheme.surfaceColor,
+                backgroundColor: Theme.of(context).colorScheme.surface,
                 selectedColor: AppTheme.primaryGreen.withValues(alpha: 0.22),
                 checkmarkColor: AppTheme.primaryGreen,
                 labelStyle: GoogleFonts.poppins(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: isSelected ? AppTheme.primaryGreen : AppTheme.textDark,
+                  color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             );

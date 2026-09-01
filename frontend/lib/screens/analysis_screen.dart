@@ -15,6 +15,7 @@ import '../screens/result_screen.dart';
 import '../services/api_service.dart';
 import '../services/navigation_service.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/modern_widgets.dart';
 import '../state/analysis_state.dart';
@@ -67,8 +68,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       }
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo seleccionar la imagen. Intenta de nuevo.')),
+      AppNotification.show(
+        context,
+        message: 'No se pudo seleccionar la imagen. Intenta de nuevo.',
+        isError: true,
       );
     }
   }
@@ -89,8 +92,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     if (analysisState.hasActiveAnalysis) {
       _isSubmitting = false;
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ya tienes un análisis en proceso. Espera a que termine.')),
+      AppNotification.show(
+        context,
+        message: 'Ya tienes un análisis en proceso. Espera a que termine.',
+        isError: true,
       );
       return;
     }
@@ -104,11 +109,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         );
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.'),
-            backgroundColor: Colors.red,
-          ),
+        AppNotification.show(
+          context,
+          message: 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.',
+          isError: true,
         );
         _isSubmitting = false;
         return;
@@ -116,11 +120,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
       if (position == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.'),
-            backgroundColor: Colors.red,
-          ),
+        AppNotification.show(
+          context,
+          message: 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.',
+          isError: true,
         );
         _isSubmitting = false;
         return;
@@ -192,11 +195,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         }
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo guardar la ubicación. Intenta de nuevo.'),
-            backgroundColor: Colors.red,
-          ),
+        AppNotification.show(
+          context,
+          message: 'No se pudo guardar la ubicación. Intenta de nuevo.',
+          isError: true,
         );
         _isSubmitting = false;
         return;
@@ -204,11 +206,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
       if (locationId == null) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.'),
-            backgroundColor: Colors.red,
-          ),
+        AppNotification.show(
+          context,
+          message: 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.',
+          isError: true,
         );
         _isSubmitting = false;
         return;
@@ -305,7 +306,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -314,7 +315,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               _showCompletedProgress ? 'Preparando resultado...' : 'Puedes seguir navegando por la app. Te notificaremos cuando esté listo.',
               style: GoogleFonts.poppins(
                 fontSize: 13,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -361,7 +362,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   });
                 },
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textGray,
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
                   padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -514,7 +515,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -523,7 +524,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 'La IA está estudiando la muestra',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -552,7 +553,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 'Esto puede tardar unos segundos...',
                 style: GoogleFonts.poppins(
                   fontSize: 12,
-                  color: AppTheme.textGray.withValues(alpha: 0.8),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -602,7 +603,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             message,
             style: GoogleFonts.poppins(
               fontSize: 13,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.4,
             ),
             textAlign: TextAlign.center,
@@ -639,7 +640,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             style: GoogleFonts.poppins(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
@@ -648,7 +649,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w400,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               height: 1.5,
             ),
           ),
@@ -731,7 +732,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
             ),
@@ -740,7 +741,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               'Toma una fotografía del liquen para iniciar el análisis',
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
@@ -780,7 +781,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.all(24),
@@ -792,7 +793,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 24),
@@ -842,7 +843,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ),
@@ -895,7 +896,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 20),
@@ -929,7 +930,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textDark,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -937,7 +938,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                             step['subtitle'] as String,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               height: 1.4,
                             ),
                           ),
@@ -983,7 +984,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -992,7 +993,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
             ),

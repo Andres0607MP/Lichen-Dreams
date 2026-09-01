@@ -60,7 +60,7 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         actions: [
@@ -384,7 +384,7 @@ class _SpeciesCard extends StatelessWidget {
         boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           onTap: onTap,
@@ -400,7 +400,7 @@ class _SpeciesCard extends StatelessWidget {
                   height: 120,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    color: AppTheme.backgroundColor,
+                    color: Theme.of(context).scaffoldBackgroundColor,
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
@@ -420,7 +420,7 @@ class _SpeciesCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                     height: 1.25,
                   ),
                   maxLines: 3,
@@ -433,7 +433,7 @@ class _SpeciesCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -501,7 +501,7 @@ class _PlaceholderIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppTheme.backgroundColor,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Icon(Icons.eco_rounded, size: 32, color: AppTheme.especiesPrimary.withValues(alpha: 0.15)),
     );
   }
@@ -531,7 +531,7 @@ class _InfoChip extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 9,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -768,7 +768,7 @@ class _SpeciesFormSheetState extends State<_SpeciesFormSheet> {
           hintText: hint,
           counterText: '',
           filled: true,
-          fillColor: AppTheme.backgroundColor,
+          fillColor: Theme.of(context).scaffoldBackgroundColor,
         ),
       ),
     );
@@ -1068,7 +1068,7 @@ class _ImagePickerField extends StatelessWidget {
                           children: [
                             Container(
                               decoration: BoxDecoration(
-                                color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+                                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
@@ -1082,7 +1082,7 @@ class _ImagePickerField extends StatelessWidget {
                             const SizedBox(width: 4),
                             Container(
                               decoration: BoxDecoration(
-                                color: AppTheme.surfaceColor.withValues(alpha: 0.9),
+                                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
@@ -1140,12 +1140,12 @@ class _PlaceholderContent extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             'Agregar imagen de referencia',
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textGray),
+            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
             'Toca para seleccionar una foto',
-            style: GoogleFonts.poppins(fontSize: 11, color: AppTheme.textGray.withValues(alpha: 0.7)),
+            style: GoogleFonts.poppins(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
           ),
         ],
       ),

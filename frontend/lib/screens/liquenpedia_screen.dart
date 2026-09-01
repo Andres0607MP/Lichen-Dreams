@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../models/liquenpedia_article.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../state/articles_state.dart';
 import '../state/auth_state.dart';
 import '../state/profile_state.dart';
@@ -177,7 +178,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
     final filteredArticles = _computeFilteredList(articlesState);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -187,7 +188,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             Text(
@@ -195,7 +196,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -292,7 +293,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -324,7 +325,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       style: TextButton.styleFrom(
@@ -387,7 +388,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -397,7 +398,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                   textAlign: TextAlign.center,
@@ -426,7 +427,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -435,7 +436,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         height: 1.4,
                       ),
                     ),
@@ -468,7 +469,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
         decoration: InputDecoration(
           hintText: 'Buscar por título, categoría o autor',
           hintStyle: GoogleFonts.poppins(
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontSize: 14,
           ),
           prefixIcon: const Icon(
@@ -481,7 +482,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
             borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: AppTheme.surfaceColor,
+          fillColor: Theme.of(context).colorScheme.surface,
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
@@ -536,7 +537,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 8),
@@ -544,7 +545,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                 'Verifica tu conexión e intenta de nuevo',
                 style: GoogleFonts.poppins(
                   fontSize: 13,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 20),
@@ -673,14 +674,14 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
     try {
       await articlesState.deleteArticle(article.id ?? 0);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Artículo eliminado correctamente')),
-        );
+        AppNotification.show(context, message: 'Artículo eliminado correctamente');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+        AppNotification.show(
+          context,
+          message: 'Error al eliminar artículo',
+          isError: true,
         );
       }
     }
@@ -732,7 +733,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -741,7 +742,7 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
                       emptyMessage,
                       style: GoogleFonts.poppins(
                         fontSize: 13,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       textAlign: TextAlign.center,
                     ),

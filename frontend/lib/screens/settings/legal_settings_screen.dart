@@ -30,7 +30,7 @@ class LegalSettingsScreen extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -132,7 +132,7 @@ class LegalSettingsScreen extends StatelessWidget {
           'Licencia del proyecto',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         content: const Column(
@@ -192,7 +192,7 @@ class _LicenseItem extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),

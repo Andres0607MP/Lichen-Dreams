@@ -120,8 +120,8 @@ class NotificationCard extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: leida
-              ? AppTheme.surfaceColor.withValues(alpha: 0.55)
-              : AppTheme.surfaceColor,
+              ? Theme.of(context).colorScheme.surface.withValues(alpha: 0.55)
+              : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
           border: Border(
             left: BorderSide(
@@ -192,7 +192,7 @@ class NotificationCard extends StatelessWidget {
                                    fontSize: 15,
                                    fontWeight:
                                        leida ? FontWeight.w500 : FontWeight.w700,
-                                   color: AppTheme.textDark,
+                                   color: Theme.of(context).colorScheme.onSurface,
                                  ),
                                  maxLines: 1,
                                  overflow: TextOverflow.ellipsis,
@@ -208,8 +208,8 @@ class NotificationCard extends StatelessWidget {
                                fontSize: 12,
                                fontWeight: FontWeight.w400,
                                color: leida
-                                   ? AppTheme.textGray.withValues(alpha: 0.7)
-                                   : AppTheme.textGray,
+                                   ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
+                                   : Theme.of(context).colorScheme.onSurfaceVariant,
                              ),
                              maxLines: 2,
                              overflow: TextOverflow.ellipsis,
@@ -223,8 +223,8 @@ class NotificationCard extends StatelessWidget {
                                fontSize: 11,
                                fontWeight: FontWeight.w500,
                                color: leida
-                                   ? AppTheme.textGray.withValues(alpha: 0.55)
-                                   : AppTheme.textGray.withValues(alpha: 0.7),
+                                   ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.55)
+                                   : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                              ),
                            ),
                         ],
@@ -234,7 +234,7 @@ class NotificationCard extends StatelessWidget {
                   const SizedBox(width: 6),
                   Icon(
                     Icons.chevron_right_rounded,
-                    color: AppTheme.textGray.withValues(alpha: 0.35),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
                     size: 20,
                   ),
                 ],

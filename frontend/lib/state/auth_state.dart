@@ -131,17 +131,20 @@ class AuthState extends ChangeNotifier {
     }
   }
 
-  Future<bool> loginWithGoogle() async {
+  Future<bool> loginWithGoogle({bool registrar = false}) async {
     await clearAuthState();
     setState(() => _loading = true);
     try {
       final idToken = await _googleAuth.signInAndGetIdToken();
       if (idToken == null) {
-        // El usuario canceló Google Sign-In: continuar en la pantalla de login.
+        // El usuario canceló Google Sign-In: continuar en la pantalla actual.
         return false;
       }
 
-      final data = await _apiService.loginWithGoogle(idToken);
+      final data = await _apiService.loginWithGoogle(
+        idToken,
+        modo: registrar ? 'registro' : 'login',
+      );
       _token = data['access_token'] as String?;
       _refreshToken = data['refresh_token'] as String?;
       if (data['user'] is Map) {

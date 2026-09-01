@@ -279,7 +279,11 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.height < 600;
 
-    return Scaffold(
+    return Theme(
+      // Excepción explícita de tema: LoadingScreen conserva SIEMPRE su
+      // apariencia clara actual, tanto en Light Mode como en Dark Mode.
+      data: AppTheme.lightTheme(),
+      child: Scaffold(
       body: Stack(
         children: [
           _buildAnimatedBackground(),
@@ -312,6 +316,7 @@ class _LoadingScreenState extends State<LoadingScreen> with TickerProviderStateM
             ),
           ),
         ],
+      ),
       ),
     );
   }

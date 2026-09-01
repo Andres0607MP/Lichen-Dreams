@@ -10,6 +10,7 @@ import '../state/auth_state.dart';
 import '../state/profile_state.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../services/navigation_service.dart';
 import '../routes/route_names.dart';
 
@@ -83,7 +84,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -106,7 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 0.5,
               ),
             ).animate().fadeIn(duration: 250.ms, delay: 50.ms),
@@ -194,7 +195,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 letterSpacing: 0.5,
               ),
             ).animate().fadeIn(duration: 300.ms, delay: 400.ms),
@@ -224,13 +225,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'Cerrar sesión',
           style: GoogleFonts.poppins(
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         content: Text(
           '¿Estás seguro de que deseas cerrar sesión?',
           style: GoogleFonts.poppins(
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
         actions: [
@@ -239,7 +240,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Text(
               'Cancelar',
               style: GoogleFonts.poppins(
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -275,15 +276,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cerrar sesión: $e'),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
+        AppNotification.show(
+          context,
+          message: 'Error al cerrar sesión',
+          isError: true,
         );
       }
     } finally {
@@ -405,7 +401,7 @@ class _SettingsUserHeader extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -416,7 +412,7 @@ class _SettingsUserHeader extends StatelessWidget {
                       email,
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -436,7 +432,7 @@ class _SettingsUserHeader extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 22,
             ),
           ],
@@ -469,7 +465,7 @@ class _SettingsCategoryTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppTheme.borderColor, width: 1),
           boxShadow: [
@@ -505,7 +501,7 @@ class _SettingsCategoryTile extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -515,7 +511,7 @@ class _SettingsCategoryTile extends StatelessWidget {
                     subtitle,
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -525,7 +521,7 @@ class _SettingsCategoryTile extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: AppTheme.textGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               size: 22,
             ),
           ],
@@ -552,7 +548,7 @@ class _SettingsLogoutTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3), width: 1),
           boxShadow: [
@@ -605,7 +601,7 @@ class _SettingsLogoutTile extends StatelessWidget {
                     'Salir de tu cuenta',
                     style: GoogleFonts.poppins(
                       fontSize: 12,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],

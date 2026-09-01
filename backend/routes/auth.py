@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
-from fastapi import APIRouter, HTTPException, status, Depends, Form
+from fastapi import APIRouter, HTTPException, status, Depends, Form, Request
 from pydantic import BaseModel, EmailStr, field_validator
-from typing import Optional
+from typing import Optional, Literal
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 import secrets
@@ -93,13 +93,40 @@ class TokenResponse(BaseModel):
 
 class GoogleLoginRequest(BaseModel):
     id_token: str
+    # 'registro': crea la cuenta si el Google no existe (default).
+    # 'login': autentica únicamente cuentas Google ya registradas.
+    modo: Literal["login", "registro"] = "registro"
 
 
-def _issue_auth_tokens(db: Session, user: Usuario) -> dict:
+def _parse_client_device(user_agent: str | None):
+    """Extrae una etiqueta corta (dispositivo / sistema operativo) del User-Agent."""
+    ua = (user_agent or "").lower()
+    if 'android' in ua:
+        dispositivo, so = 'Móvil', 'Android'
+    elif 'iphone' in ua or 'ipad' in ua:
+        dispositivo, so = ('Tablet' if 'ipad' in ua else 'Móvil'), 'iOS'
+    elif 'windows' in ua:
+        dispositivo, so = 'Escritorio', 'Windows'
+    elif 'mac os' in ua or 'macintosh' in ua:
+        dispositivo, so = 'Escritorio', 'macOS'
+    elif 'linux' in ua:
+        dispositivo, so = 'Escritorio', 'Linux'
+    else:
+        dispositivo, so = 'Desconocido', 'Desconocido'
+    return dispositivo, so
+
+
+def _issue_auth_tokens(
+    db: Session,
+    user: Usuario,
+    user_agent: str | None = None,
+    client_ip: str | None = None,
+) -> dict:
     """Crea una sesión activa nueva y emite los JWT de Lichen Dreams.
 
     Misma lógica que el login por email/contraseña: revoca las sesiones
-    activas previas del usuario y crea una única sesión activa.
+    activas previas del usuario y crea una única sesión activa. La sesión
+    guarda metadatos del cliente y la expiración alineada con el refresh token.
     """
     import uuid
 
@@ -110,10 +137,15 @@ def _issue_auth_tokens(db: Session, user: Usuario) -> dict:
         Sesion.estado_sesion == "active"
     ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
 
+    dispositivo, sistema_operativo = _parse_client_device(user_agent)
+
     sesion = Sesion(
         token_sesion=sid,
-        dispositivo=None,
-        ip_usuario=None,
+        dispositivo=dispositivo,
+        sistema_operativo=sistema_operativo,
+        ip_usuario=(client_ip or None)[:50] if client_ip else None,
+        fecha_inicio=datetime.utcnow(),
+        fecha_expiracion=datetime.utcnow() + timedelta(days=30),
         estado_sesion="active",
         id_usuario=user.id_usuario
     )
@@ -151,6 +183,7 @@ def _issue_auth_tokens(db: Session, user: Usuario) -> dict:
 
 @router.post("/login", response_model=TokenResponse, summary="Iniciar sesión")
 def login(
+    request: Request,
     username: Optional[str] = Form(None),
     email: Optional[str] = Form(None),
     password: str = Form(...),
@@ -173,7 +206,12 @@ def login(
             detail="Credenciales inválidas"
         )
 
-    return _issue_auth_tokens(db, user)
+    return _issue_auth_tokens(
+        db,
+        user,
+        user_agent=request.headers.get("user-agent"),
+        client_ip=request.client.host if request.client else None,
+    )
 
 
 def verify_google_id_token(id_token: str) -> dict:
@@ -202,7 +240,8 @@ def verify_google_id_token(id_token: str) -> dict:
 
 @router.post("/google", response_model=TokenResponse, summary="Iniciar sesión con Google")
 def google_login(
-    request: GoogleLoginRequest,
+    request: Request,
+    body: GoogleLoginRequest,
     db: Session = Depends(get_db)
 ):
     """Inicia sesión creando/recuperando un usuario local a partir de un ID token de Google.
@@ -214,7 +253,7 @@ def google_login(
     automáticamente: se devuelve 409 para que el usuario use su flujo normal.
     """
     try:
-        info = verify_google_id_token(request.id_token)
+        info = verify_google_id_token(body.id_token)
     except TransportError:
         # Diagnóstico temporal: Google no es alcanzable para descargar las claves
         # públicas de verificación (bloqueo de red/firewall en el servidor).
@@ -242,7 +281,35 @@ def google_login(
         Usuario.proveedor_id == sub
     ).first()
 
-    if not user:
+    if user:
+        # La cuenta de Google YA existe.
+        if body.modo == "registro":
+            # Desde Crear cuenta: no duplicar, indicar que inicie sesión.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Esta cuenta de Google ya está registrada. Inicia sesión para continuar."
+            )
+        # Desde Login: refrescar la foto de Google (sin sobrescribir una foto
+        # personalizada local).
+        google_picture = info.get("picture")
+        if google_picture:
+            current_foto = user.foto_perfil or ""
+            is_google_photo = (
+                current_foto.startswith("http://")
+                or current_foto.startswith("https://")
+            )
+            if not current_foto or is_google_photo:
+                user.foto_perfil = google_picture
+                db.commit()
+                db.refresh(user)
+    elif body.modo == "login":
+        # Login con Google NO registrado: rechazar sin crear cuenta ni sesión.
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Esta cuenta de Google no está registrada. Crea una cuenta usando 'Continuar con Google' en Crear cuenta."
+        )
+    else:
+        # Registro (Crear cuenta) con Google inexistente: crear cuenta.
         if not email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -281,21 +348,6 @@ def google_login(
         db.add(user)
         db.commit()
         db.refresh(user)
-    else:
-        # Usuario de Google existente: refrescar la foto de perfil de Google
-        # con la que viene en el token validado. No se sobrescribe una foto
-        # personalizada subida en Lichen Dreams (rutas locales /uploads/...).
-        google_picture = info.get("picture")
-        if google_picture:
-            current_foto = user.foto_perfil or ""
-            is_google_photo = (
-                current_foto.startswith("http://")
-                or current_foto.startswith("https://")
-            )
-            if not current_foto or is_google_photo:
-                user.foto_perfil = google_picture
-                db.commit()
-                db.refresh(user)
 
     if user.estado_cuenta != "active":
         raise HTTPException(
@@ -312,7 +364,12 @@ def google_login(
         (user.foto_perfil or "(NULL)"),
     )
 
-    return _issue_auth_tokens(db, user)
+    return _issue_auth_tokens(
+        db,
+        user,
+        user_agent=request.headers.get("user-agent"),
+        client_ip=request.client.host if request.client else None,
+    )
 
 
 @router.post(

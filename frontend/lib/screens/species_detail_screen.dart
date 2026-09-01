@@ -30,7 +30,7 @@ class SpeciesDetailScreen extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         leading: IconButton(
@@ -74,7 +74,7 @@ class SpeciesDetailScreen extends StatelessWidget {
                 height: 220,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
-                  color: AppTheme.backgroundColor,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                 ),
                 child: _ImagePlaceholder(),
               ),
@@ -84,7 +84,7 @@ class SpeciesDetailScreen extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
                 letterSpacing: -0.3,
               ),
             ),
@@ -95,7 +95,7 @@ class SpeciesDetailScreen extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -142,7 +142,7 @@ class SpeciesDetailScreen extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -167,7 +167,7 @@ class _ImagePlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppTheme.backgroundColor,
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Icon(Icons.eco_rounded, size: 64, color: AppTheme.especiesPrimary.withValues(alpha: 0.15)),
     );
   }

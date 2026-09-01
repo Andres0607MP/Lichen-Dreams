@@ -320,6 +320,7 @@ class _LoginScreenState extends State<LoginScreen>
                                      child: GoogleSignInButton(
                                        loading: _googleLoading,
                                        onPressed: _handleGoogleLogin,
+                                       label: 'Iniciar con Google',
                                      ),
                                    ),
                                    const SizedBox(height: 18),

@@ -19,6 +19,7 @@ class NotificationsState extends ChangeNotifier {
   bool get loading => _loading;
   String? get error => _error;
   int get unreadCount => _notifications.where((n) => n['leida'] != true).length;
+  int get unreadAnalysisCount => _notifications.where((n) => n['leida'] != true && n['tipo'] == 'analysis').length;
   bool get hasFreshData => _lastLoadedAt != null && DateTime.now().difference(_lastLoadedAt!) < _cacheDuration;
   bool get soundEnabled => _soundEnabled;
 

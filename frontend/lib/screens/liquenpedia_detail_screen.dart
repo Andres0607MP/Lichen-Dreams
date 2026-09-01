@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/liquenpedia_article.dart';
 import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 import '../state/articles_state.dart';
 import '../widgets/article/image_network_with_placeholder.dart';
 import '../widgets/article/status_badge.dart';
@@ -47,7 +48,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
       case 'archived':
         return AppTheme.borderColor;
       default:
-        return AppTheme.textGray;
+        return Theme.of(context).colorScheme.onSurfaceVariant;
     }
   }
 
@@ -67,14 +68,18 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
               Navigator.pop(context);
               try {
                 await context.read<ArticlesState>().deleteArticle(article.id ?? 0);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Artículo eliminado')),
-                );
+                if (context.mounted) {
+                  AppNotification.show(context, message: 'Artículo eliminado');
+                }
                 Navigator.pop(context, true);
               } catch (e) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text('Error: $e')));
+                if (context.mounted) {
+                  AppNotification.show(
+                    context,
+                    message: 'Error al eliminar artículo',
+                    isError: true,
+                  );
+                }
               }
             },
             child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
@@ -90,7 +95,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
     final expandedHeight = (screenWidth * 9 / 16).clamp(210.0, 380.0);
 
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
@@ -310,7 +315,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                       margin: const EdgeInsets.all(16),
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: AppTheme.surfaceColor,
+                        color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
@@ -328,7 +333,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                             style: GoogleFonts.poppins(
                               fontSize: 26,
                               fontWeight: FontWeight.w800,
-                              color: AppTheme.textDark,
+                              color: Theme.of(context).colorScheme.onSurface,
                               height: 1.3,
                             ),
                           ),
@@ -460,7 +465,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -506,7 +511,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textGray,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 1),
@@ -515,7 +520,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
-                            color: AppTheme.textDark,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -545,7 +550,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -583,7 +588,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
             ],
@@ -594,7 +599,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
               'Este artículo aún no tiene contenido.',
               style: GoogleFonts.poppins(
                 fontSize: 14,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
             )
@@ -609,7 +614,7 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                   style: GoogleFonts.poppins(
                     fontSize: 14.5,
                     height: 1.7,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   textAlign: TextAlign.start,
                 ),

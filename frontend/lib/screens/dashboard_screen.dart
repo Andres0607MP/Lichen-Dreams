@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../widgets/app_theme.dart';
 import '../widgets/lichen_scaffold.dart';
+import '../widgets/app_manual_tour.dart';
 import '../widgets/dashboard/lichen_carousel.dart';
 import '../widgets/dashboard/liquenpedia_carousel.dart';
 import '../models/dashboard_stats.dart';
@@ -32,7 +33,8 @@ class DashboardScreen extends StatefulWidget {
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with TickerProviderStateMixin {
+class _DashboardScreenState extends State<DashboardScreen>
+    with TickerProviderStateMixin {
   bool _hasAnimated = false;
   bool _isHoveringPrimary = false;
   int _lastProcessedDataVersion = 0;
@@ -49,7 +51,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         final currentDataVersion = analysisState.dataVersion;
         final hasNewData = currentDataVersion != _lastProcessedDataVersion;
         _lastProcessedDataVersion = currentDataVersion;
-        if ((hasNewData || !dashboardState.hasFreshData) && !dashboardState.loading) {
+        if ((hasNewData || !dashboardState.hasFreshData) &&
+            !dashboardState.loading) {
           if (hasNewData) {
             dashboardState.invalidate();
           }
@@ -118,7 +121,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (shouldAnimate)
-                _buildWelcomeHeader(context, userName, horizontalPadding).animate().fadeIn(duration: 500.ms).slideY(begin: 0.05, end: 0, duration: 500.ms)
+                _buildWelcomeHeader(context, userName, horizontalPadding)
+                    .animate()
+                    .fadeIn(duration: 500.ms)
+                    .slideY(begin: 0.05, end: 0, duration: 500.ms)
               else
                 _buildWelcomeHeader(context, userName, horizontalPadding),
               SizedBox(height: isLargeScreen ? 20 : 16),
@@ -132,7 +138,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
               SizedBox(height: sectionSpacing),
               if (shouldAnimate)
-                _buildPrimaryAction(context, horizontalPadding, isLargeScreen).animate().fadeIn(duration: 500.ms).scaleXY(begin: 0.96, end: 1.0, duration: 500.ms)
+                _buildPrimaryAction(context, horizontalPadding, isLargeScreen)
+                    .animate()
+                    .fadeIn(duration: 500.ms)
+                    .scaleXY(begin: 0.96, end: 1.0, duration: 500.ms)
               else
                 _buildPrimaryAction(context, horizontalPadding, isLargeScreen),
               SizedBox(height: sectionSpacing),
@@ -145,7 +154,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               ),
               SizedBox(height: isLargeScreen ? 16 : 12),
               Selector<NotificationsState, int>(
-                selector: (context, state) => state.unreadCount,
+                selector: (context, state) => state.unreadAnalysisCount,
                 builder: (context, unreadCount, child) {
                   return _buildQuickActions(context, unreadCount);
                 },
@@ -154,11 +163,17 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               Selector<DashboardState, DashboardStats?>(
                 selector: (context, state) => state.stats,
                 builder: (context, stats, child) {
-                  return _buildStatsSection(context, stats ?? DashboardStats(
-                    analysisCount: 0,
-                    zoneCount: 0,
-                    airQuality: '---',
-                  ), horizontalPadding, isLargeScreen);
+                  return _buildStatsSection(
+                    context,
+                    stats ??
+                        DashboardStats(
+                          analysisCount: 0,
+                          zoneCount: 0,
+                          airQuality: '---',
+                        ),
+                    horizontalPadding,
+                    isLargeScreen,
+                  );
                 },
                 child: const SizedBox.shrink(),
               ),
@@ -175,7 +190,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   error: catalogState.speciesError,
                 ),
                 builder: (context, data, child) {
-                  return _buildSpeciesSection(context, data, horizontalPadding, isLargeScreen);
+                  return _buildSpeciesSection(
+                    context,
+                    data,
+                    horizontalPadding,
+                    isLargeScreen,
+                  );
                 },
               ),
               SizedBox(height: sectionSpacing),
@@ -189,6 +209,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 child: _buildSectionHeader(
                   title: 'Capacidades',
                   subtitle: 'Descubre lo que puedes hacer',
+                  trailing: _HelpButton(),
                 ),
               ),
               SizedBox(height: isLargeScreen ? 16 : 12),
@@ -205,6 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     required String title,
     String? subtitle,
     bool accent = false,
+    Widget? trailing,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Row(
@@ -250,15 +272,23 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
             ],
           ),
         ),
+        if (trailing != null) trailing,
       ],
     );
   }
 
-  Widget _buildWelcomeHeader(BuildContext context, String? userName, double horizontalPadding) {
+  Widget _buildWelcomeHeader(
+    BuildContext context,
+    String? userName,
+    double horizontalPadding,
+  ) {
     final analysisState = context.watch<AnalysisState>();
     final colorScheme = Theme.of(context).colorScheme;
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: isLargeScreen(context) ? 20 : 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: isLargeScreen(context) ? 20 : 16,
+      ),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -359,7 +389,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   const SizedBox(
                     width: 14,
                     height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.warningColor),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.warningColor,
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Text(
@@ -398,7 +431,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildStatsSection(BuildContext context, DashboardStats stats, double horizontalPadding, bool isLargeScreen) {
+  Widget _buildStatsSection(
+    BuildContext context,
+    DashboardStats stats,
+    double horizontalPadding,
+    bool isLargeScreen,
+  ) {
     final quality = stats.environmentalQuality;
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
@@ -418,7 +456,8 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 ),
               ),
               Tooltip(
-                message: 'Métricas basadas en tus análisis y zonas registradas. Los datos se actualizan automáticamente.',
+                message:
+                    'Métricas basadas en tus análisis y zonas registradas. Los datos se actualizan automáticamente.',
                 child: Semantics(
                   label: 'Ver estadísticas detalladas',
                   button: true,
@@ -426,7 +465,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                     icon: Icon(
                       Icons.info_outline_rounded,
                       size: 18,
-                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      color: colorScheme.onSurfaceVariant.withValues(
+                        alpha: 0.7,
+                      ),
                     ),
                     onPressed: () => DashboardStatsDetailSheet.show(context),
                     padding: EdgeInsets.zero,
@@ -501,11 +542,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           ),
                         ],
                       ),
-                      child: Icon(
-                        quality.icon,
-                        color: Colors.white,
-                        size: 28,
-                      ),
+                      child: Icon(quality.icon, color: Colors.white, size: 28),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -544,8 +581,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: _getQualityProgress(quality.level),
-                    backgroundColor: quality.secondaryColor.withValues(alpha: 0.2),
-                    valueColor: AlwaysStoppedAnimation<Color>(quality.primaryColor),
+                    backgroundColor: quality.secondaryColor.withValues(
+                      alpha: 0.2,
+                    ),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      quality.primaryColor,
+                    ),
                     minHeight: 6,
                   ),
                 ),
@@ -596,9 +637,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
             color: colorScheme.shadow.withValues(alpha: 0.06),
@@ -720,7 +759,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   icon: Icons.eco_rounded,
                   color: AppTheme.especiesPrimary,
                   badge: speciesCount > 0 ? _buildBadge('$speciesCount') : null,
-                  onTap: () => Navigator.pushNamed(context, AppRoutes.adminSpeciesSettings),
+                  onTap: () => Navigator.pushNamed(
+                    context,
+                    AppRoutes.adminSpeciesSettings,
+                  ),
                 );
               },
             ),
@@ -765,7 +807,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     return 0.8;
   }
 
-  Widget _buildPrimaryAction(BuildContext context, double horizontalPadding, bool isLargeScreen) {
+  Widget _buildPrimaryAction(
+    BuildContext context,
+    double horizontalPadding,
+    bool isLargeScreen,
+  ) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: MouseRegion(
@@ -784,19 +830,30 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.2 : 0.15),
-                    AppTheme.lightGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.12 : 0.08),
+                    AppTheme.primaryGreen.withValues(
+                      alpha: _isHoveringPrimary && isLargeScreen ? 0.2 : 0.15,
+                    ),
+                    AppTheme.lightGreen.withValues(
+                      alpha: _isHoveringPrimary && isLargeScreen ? 0.12 : 0.08,
+                    ),
                   ],
                 ),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.3 : 0.2),
+                  color: AppTheme.primaryGreen.withValues(
+                    alpha: _isHoveringPrimary && isLargeScreen ? 0.3 : 0.2,
+                  ),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.15 : 0.08),
+                    color: AppTheme.primaryGreen.withValues(
+                      alpha: _isHoveringPrimary && isLargeScreen ? 0.15 : 0.08,
+                    ),
                     blurRadius: _isHoveringPrimary && isLargeScreen ? 20 : 12,
-                    offset: Offset(0, _isHoveringPrimary && isLargeScreen ? 6 : 4),
+                    offset: Offset(
+                      0,
+                      _isHoveringPrimary && isLargeScreen ? 6 : 4,
+                    ),
                   ),
                 ],
               ),
@@ -811,8 +868,14 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: AppTheme.primaryGreen.withValues(alpha: _isHoveringPrimary && isLargeScreen ? 0.5 : 0.3),
-                          blurRadius: _isHoveringPrimary && isLargeScreen ? 16 : 12,
+                          color: AppTheme.primaryGreen.withValues(
+                            alpha: _isHoveringPrimary && isLargeScreen
+                                ? 0.5
+                                : 0.3,
+                          ),
+                          blurRadius: _isHoveringPrimary && isLargeScreen
+                              ? 16
+                              : 12,
                           offset: const Offset(0, 4),
                         ),
                       ],
@@ -833,7 +896,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.textDark,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -842,7 +905,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
-                            color: AppTheme.textGray,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -890,7 +955,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                 ),
               ),
               TextButton.icon(
-                onPressed: () => Navigator.pushNamed(context, AppRoutes.adminSpeciesSettings),
+                onPressed: () => Navigator.pushNamed(
+                  context,
+                  AppRoutes.adminSpeciesSettings,
+                ),
                 icon: const Icon(Icons.arrow_forward_rounded, size: 16),
                 label: Text(
                   'Ver catálogo',
@@ -933,7 +1001,9 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
               height: 200,
               margin: const EdgeInsets.only(right: 12),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                color: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
@@ -959,7 +1029,11 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline_rounded, color: AppTheme.errorColor, size: 28),
+            Icon(
+              Icons.error_outline_rounded,
+              color: AppTheme.errorColor,
+              size: 28,
+            ),
             const SizedBox(height: 8),
             Text(
               'No pudimos cargar las especies',
@@ -994,13 +1068,19 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.eco_rounded, size: 40, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4)),
+            Icon(
+              Icons.eco_rounded,
+              size: 40,
+              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
             const SizedBox(height: 8),
             Text(
               'Aún no hay especies en el catálogo',
@@ -1024,9 +1104,12 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
     );
   }
 
-  Widget _buildSpeciesList(BuildContext context, List<Map<String, dynamic>> species, bool isLargeScreen) {
+  Widget _buildSpeciesList(
+    BuildContext context,
+    List<Map<String, dynamic>> species,
+    bool isLargeScreen,
+  ) {
     final displaySpecies = species.take(5).toList();
-    final isAdmin = context.select<AuthState, bool>((a) => a.isAdmin);
     return SizedBox(
       height: 200,
       child: SingleChildScrollView(
@@ -1037,7 +1120,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: displaySpecies
-              .map((s) => _DashboardSpeciesCard(species: s, isAdmin: isAdmin))
+              .map((s) => _DashboardSpeciesCard(species: s))
               .toList(),
         ),
       ),
@@ -1051,21 +1134,24 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         children: [
           _buildCapabilityCard(
             title: 'Identificación con IA',
-            description: 'Reconocimiento automático de especies de líquenes mediante inteligencia artificial.',
+            description:
+                'Reconocimiento automático de especies de líquenes mediante inteligencia artificial.',
             icon: Icons.smart_toy_rounded,
             color: AppTheme.primaryGreen,
           ),
           const SizedBox(height: 14),
           _buildCapabilityCard(
             title: 'Bioindicadores ambientales',
-            description: 'Los líquenes como indicadores de calidad del aire y estado del ecosistema.',
+            description:
+                'Los líquenes como indicadores de calidad del aire y estado del ecosistema.',
             icon: Icons.air_rounded,
             color: AppTheme.accentGreen,
           ),
           const SizedBox(height: 14),
           _buildCapabilityCard(
             title: 'Comunidad científica',
-            description: 'Accede a artículos, estudios y el conocimiento colectivo sobre líquenes.',
+            description:
+                'Accede a artículos, estudios y el conocimiento colectivo sobre líquenes.',
             icon: Icons.people_rounded,
             color: AppTheme.lightGreen,
           ),
@@ -1086,15 +1172,10 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            color.withValues(alpha: 0.1),
-            color.withValues(alpha: 0.04),
-          ],
+          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.04)],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: color.withValues(alpha: 0.15),
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.15)),
         boxShadow: [
           BoxShadow(
             color: color.withValues(alpha: 0.05),
@@ -1131,7 +1212,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   style: GoogleFonts.poppins(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: -0.2,
                   ),
                   maxLines: 1,
@@ -1143,7 +1224,7 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     fontWeight: FontWeight.w400,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     height: 1.4,
                   ),
                   maxLines: 2,
@@ -1184,9 +1265,8 @@ class _SpeciesSectionData {
 
 class _DashboardSpeciesCard extends StatelessWidget {
   final Map<String, dynamic> species;
-  final bool isAdmin;
 
-  const _DashboardSpeciesCard({required this.species, this.isAdmin = false});
+  const _DashboardSpeciesCard({required this.species});
 
   @override
   Widget build(BuildContext context) {
@@ -1198,9 +1278,7 @@ class _DashboardSpeciesCard extends StatelessWidget {
     final imagen = species['imagen_referencia']?.toString();
 
     return GestureDetector(
-      onTap: isAdmin
-          ? () => _openAdminEdit(context, species)
-          : () => _openSpeciesDetail(context, species),
+      onTap: () => _openSpeciesDetail(context, species),
       child: Container(
         width: 160,
         height: 200,
@@ -1237,7 +1315,7 @@ class _DashboardSpeciesCard extends StatelessWidget {
                 height: 90,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
-                  color: AppTheme.backgroundColor,
+                  color: Theme.of(context).scaffoldBackgroundColor,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
@@ -1246,9 +1324,10 @@ class _DashboardSpeciesCard extends StatelessWidget {
                           AppConfig.getImageUrl(imagen),
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          errorBuilder: (context, error, stackTrace) => _PlaceholderIcon(),
+                          errorBuilder: (context, error, stackTrace) =>
+                              _PlaceholderIcon(context),
                         )
-                      : _PlaceholderIcon(),
+                      : _PlaceholderIcon(context),
                 ),
               ),
               const SizedBox(height: 8),
@@ -1277,38 +1356,9 @@ class _DashboardSpeciesCard extends StatelessWidget {
               const SizedBox(height: 6),
               if (tipoCrecimiento != null && tipoCrecimiento.isNotEmpty) ...[
                 _buildTag(context, tipoCrecimiento, AppTheme.especiesIcon),
-              ] else if (colorPredominante != null && colorPredominante.isNotEmpty) ...[
+              ] else if (colorPredominante != null &&
+                  colorPredominante.isNotEmpty) ...[
                 _buildTag(context, colorPredominante, AppTheme.especiesIcon),
-              ],
-              if (isAdmin) ...[
-                const Spacer(),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _openAdminEdit(context, species),
-                        icon: Icon(Icons.edit_rounded, size: 13),
-                        label: Text('Editar', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600)),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppTheme.especiesPrimary,
-                          side: BorderSide(color: AppTheme.especiesPrimary.withValues(alpha: 0.3)),
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    IconButton(
-                      onPressed: () => _openAdminDelete(context, species),
-                      icon: Icon(Icons.delete_outline_rounded, size: 15, color: AppTheme.errorColor.withValues(alpha: 0.7)),
-                      tooltip: 'Eliminar',
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppTheme.errorColor.withValues(alpha: 0.06),
-                        padding: const EdgeInsets.all(5),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ],
           ),
@@ -1317,73 +1367,18 @@ class _DashboardSpeciesCard extends StatelessWidget {
     );
   }
 
-  void _openAdminEdit(BuildContext context, Map<String, dynamic> species) {
-    Navigator.pushNamed(context, AppRoutes.adminSpeciesSettings);
-  }
-
-  Future<void> _openAdminDelete(BuildContext context, Map<String, dynamic> species) async {
-    final nombre = species['nombre_cientifico'] ?? species['nombre_comun'] ?? 'esta especie';
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        icon: Icon(Icons.delete_outline_rounded, size: 36, color: AppTheme.errorColor.withValues(alpha: 0.7)),
-        title: Text(
-          'Eliminar especie',
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: Theme.of(context).colorScheme.onSurface),
-          textAlign: TextAlign.center,
-        ),
-        content: Text(
-          '¿Estás seguro de que deseas eliminar "$nombre"? Esta acción no se puede deshacer.',
-          style: GoogleFonts.poppins(fontSize: 14, height: 1.5, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text('Cancelar', style: GoogleFonts.poppins(color: AppTheme.textGray)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text('Eliminar', style: GoogleFonts.poppins(color: AppTheme.errorColor, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && context.mounted) {
-      try {
-        final id = species['id_especie'];
-        if (id is int) {
-          await context.read<CatalogState>().deleteSpecies(id);
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Especie eliminada'), backgroundColor: AppTheme.successColor),
-            );
-          }
-        }
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor),
-          );
-        }
-      }
-    }
-  }
-
   void _openSpeciesDetail(BuildContext context, Map<String, dynamic> species) {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.speciesDetail,
-      arguments: species,
-    );
+    Navigator.pushNamed(context, AppRoutes.speciesDetail, arguments: species);
   }
 
-  Widget _PlaceholderIcon() {
+  Widget _PlaceholderIcon(BuildContext context) {
     return Container(
-      color: AppTheme.backgroundColor,
-      child: Icon(Icons.eco_rounded, color: AppTheme.especiesPrimary.withValues(alpha: 0.25), size: 28),
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Icon(
+        Icons.eco_rounded,
+        color: AppTheme.especiesPrimary.withValues(alpha: 0.25),
+        size: 28,
+      ),
     );
   }
 
@@ -1403,6 +1398,93 @@ class _DashboardSpeciesCard extends StatelessWidget {
         ),
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+}
+
+class _HelpButton extends StatefulWidget {
+  const _HelpButton();
+
+  @override
+  State<_HelpButton> createState() => _HelpButtonState();
+}
+
+class _HelpButtonState extends State<_HelpButton>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.08).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _pulseController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Tooltip(
+      message: '¿Cómo funciona Lichen Dreams?',
+      child: Semantics(
+        label: '¿Cómo funciona Lichen Dreams?',
+        button: true,
+        child: ScaleTransition(
+          scale: _pulseAnimation,
+          child: GestureDetector(
+            onTap: () => AppManualTour.show(context),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.15),
+                    colorScheme.primary.withValues(alpha: 0.05),
+                  ],
+                ),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.3),
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: colorScheme.primary.withValues(alpha: 0.15),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  '?',
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.primary,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

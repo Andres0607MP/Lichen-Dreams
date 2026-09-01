@@ -88,7 +88,7 @@ class _Badge extends StatelessWidget {
           color: Colors.redAccent,
           borderRadius: BorderRadius.circular(9),
           border: Border.all(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             width: 1.5,
           ),
           boxShadow: [

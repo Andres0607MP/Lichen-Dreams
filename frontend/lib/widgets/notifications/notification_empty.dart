@@ -37,7 +37,7 @@ class NotificationEmpty extends StatelessWidget {
                 child: Icon(
                   Icons.notifications_off_outlined,
                   size: 48,
-                  color: AppTheme.textGray.withValues(alpha: 0.35),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
                 ),
               )
                   .animate()
@@ -51,7 +51,7 @@ class NotificationEmpty extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ).animate().fadeIn(duration: 500.ms, delay: 180.ms),
               const SizedBox(height: 8),
@@ -61,7 +61,7 @@ class NotificationEmpty extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
-                  color: AppTheme.textGray,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.5,
                 ),
               ).animate().fadeIn(duration: 500.ms, delay: 260.ms),

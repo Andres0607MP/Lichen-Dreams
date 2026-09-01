@@ -6,6 +6,7 @@ import '../services/api_service.dart';
 import '../state/catalog_state.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/app_theme.dart';
+import '../widgets/app_notification.dart';
 
 class AdminZonesScreen extends StatefulWidget {
   const AdminZonesScreen({super.key});
@@ -258,20 +259,17 @@ class _AdminZonesScreenState extends State<AdminZonesScreen> {
           await _catalogState.createZone(data);
         }
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(isEditing ? 'Zona actualizada' : 'Zona creada'),
-              backgroundColor: AppTheme.primaryGreen,
-            ),
+          AppNotification.show(
+            context,
+            message: isEditing ? 'Zona actualizada' : 'Zona creada',
           );
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: AppTheme.errorColor,
-            ),
+          AppNotification.show(
+            context,
+            message: 'Error al guardar zona',
+            isError: true,
           );
         }
       }
@@ -306,20 +304,14 @@ class _AdminZonesScreenState extends State<AdminZonesScreen> {
       try {
         await _catalogState.deleteZone(zone['id_zona']);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Zona eliminada'),
-              backgroundColor: AppTheme.primaryGreen,
-            ),
-          );
+          AppNotification.show(context, message: 'Zona eliminada');
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error: $e'),
-              backgroundColor: AppTheme.errorColor,
-            ),
+          AppNotification.show(
+            context,
+            message: 'Error al eliminar zona',
+            isError: true,
           );
         }
       }

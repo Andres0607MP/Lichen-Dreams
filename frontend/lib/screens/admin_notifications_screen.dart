@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-
 import '../services/api_service.dart';
 import '../state/users_state.dart';
 import '../state/auth_state.dart';
@@ -10,9 +9,9 @@ import '../widgets/modern_widgets.dart';
 
 class AdminNotificationsScreen extends StatefulWidget {
   const AdminNotificationsScreen({Key? key}) : super(key: key);
-
   @override
-  State<AdminNotificationsScreen> createState() => _AdminNotificationsScreenState();
+  State<AdminNotificationsScreen> createState() =>
+      _AdminNotificationsScreenState();
 }
 
 class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
@@ -23,7 +22,6 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
   String _destino = 'all';
   int? _selectedUserId;
   bool _sending = false;
-
   @override
   void dispose() {
     _tituloController.dispose();
@@ -81,7 +79,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           ),
           backgroundColor: AppTheme.successColor,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -108,7 +108,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           ),
           backgroundColor: AppTheme.errorColor,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           margin: const EdgeInsets.all(16),
         ),
       );
@@ -122,15 +124,17 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
     final usersState = context.watch<UsersState>();
     final authState = context.watch<AuthState>();
     final isAdmin = authState.role == 'admin';
-
     if (!isAdmin) {
       return Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         appBar: AppBar(
           elevation: 0,
           backgroundColor: Colors.transparent,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
+            icon: const Icon(
+              Icons.arrow_back_rounded,
+              color: AppTheme.textDark,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -150,13 +154,11 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
         ),
       );
     }
-
     final titulo = _tituloController.text.trim();
     final mensaje = _mensajeController.text.trim();
     final isWide = MediaQuery.of(context).size.width > 720;
-
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -172,7 +174,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
-                color: AppTheme.textDark,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             Text(
@@ -180,7 +182,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -201,7 +203,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                         children: [
                           Expanded(child: _buildForm(usersState)),
                           const SizedBox(width: 20),
-                          Expanded(child: _buildPreview(titulo, mensaje, usersState)),
+                          Expanded(
+                            child: _buildPreview(titulo, mensaje, usersState),
+                          ),
                         ],
                       )
                     : Column(
@@ -228,7 +232,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
@@ -266,7 +270,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 6),
@@ -295,7 +299,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: length >= maxLength ? AppTheme.errorColor : AppTheme.textGray,
+                  color: length >= maxLength
+                      ? AppTheme.errorColor
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -314,7 +320,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 6),
@@ -345,7 +351,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 14,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 10),
@@ -387,7 +393,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
 
   Widget _buildUserSelector(UsersState usersState) {
     final query = _searchController.text.trim().toLowerCase();
-    final allUsers = usersState.users.whereType<Map<String, dynamic>>().toList();
+    final allUsers = usersState.users
+        .whereType<Map<String, dynamic>>()
+        .toList();
     final filteredUsers = query.isEmpty
         ? allUsers
         : allUsers.where((user) {
@@ -395,7 +403,6 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
             final email = (user['correo']?.toString() ?? '').toLowerCase();
             return name.contains(query) || email.contains(query);
           }).toList();
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -408,7 +415,11 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                 color: AppTheme.primaryGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.person_rounded, size: 18, color: AppTheme.primaryGreen),
+              child: Icon(
+                Icons.person_rounded,
+                size: 18,
+                color: AppTheme.primaryGreen,
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -420,7 +431,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textDark,
+                      color: Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                   Text(
@@ -428,7 +439,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -454,14 +465,22 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                 textCapitalization: TextCapitalization.sentences,
                 decoration: InputDecoration(
                   hintText: 'Buscar por nombre o correo...',
-                  prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppTheme.textGray),
+                  prefixIcon: const Icon(
+                    Icons.search_rounded,
+                    size: 18,
+                    color: AppTheme.textGray,
+                  ),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
                           onPressed: () {
                             _searchController.clear();
                             setState(() {});
                           },
-                          icon: const Icon(Icons.clear_rounded, size: 18, color: AppTheme.textGray),
+                          icon: const Icon(
+                            Icons.clear_rounded,
+                            size: 18,
+                            color: AppTheme.textGray,
+                          ),
                         )
                       : null,
                 ),
@@ -469,18 +488,36 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
               ),
               const SizedBox(height: 8),
               if (usersState.loading)
-                const Center(child: SizedBox(height: 36, child: CircularProgressIndicator(strokeWidth: 2)))
+                const Center(
+                  child: SizedBox(
+                    height: 36,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
               else if (usersState.error != null)
                 Column(
                   children: [
                     Text(
                       'No pudimos cargar los usuarios.',
-                      style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.errorColor),
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppTheme.errorColor,
+                      ),
                     ),
                     TextButton.icon(
                       onPressed: usersState.loadUsers,
-                      icon: const Icon(Icons.refresh_rounded, size: 16, color: AppTheme.primaryGreen),
-                      label: Text('Reintentar', style: GoogleFonts.poppins(fontSize: 12, color: AppTheme.primaryGreen)),
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        size: 16,
+                        color: AppTheme.primaryGreen,
+                      ),
+                      label: Text(
+                        'Reintentar',
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          color: AppTheme.primaryGreen,
+                        ),
+                      ),
                     ),
                   ],
                 )
@@ -490,7 +527,10 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                   child: Center(
                     child: Text(
                       'No hay usuarios disponibles',
-                      style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textGray),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 )
@@ -500,7 +540,10 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                   child: Center(
                     child: Text(
                       'No encontramos usuarios',
-                      style: GoogleFonts.poppins(fontSize: 13, color: AppTheme.textGray),
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 )
@@ -516,7 +559,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                       final id = user['id_usuario'] ?? user['id'];
                       final name = user['nombre']?.toString() ?? 'Sin nombre';
                       final email = user['correo']?.toString() ?? '';
-                      final parsedId = id is int ? id : int.tryParse(id.toString()) ?? 0;
+                      final parsedId = id is int
+                          ? id
+                          : int.tryParse(id.toString()) ?? 0;
                       return _UserTile(
                         name: name,
                         email: email,
@@ -593,7 +638,6 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           : 'Usuario específico';
       destinatarioTexto = nombre;
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -602,7 +646,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 12),
@@ -633,7 +677,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: titulo.isEmpty ? AppTheme.textGray : AppTheme.textDark,
+                        color: titulo.isEmpty
+                            ? Theme.of(context).colorScheme.onSurfaceVariant
+                            : Theme.of(context).colorScheme.onSurface,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -647,7 +693,9 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                 style: GoogleFonts.poppins(
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
-                  color: mensaje.isEmpty ? AppTheme.textGray : AppTheme.textGray,
+                  color: mensaje.isEmpty
+                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
                   height: 1.4,
                 ),
                 maxLines: 3,
@@ -655,7 +703,10 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
               ),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryGreen.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
@@ -685,7 +736,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                     Icon(
                       Icons.person_outline_rounded,
                       size: 14,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Expanded(
@@ -694,7 +745,7 @@ class _AdminNotificationsScreenState extends State<AdminNotificationsScreen> {
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: AppTheme.textGray,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -715,13 +766,11 @@ class _SelectedUserCard extends StatelessWidget {
   final UsersState usersState;
   final int selectedUserId;
   final VoidCallback onChanged;
-
   const _SelectedUserCard({
     required this.usersState,
     required this.selectedUserId,
     required this.onChanged,
   });
-
   @override
   Widget build(BuildContext context) {
     final user = usersState.users
@@ -734,7 +783,6 @@ class _SelectedUserCard extends StatelessWidget {
     final email = user.isNotEmpty
         ? (user.first['correo']?.toString() ?? '')
         : '';
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -771,7 +819,7 @@ class _SelectedUserCard extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -783,7 +831,7 @@ class _SelectedUserCard extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -795,7 +843,11 @@ class _SelectedUserCard extends StatelessWidget {
           const SizedBox(width: 8),
           TextButton.icon(
             onPressed: onChanged,
-            icon: Icon(Icons.swap_horiz_rounded, size: 16, color: AppTheme.primaryGreen),
+            icon: Icon(
+              Icons.swap_horiz_rounded,
+              size: 16,
+              color: AppTheme.primaryGreen,
+            ),
             label: Text(
               'Cambiar',
               style: GoogleFonts.poppins(
@@ -821,14 +873,12 @@ class _UserTile extends StatelessWidget {
   final String email;
   final bool isSelected;
   final VoidCallback onTap;
-
   const _UserTile({
     required this.name,
     required this.email,
     required this.isSelected,
     required this.onTap,
   });
-
   @override
   Widget build(BuildContext context) {
     return InkWell(
@@ -839,10 +889,12 @@ class _UserTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppTheme.primaryGreen.withValues(alpha: 0.08)
-              : AppTheme.surfaceColor,
+              : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppTheme.primaryGreen : AppTheme.borderColor.withValues(alpha: 0.6),
+            color: isSelected
+                ? AppTheme.primaryGreen
+                : AppTheme.borderColor.withValues(alpha: 0.6),
             width: isSelected ? 1.4 : 1,
           ),
         ),
@@ -854,13 +906,13 @@ class _UserTile extends StatelessWidget {
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppTheme.primaryGreen.withValues(alpha: 0.18)
-                    : AppTheme.surfaceColor,
+                    : Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 Icons.person_rounded,
                 size: 20,
-                color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+                color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 12),
@@ -872,8 +924,10 @@ class _UserTile extends StatelessWidget {
                     name,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected ? AppTheme.textDark : AppTheme.textDark,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                      color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -884,7 +938,7 @@ class _UserTile extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -912,7 +966,6 @@ class _RecipientOption extends StatelessWidget {
   final String value;
   final String groupValue;
   final ValueChanged<String?> onChanged;
-
   const _RecipientOption({
     required this.label,
     required this.description,
@@ -921,7 +974,6 @@ class _RecipientOption extends StatelessWidget {
     required this.groupValue,
     required this.onChanged,
   });
-
   @override
   Widget build(BuildContext context) {
     final isSelected = groupValue == value;
@@ -933,7 +985,7 @@ class _RecipientOption extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected
               ? AppTheme.primaryGreen.withValues(alpha: 0.08)
-              : AppTheme.surfaceColor,
+              : Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isSelected ? AppTheme.primaryGreen : AppTheme.borderColor,
@@ -957,7 +1009,7 @@ class _RecipientOption extends StatelessWidget {
                 Icon(
                   icon,
                   size: 18,
-                  color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+                  color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -965,8 +1017,10 @@ class _RecipientOption extends StatelessWidget {
                     label,
                     style: GoogleFonts.poppins(
                       fontSize: 13,
-                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                      color: isSelected ? AppTheme.textDark : AppTheme.textGray,
+                      fontWeight: isSelected
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                      color: isSelected ? Theme.of(context).colorScheme.onSurface : Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -974,7 +1028,7 @@ class _RecipientOption extends StatelessWidget {
                   isSelected
                       ? Icons.radio_button_checked_rounded
                       : Icons.radio_button_unchecked_rounded,
-                  color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+                  color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                   size: 20,
                 ),
               ],
@@ -985,7 +1039,7 @@ class _RecipientOption extends StatelessWidget {
               style: GoogleFonts.poppins(
                 fontSize: 11,
                 fontWeight: FontWeight.w400,
-                color: AppTheme.textGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],

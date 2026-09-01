@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../services/api_service.dart';
 import '../../widgets/lichen_scaffold.dart';
 import '../../widgets/app_theme.dart';
+import '../../widgets/app_notification.dart';
 import '../../state/reports_state.dart';
 
 class EnvironmentalReportScreen extends StatefulWidget {
@@ -66,7 +67,7 @@ class _EnvironmentalReportScreenState extends State<EnvironmentalReportScreen> w
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -218,11 +219,10 @@ class _EnvironmentalReportScreenState extends State<EnvironmentalReportScreen> w
                   final title = 'Resumen ambiental ${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
                   _reportsState.generateReport(title: title).then((result) {
                     if (result == null && context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(_reportsState.error ?? 'No se pudo generar el reporte'),
-                          backgroundColor: AppTheme.errorColor,
-                        ),
+                      AppNotification.show(
+                        context,
+                        message: _reportsState.error ?? 'No se pudo generar el reporte',
+                        isError: true,
                       );
                     }
                   });
@@ -272,7 +272,7 @@ class _HeroSection extends StatelessWidget {
             ],
           ),
           child: Material(
-            color: AppTheme.surfaceColor,
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(24),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(22, 24, 22, 24),
@@ -304,7 +304,7 @@ class _HeroSection extends StatelessWidget {
                                 style: GoogleFonts.poppins(
                                   fontSize: 20,
                                   fontWeight: FontWeight.w700,
-                                  color: AppTheme.textDark,
+                                  color: Theme.of(context).colorScheme.onSurface,
                                   height: 1.25,
                                 ),
                                 maxLines: 2,
@@ -347,7 +347,7 @@ class _HeroSection extends StatelessWidget {
                                   style: GoogleFonts.poppins(
                                     fontSize: 17,
                                     fontWeight: FontWeight.w700,
-                                    color: AppTheme.textDark,
+                                    color: Theme.of(context).colorScheme.onSurface,
                                     height: 1.25,
                                   ),
                                   maxLines: 2,
@@ -498,7 +498,7 @@ class _QualityRadialGauge extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 9,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textGray,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -634,7 +634,7 @@ class _QuickStatItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.5)),
         boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 8, offset: const Offset(0, 2))],
@@ -662,7 +662,7 @@ class _QuickStatItem extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
                 Text(
@@ -670,7 +670,7 @@ class _QuickStatItem extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -709,7 +709,7 @@ class _LichenDistributionSection extends StatelessWidget {
         boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -729,7 +729,7 @@ class _LichenDistributionSection extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textDark,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 4),
@@ -737,7 +737,7 @@ class _LichenDistributionSection extends StatelessWidget {
                             'Distribución de resultados',
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 20),
@@ -745,7 +745,7 @@ class _LichenDistributionSection extends StatelessWidget {
                           const SizedBox(height: 12),
                           _LichenLegend(label: 'Afectados', value: affected, total: total, color: AppTheme.errorColor),
                           const SizedBox(height: 12),
-                          _LichenLegend(label: 'Desconocidos', value: unknown, total: total, color: AppTheme.textGray),
+                          _LichenLegend(label: 'Desconocidos', value: unknown, total: total, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ],
                       ),
                     ),
@@ -773,7 +773,7 @@ class _LichenDistributionSection extends StatelessWidget {
                               style: GoogleFonts.poppins(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: AppTheme.textDark,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 2),
@@ -781,7 +781,7 @@ class _LichenDistributionSection extends StatelessWidget {
                               'Distribución de resultados',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
-                                color: AppTheme.textGray,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -799,7 +799,7 @@ class _LichenDistributionSection extends StatelessWidget {
                   const SizedBox(height: 10),
                   _LichenLegend(label: 'Afectados', value: affected, total: total, color: AppTheme.errorColor),
                   const SizedBox(height: 10),
-                  _LichenLegend(label: 'Desconocidos', value: unknown, total: total, color: AppTheme.textGray),
+                  _LichenLegend(label: 'Desconocidos', value: unknown, total: total, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ],
               );
             },
@@ -837,7 +837,7 @@ class _LichenLegend extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 13,
               fontWeight: FontWeight.w500,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -846,7 +846,7 @@ class _LichenLegend extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(width: 8),
@@ -855,7 +855,7 @@ class _LichenLegend extends StatelessWidget {
           style: GoogleFonts.poppins(
             fontSize: 12,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textGray,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
@@ -978,7 +978,7 @@ class _AirQualitySection extends StatelessWidget {
         boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -1002,7 +1002,7 @@ class _AirQualitySection extends StatelessWidget {
                       'Calidad del aire',
                       style: GoogleFonts.poppins(
                         fontSize: 12,
-                        color: AppTheme.textGray,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -1106,7 +1106,7 @@ class _AmbientConditionsSection extends StatelessWidget {
         boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -1118,7 +1118,7 @@ class _AmbientConditionsSection extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 14),
@@ -1166,7 +1166,7 @@ class _AmbientChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
       ),
@@ -1183,7 +1183,7 @@ class _AmbientChip extends StatelessWidget {
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textGray,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -1195,7 +1195,7 @@ class _AmbientChip extends StatelessWidget {
             style: GoogleFonts.poppins(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textDark,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ],
@@ -1256,7 +1256,7 @@ class _InsightsSection extends StatelessWidget {
         boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Material(
-        color: AppTheme.surfaceColor,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -1268,7 +1268,7 @@ class _InsightsSection extends StatelessWidget {
                 style: GoogleFonts.poppins(
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textDark,
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
               ),
               const SizedBox(height: 14),
@@ -1296,7 +1296,7 @@ class _InsightsSection extends StatelessWidget {
                             style: GoogleFonts.poppins(
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textDark,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 2),
@@ -1304,7 +1304,7 @@ class _InsightsSection extends StatelessWidget {
                             insight.description,
                             style: GoogleFonts.poppins(
                               fontSize: 12,
-                              color: AppTheme.textGray,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                               height: 1.5,
                             ),
                           ),

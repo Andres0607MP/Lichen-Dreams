@@ -47,7 +47,7 @@ class _AppearanceSettingsScreenState extends State<AppearanceSettingsScreen> {
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.w700,
-            color: AppTheme.textDark,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -137,12 +137,12 @@ class _TextScaleSelector extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppTheme.primaryGreen.withValues(alpha: 0.15)
-                        : AppTheme.textGray.withValues(alpha: 0.08),
+                        : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
                     Icons.text_fields_rounded,
-                    color: isSelected ? AppTheme.primaryGreen : AppTheme.textGray,
+                    color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
                     size: 20,
                   ),
                 ),
@@ -153,7 +153,7 @@ class _TextScaleSelector extends StatelessWidget {
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                      color: isSelected ? AppTheme.primaryGreen : AppTheme.textDark,
+                      color: isSelected ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -166,7 +166,7 @@ class _TextScaleSelector extends StatelessWidget {
                 else
                   Icon(
                     Icons.circle_outlined,
-                    color: AppTheme.textGray.withValues(alpha: 0.5),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     size: 22,
                   ),
               ],
