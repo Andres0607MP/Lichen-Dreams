@@ -162,35 +162,9 @@ class AnalysisService:
         else:
             observaciones = f"Análisis completado: {resultado_ia}"
 
-        if resultado_ia == "liquen desconocido":
-            return {
-                "id": 0,
-                "id_usuario": id_usuario,
-                "url_imagen": image_url,
-                "imagen_url": image_url,
-                "image_url": image_url,
-                "imagen_base64": None,
-                "image_base64": None,
-                "resultado": resultado_ia,
-                "categoria": resultado_ia,
-                "confianza": porcentaje_confianza,
-                "nombre_especie": None,
-                "id_especie": None,
-                "especie_nombre_cientifico": None,
-                "especie_nombre_comun": None,
-                "estado": estado_validacion,
-                "status": estado_validacion,
-                "humedad": 0.0,
-                "humidity": 0.0,
-                "calidad_del_aire": calidad_aire,
-                "air_quality": calidad_aire,
-                "recomendacion": "La imagen no parece corresponder a un liquen. Intenta tomar otra fotografía.",
-                "recommendation": "La imagen no parece corresponder a un liquen. Intenta tomar otra fotografía.",
-                "fecha_creacion": datetime.utcnow(),
-                "progreso": 0,
-                "rechazado": True,
-                "mensaje_rechazo": "La imagen no parece corresponder a un liquen. Intenta tomar otra fotografía.",
-            }
+        # "liquen desconocido" es una predicción VÁLIDA del modelo y se persiste
+        # como un análisis normal (con ubicación, historial y relaciones).
+        # Se eliminó el early-return que descartaba la transacción (id=0).
 
         if image_source == 'gallery':
             # For gallery, do not persist anything, return temporary result

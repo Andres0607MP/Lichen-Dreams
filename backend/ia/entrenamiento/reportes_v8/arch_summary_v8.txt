@@ -1,0 +1,62 @@
+Model: "functional"
++--------------------------------------------------------------------------+
+| Layer (type)                    | Output Shape           |       Param # |
+|---------------------------------+------------------------+---------------|
+| input_layer_2 (InputLayer)      | (None, 224, 224, 3)    |             0 |
+|---------------------------------+------------------------+---------------|
+| feature_extractor (Functional)  | (None, 1280)           |     2,257,984 |
+|---------------------------------+------------------------+---------------|
+| classifier_head (Functional)    | (None, 3)              |     1,844,227 |
++--------------------------------------------------------------------------+
+ Total params: 4,102,211 (15.65 MB)
+ Trainable params: 4,026,851 (15.36 MB)
+ Non-trainable params: 75,360 (294.38 KB)
+
+
+BACKBONE: mobilenetv2
+{
+  "seed": 42,
+  "batch": 48,
+  "arch": "mobilenetv2",
+  "phase1_epochs": 12,
+  "phase2_epochs": 10,
+  "phase3_epochs": 8,
+  "lr1": 0.001,
+  "lr2": 3e-05,
+  "lr3": 1e-05,
+  "fine_tune_layers_1": 80,
+  "fine_tune_layers_2": 140,
+  "batch_norm_durante_fine_tune": "congelada (estadisticas preentrenadas intactas)",
+  "patience": 4,
+  "input_size": [
+    224,
+    224
+  ],
+  "rgb": true,
+  "preprocessing": "RGB 224x224 float32 /255.0 -> [0,1]; Rescaling interno (2.0,-1.0) -> [-1,1] sin doble /255",
+  "head": "Dense1024+BN+ReLU+Dropout .30 -> Dense512+BN+ReLU+Dropout .25 -> Dense3 softmax",
+  "backbone": "MobileNetV2 ImageNet (seleccionado por probe: val bal_acc .84 / macroF1 .83; B1=.53, MobileNetV3Large=.64)",
+  "balance": "batches balanceados 1/3 por clase (exposicion equitativa; sin class weights en loss por limite de Keras con generadores y para evitar doble ponderacion)",
+  "loss": "sparse_categorical_crossentropy + weight_decay 1e-4 (Adam)",
+  "augmentation": "solo train en fases 2/3: flip horizontal (sin cambios de color/brillo para conservar la semantica textural de las clases)",
+  "checkpoint_metric": "val_macro_f1 (max)",
+  "early_stopping": "val_macro_f1 max, patience=args.patience",
+  "split": {
+    "train": {
+      "saludable": 350,
+      "contaminado": 402,
+      "desconocido": 824
+    },
+    "val": {
+      "saludable": 75,
+      "contaminado": 49,
+      "desconocido": 166
+    },
+    "test": {
+      "saludable": 75,
+      "contaminado": 49,
+      "desconocido": 169
+    }
+  },
+  "manifest": "C:\\Users\\mance\\Documents\\Steffi\\Lichen-Dreams\\backend\\ia\\entrenamiento\\dataset_v7_manifest.csv"
+}

@@ -1,0 +1,25 @@
+{
+  "seed": 42,
+  "manifest": "C:\\Users\\mance\\Documents\\Steffi\\Lichen-Dreams\\backend\\ia\\entrenamiento\\dataset_v7_manifest.csv",
+  "splits": {
+    "train": {
+      "saludable": 350,
+      "contaminado": 402,
+      "desconocido": 824
+    },
+    "val": {
+      "saludable": 75,
+      "contaminado": 49,
+      "desconocido": 166
+    },
+    "test": {
+      "saludable": 75,
+      "contaminado": 49,
+      "desconocido": 169
+    }
+  },
+  "is_augmented": {
+    "train_only": true,
+    "test_augmented": 0
+  }
+}

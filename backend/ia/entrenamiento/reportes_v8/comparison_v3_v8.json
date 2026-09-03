@@ -1,0 +1,122 @@
+{
+  "metricas": [
+    "accuracy",
+    "macro_f1",
+    "balanced_accuracy",
+    "recall_saludable",
+    "recall_contaminado",
+    "recall_desconocido",
+    "f1_saludable",
+    "f1_contaminado",
+    "f1_desconocido"
+  ],
+  "nota": "V3 evaluado HOY sobre el split test de V7 (mismas 293 imagenes) para comparacion justa. V3 fue entrenado con un split propio (test=321) y sus metricas historicas figuran en reportes/metrics_v3.json.",
+  "v3_sobre_test_v7": {
+    "accuracy": 0.47440273037542663,
+    "precision_macro": 0.2042844237966189,
+    "recall_macro": 0.28865273920218976,
+    "f1_macro": 0.2375824755872262,
+    "balanced_accuracy": 0.28865273920218976,
+    "confusion_matrix": [
+      [
+        0,
+        5,
+        70
+      ],
+      [
+        0,
+        3,
+        46
+      ],
+      [
+        0,
+        33,
+        136
+      ]
+    ],
+    "classification_report": "                    precision    recall  f1-score   support\n\n  liquen saludable     0.0000    0.0000    0.0000        75\nliquen contaminado     0.0732    0.0612    0.0667        49\n       desconocido     0.5397    0.8047    0.6461       169\n\n          accuracy                         0.4744       293\n         macro avg     0.2043    0.2887    0.2376       293\n      weighted avg     0.3235    0.4744    0.3838       293\n",
+    "per_class": {
+      "liquen saludable": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1-score": 0.0,
+        "support": 75.0
+      },
+      "liquen contaminado": {
+        "precision": 0.07317073170731707,
+        "recall": 0.061224489795918366,
+        "f1-score": 0.06666666666666667,
+        "support": 49.0
+      },
+      "desconocido": {
+        "precision": 0.5396825396825397,
+        "recall": 0.8047337278106509,
+        "f1-score": 0.6460807600950119,
+        "support": 169.0
+      },
+      "accuracy": 0.47440273037542663,
+      "macro avg": {
+        "precision": 0.2042844237966189,
+        "recall": 0.28865273920218976,
+        "f1-score": 0.2375824755872262,
+        "support": 293.0
+      },
+      "weighted avg": {
+        "precision": 0.3235212118089001,
+        "recall": 0.47440273037542663,
+        "f1-score": 0.38380312328574634,
+        "support": 293.0
+      }
+    },
+    "prediction_distribution": {
+      "liquen saludable": 0,
+      "liquen contaminado": 41,
+      "desconocido": 252
+    },
+    "prediction_distribution_frac": {
+      "liquen saludable": 0.0,
+      "liquen contaminado": 0.1399,
+      "desconocido": 0.8601
+    },
+    "confianza_promedio": 66.91902875900269,
+    "model_collapse": true,
+    "max_class_share": 0.8601,
+    "split_test": {
+      "total": 293,
+      "saludable": 75,
+      "contaminado": 49,
+      "desconocido": 169
+    }
+  },
+  "v3_historico": {
+    "accuracy": 0.4517133956386293,
+    "macro_f1": 0.24064131245339296,
+    "balanced_accuracy": null,
+    "recall_saludable": 0.0,
+    "recall_contaminado": 0.08450704225352113,
+    "recall_desconocido": 0.7942857142857143,
+    "f1_saludable": 0.0,
+    "f1_contaminado": 0.1,
+    "f1_desconocido": 0.6219239373601789,
+    "split_test": "321 (split propio de V3)"
+  },
+  "v8": {
+    "accuracy": 0.9385665529010239,
+    "macro_f1": 0.9101299379430844,
+    "balanced_accuracy": 0.9107944558494009,
+    "recall_saludable": 0.8666666666666667,
+    "recall_contaminado": 0.8775510204081632,
+    "recall_desconocido": 0.9881656804733728,
+    "f1_saludable": 0.896551724137931,
+    "f1_contaminado": 0.8514851485148515,
+    "f1_desconocido": 0.9823529411764705
+  },
+  "delta_v8_minus_v3_mismo_test": {
+    "macro_f1": 0.6725,
+    "balanced_accuracy": 0.6221,
+    "accuracy": 0.4642,
+    "recall_saludable": 0.8667,
+    "recall_contaminado": 0.8163,
+    "recall_desconocido": 0.1834
+  }
+}

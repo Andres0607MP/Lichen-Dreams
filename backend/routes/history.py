@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload as db_joinedload
 
 from config.db import get_db
 from models.core import Analisis, HistorialActividad, Usuario, ProcesamientoIA, Notificacion, Imagen
@@ -67,6 +67,31 @@ def _history_item_to_contract(item: HistorialActividad) -> HistoryResponse:
             analysis_data = analysis_service.get_results(analysis_id)
         except Exception:
             analysis_data = {}
+
+    # Ubicación: preferir la relación real Analisis -> Ubicacion. Solo si no
+    # existe, usar el texto legacy `location=` (compatibilidad con historiales
+    # antiguos). Esto independiza el historial del parser frágil de cadenas.
+    if analysis_id:
+        try:
+            from config.db import SessionLocal
+            from models.core import Analisis, Ubicacion
+            with SessionLocal() as db:
+                a = (
+                    db.query(Analisis)
+                    .options(db_joinedload(Analisis.ubicacion))
+                    .filter(Analisis.id_analisis == analysis_id)
+                    .first()
+                )
+                if a and a.ubicacion and a.ubicacion.latitud is not None:
+                    ub = a.ubicacion
+                    location = (
+                        str(ub.direccion or "")
+                        or str(ub.municipio or "")
+                        or str(ub.departamento or "")
+                        or f"{float(ub.latitud):.6f},{float(ub.longitud):.6f}"
+                    )
+        except Exception:
+            pass
 
     return HistoryResponse(
         id=item.id_historial,

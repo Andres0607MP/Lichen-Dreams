@@ -21,6 +21,7 @@ if config.config_file_name is not None:
 
 # Import your model's MetaData object here
 from models.base import Base
+import models.core  # noqa: F401  # poblar Base.metadata con las tablas del proyecto
 
 target_metadata = Base.metadata
 
