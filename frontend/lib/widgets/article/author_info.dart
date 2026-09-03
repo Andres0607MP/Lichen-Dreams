@@ -1,12 +1,7 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import '../../../config/app_config.dart';
 import '../../../widgets/app_theme.dart';
-import '../../../state/profile_state.dart';
-import '../../../state/auth_state.dart';
-import '../../../services/api_service.dart';
 
 class AuthorInfo extends StatelessWidget {
   final String autor;
@@ -115,135 +110,85 @@ class AuthorAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authState = context.watch<AuthState>();
-    final profileState = context.watch<ProfileState>();
-
-    final isCurrentUser = authState.userName != null &&
-        authState.userName!.trim().toLowerCase() == autor.trim().toLowerCase();
-
-    final rawFoto = profileState.profile?['foto_perfil'];
-    final imagePath = isCurrentUser
-        ? rawFoto?.toString()
-        : fotoPerfil;
+    final imagePath = fotoPerfil;
 
     if (imagePath != null && imagePath.isNotEmpty) {
-      return _CachedAuthorImage(imagePath: imagePath, size: size);
+      return _AuthorImageNetwork(
+        imagePath: imagePath,
+        autor: autor,
+        size: size,
+      );
     }
 
     return _InitialsAvatar(autor: autor, size: size);
   }
 }
 
-class _CachedAuthorImage extends StatefulWidget {
+class _AuthorImageNetwork extends StatelessWidget {
   final String imagePath;
+  final String autor;
   final double size;
 
-  const _CachedAuthorImage({
+  const _AuthorImageNetwork({
     required this.imagePath,
+    required this.autor,
     required this.size,
   });
 
   @override
-  State<_CachedAuthorImage> createState() => _CachedAuthorImageState();
-}
-
-class _CachedAuthorImageState extends State<_CachedAuthorImage> {
-  Uint8List? _bytes;
-  bool _loading = true;
-  static final Map<String, Uint8List?> _cache = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _loadImage();
-  }
-
-  @override
-  void didUpdateWidget(covariant _CachedAuthorImage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.imagePath != widget.imagePath) {
-      _loadImage();
-    }
-  }
-
-  Future<void> _loadImage() async {
-    debugPrint('AUTHOR_AVATAR_DEBUG loading imagePath=${widget.imagePath}');
-    if (_cache.containsKey(widget.imagePath)) {
-      _bytes = _cache[widget.imagePath];
-      if (mounted) setState(() => _loading = false);
-      debugPrint('AUTHOR_AVATAR_DEBUG cache hit');
-      return;
-    }
-
-    final apiService = Provider.of<ApiService>(context, listen: false);
-
-    try {
-      _bytes = await apiService.downloadImageBytes(widget.imagePath);
-      debugPrint('AUTHOR_AVATAR_DEBUG downloaded bytes=${_bytes?.length}');
-      if (_bytes != null) {
-        _cache[widget.imagePath] = _bytes;
-      }
-    } catch (e) {
-      _bytes = null;
-      debugPrint('AUTHOR_AVATAR_DEBUG download error=$e');
-    }
-
-    if (mounted) setState(() => _loading = false);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Theme.of(context).colorScheme.surface,
-          border: Border.all(
-            color: AppTheme.borderColor,
-            width: 1,
-          ),
-        ),
-        child: const Center(
-          child: SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: AppTheme.primaryGreen,
-            ),
-          ),
-        ),
-      );
-    }
+    final imageUrl = AppConfig.getImageUrl(imagePath);
 
-    if (_bytes != null) {
-      return Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-            width: 1.5,
-          ),
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
+          width: 1.5,
         ),
-        child: ClipOval(
-          child: Image.memory(
-            _bytes!,
-            width: widget.size,
-            height: widget.size,
-            fit: BoxFit.cover,
-          ),
+      ),
+      child: ClipOval(
+        child: Image.network(
+          imageUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Container(
+              width: size,
+              height: size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: Theme.of(context).colorScheme.surface,
+                border: Border.all(
+                  color: AppTheme.borderColor,
+                  width: 1,
+                ),
+              ),
+              child: const Center(
+                child: SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppTheme.primaryGreen,
+                  ),
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return _InitialsAvatar(
+              autor: autor,
+              size: size,
+              fallback: true,
+            );
+          },
         ),
-      );
-    }
-
-    return _InitialsAvatar(
-      autor: '',
-      size: widget.size,
-      fallback: true,
+      ),
     );
   }
 }

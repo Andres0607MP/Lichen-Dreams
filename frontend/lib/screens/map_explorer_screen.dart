@@ -7,6 +7,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
+import '../config/app_config.dart';
 import '../routes/route_names.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/app_notification.dart';
@@ -17,6 +18,7 @@ import '../state/map_state.dart';
 import '../state/auth_state.dart';
 import '../models/map_analysis_point.dart';
 import '../models/environmental_zone.dart';
+import '../models/environmental_zone_model.dart';
 
 class MapExplorerScreen extends StatefulWidget {
   final int pointId;
@@ -43,6 +45,8 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   bool _showCommunity = true;
   bool _showZones = true;
   bool _showCircles = true;
+  bool _showCatalogZones = true;
+  EnvironmentalZoneModel? _selectedCatalogZone;
 
   static const Color moderateYellow = Color(0xFFFFC107);
 
@@ -57,6 +61,9 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
       mapState.updateUserId(authState.userId);
       if (!mapState.loading && mapState.points.isEmpty) {
         mapState.loadPoints();
+      }
+      if (mapState.catalogZones.isEmpty && !mapState.loadingZones) {
+        mapState.loadZones();
       }
       if (widget.pointId != 0) {
         _selectPointById(widget.pointId);
@@ -359,7 +366,29 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     setState(() {
       _selectedPoint = null;
       _selectedZone = null;
+      _selectedCatalogZone = null;
     });
+  }
+
+  void _onCatalogZoneTap(EnvironmentalZoneModel zone) {
+    setState(() {
+      _selectedCatalogZone = zone;
+      _selectedPoint = null;
+      _selectedZone = null;
+    });
+    if (zone.center != null) {
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(
+            target: zone.center!,
+            zoom: 15,
+            tilt: 55,
+            bearing: 0,
+          ),
+        ),
+      );
+    }
+    _zoomNotifier.value = 15;
   }
 
   void _onZoneTap(EnvironmentalZone zone) {
@@ -536,8 +565,10 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   Widget _buildMapContent(MapState mapState) {
     final points = _visiblePoints(mapState);
     final zones = _showZones ? calculateEnvironmentalZones(points) : <EnvironmentalZone>[];
+    final catalogZones = _showCatalogZones ? mapState.catalogZones : <EnvironmentalZoneModel>[];
     final selected = _selectedPoint;
     final selectedZone = _selectedZone;
+    final selectedCatalogZone = _selectedCatalogZone;
 
     return SizedBox.expand(
       child: Stack(
@@ -545,20 +576,26 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
         children: [
           GoogleMap(
             initialCameraPosition: CameraPosition(
-              target: selectedZone != null
-                  ? selectedZone.center
-                  : (selected != null
-                      ? selected.latLng
-                      : (_currentPosition != null
-                          ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
-                          : const LatLng(4.7110, -74.0721))),
-              zoom: selectedZone != null || selected != null ? 16 : MapAnalysisPoint.defaultMapZoom,
+              target: selectedCatalogZone != null
+                  ? selectedCatalogZone.center!
+                  : (selectedZone != null
+                      ? selectedZone.center
+                      : (selected != null
+                          ? selected.latLng
+                          : (_currentPosition != null
+                              ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
+                              : const LatLng(4.7110, -74.0721)))),
+              zoom: selectedCatalogZone != null || selectedZone != null || selected != null ? 16 : MapAnalysisPoint.defaultMapZoom,
               tilt: 55,
               bearing: 0,
             ),
             mapType: _mapType,
             markers: _buildMarkers(points, zones, mapState),
-            circles: {..._buildZoneCircles(zones), if (_showCircles) ..._buildIndividualCircles(points)},
+            circles: {
+              ..._buildZoneCircles(zones),
+              ..._buildCatalogZoneCircles(catalogZones),
+              if (_showCircles) ..._buildIndividualCircles(points),
+            },
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
             zoomGesturesEnabled: true,
@@ -572,11 +609,11 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             },
             onTap: _onMapTap,
           ),
+          if (selectedCatalogZone != null)
+            _buildCatalogZoneTopOverlay(selectedCatalogZone),
           if (selectedZone != null)
             _buildZoneTopOverlay(selectedZone),
-          if (selected == null && selectedZone == null && points.isNotEmpty && _showZones)
-            _buildAggregateOverlay(points, zones),
-          if (selected != null && selectedZone == null)
+          if (selected != null && selectedZone == null && selectedCatalogZone == null)
             _buildPointTopOverlay(selected, selected.visualQualityLevel.statusColor),
           _buildLegend(),
           _buildMapControls(),
@@ -607,6 +644,29 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     final Set<Circle> circles = {};
     for (final zone in zones) {
       circles.add(zone.toCircle());
+    }
+    return circles;
+  }
+
+  Set<Circle> _buildCatalogZoneCircles(List<EnvironmentalZoneModel> zones) {
+    final Set<Circle> circles = {};
+    for (final zone in zones) {
+      final isSelected = _selectedCatalogZone?.id == zone.id;
+      if (zone.center == null) continue;
+      circles.add(Circle(
+        circleId: CircleId('catalog_zone_${zone.id}'),
+        center: zone.center!,
+        radius: zone.radioMetros ?? 100.0,
+        fillColor: isSelected
+            ? zone.statusColor.withValues(alpha: 0.45)
+            : zone.statusColor.withValues(alpha: 0.25),
+        strokeColor: isSelected
+            ? zone.statusColor
+            : zone.statusColor.withValues(alpha: 0.8),
+        strokeWidth: isSelected ? 4 : 2,
+        consumeTapEvents: true,
+        onTap: () => _onCatalogZoneTap(zone),
+      ));
     }
     return circles;
   }
@@ -791,6 +851,89 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     );
   }
 
+  Widget _buildCatalogZoneTopOverlay(EnvironmentalZoneModel zone) {
+    final statusColor = zone.statusColor;
+    return Positioned(
+      top: 16,
+      left: 16,
+      right: 16,
+      child: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 500),
+        tween: Tween(begin: 0.0, end: 1.0),
+        builder: (context, value, child) {
+          return Transform.translate(
+            offset: Offset(0, -20 * (1 - value)),
+            child: Opacity(
+              opacity: value,
+              child: child,
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: statusColor.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
+                ),
+              ).animate().scale(
+                    duration: const Duration(milliseconds: 1200),
+                    curve: Curves.easeInOut,
+                  ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      zone.nombre,
+                      style: GoogleFonts.poppins(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${zone.qualityLabel} · ${zone.riskLabel} riesgo · ${zone.totalAnalisis} análisis',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: statusColor,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildZoneTopOverlay(EnvironmentalZone zone) {
     final statusColor = zone.qualityLevel.statusColor;
     return Positioned(
@@ -900,6 +1043,13 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
           const SizedBox(width: 8),
           _layerToggle('Zonas', _showZones, moderateYellow, (value) {
             setState(() => _showZones = value);
+          }),
+          const SizedBox(width: 8),
+          _layerToggle('Catálogo', _showCatalogZones, AppTheme.mapaPrimary, (value) {
+            setState(() => _showCatalogZones = value);
+            if (!value) {
+              setState(() => _selectedCatalogZone = null);
+            }
           }),
         ],
       ),
@@ -1077,6 +1227,9 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   }
 
   Widget _buildBottomSheet() {
+    if (_selectedCatalogZone != null) {
+      return _buildCatalogZoneDetailsSheet(_selectedCatalogZone!);
+    }
     if (_selectedZone != null) {
       return _buildZoneDetailsSheet(_selectedZone!);
     }
@@ -1084,6 +1237,47 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
       return _buildPointDetailsSheet(_selectedPoint!);
     }
     return const SizedBox.shrink();
+  }
+
+  Widget _buildCatalogZoneDetailsSheet(EnvironmentalZoneModel zone) {
+    final statusColor = zone.statusColor;
+
+    return DraggableScrollableSheet(
+      initialChildSize: 0.18,
+      minChildSize: 0.14,
+      maxChildSize: 0.55,
+      snap: true,
+      snapSizes: const [0.18, 0.42, 0.55],
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: EdgeInsets.fromLTRB(16, 10, 16, MediaQuery.of(context).padding.bottom + 10),
+            children: [
+              _buildSheetHandle(),
+              const SizedBox(height: 8),
+              _buildCatalogZoneSheetHeader(zone, statusColor),
+              const SizedBox(height: 12),
+              _buildCatalogZoneSheetDetails(zone, statusColor),
+              const SizedBox(height: 14),
+              _buildCatalogZoneSheetActions(zone),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildZoneDetailsSheet(EnvironmentalZone zone) {
@@ -1195,8 +1389,8 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                 CircleAvatar(
                   radius: 16,
                   backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.15),
-                  backgroundImage: point.usuario!['foto_perfil'] != null && point.usuario!['foto_perfil'].toString().isNotEmpty
-                      ? NetworkImage(point.usuario!['foto_perfil'].toString())
+                   backgroundImage: point.usuario!['foto_perfil'] != null && point.usuario!['foto_perfil'].toString().isNotEmpty
+                       ? NetworkImage(AppConfig.getImageUrl(point.usuario!['foto_perfil'].toString()))
                       : null,
                   child: point.usuario!['foto_perfil'] == null || point.usuario!['foto_perfil'].toString().isEmpty
                       ? Icon(Icons.person_rounded, size: 16, color: AppTheme.primaryGreen)
@@ -1569,6 +1763,199 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             ),
             style: FilledButton.styleFrom(
               backgroundColor: AppTheme.primaryGreen,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCatalogZoneSheetHeader(EnvironmentalZoneModel zone, Color statusColor) {
+    return Row(
+      children: [
+        Container(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            Icons.eco_rounded,
+            color: statusColor,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                zone.nombre,
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '${zone.qualityLabel} · ${zone.totalAnalisis} análisis',
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: statusColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            zone.riskLabel,
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: statusColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCatalogZoneSheetDetails(EnvironmentalZoneModel zone, Color statusColor) {
+    final radioStr = zone.radioMetros != null
+        ? '${(zone.radioMetros! / 1000).toStringAsFixed(zone.radioMetros!.remainder(1000) == 0 ? 0 : 1)} km (${zone.radioMetros!.toInt()} m)'
+        : 'Sin datos';
+
+    final porcentajeStr = zone.porcentajeSaludable != null
+        ? '${zone.porcentajeSaludable!.toStringAsFixed(1)}%'
+        : 'Sin datos';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _detailChip(
+                icon: Icons.location_on_rounded,
+                label: 'Calidad aire',
+                value: zone.qualityLabel,
+                color: statusColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _detailChip(
+                icon: Icons.warning_rounded,
+                label: 'Nivel riesgo',
+                value: zone.riskLabel,
+                color: statusColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _detailChip(
+                icon: Icons.analytics_rounded,
+                label: 'Análisis',
+                value: '${zone.totalAnalisis}',
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: _detailChip(
+                icon: Icons.favorite_rounded,
+                label: 'Saludables',
+                value: '${zone.saludables}',
+                color: AppTheme.successColor,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: _detailChip(
+                icon: Icons.error_rounded,
+                label: 'Afectados',
+                value: '${zone.afectados}',
+                color: AppTheme.errorColor,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child:               _detailChip(
+                icon: Icons.percent_rounded,
+                label: 'Saludables %',
+                value: porcentajeStr,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _detailChip(
+          icon: Icons.place_rounded,
+          label: 'Radio',
+          value: radioStr,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        if (zone.descripcion != null && zone.descripcion!.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.6),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              zone.descripcion!,
+              style: GoogleFonts.poppins(
+                fontSize: 12,
+                height: 1.5,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCatalogZoneSheetActions(EnvironmentalZoneModel zone) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () {
+              setState(() => _selectedCatalogZone = null);
+            },
+            icon: const Icon(Icons.close_rounded, size: 18),
+            label: Text(
+              'Cerrar',
+              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppTheme.primaryGreen,
+              side: const BorderSide(color: AppTheme.primaryGreen, width: 1.5),
               padding: const EdgeInsets.symmetric(vertical: 12),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),

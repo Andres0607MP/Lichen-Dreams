@@ -4,6 +4,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
+import '../config/app_config.dart';
 import '../routes/route_names.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/lichen_scaffold.dart';
@@ -1539,8 +1540,8 @@ class _AnalysisCard extends StatelessWidget {
                     CircleAvatar(
                       radius: 14,
                       backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.15),
-                      backgroundImage: point.usuario!['foto_perfil'] != null && point.usuario!['foto_perfil'].toString().isNotEmpty
-                          ? NetworkImage(point.usuario!['foto_perfil'].toString())
+                    backgroundImage: point.usuario!['foto_perfil'] != null && point.usuario!['foto_perfil'].toString().isNotEmpty
+                        ? NetworkImage(AppConfig.getImageUrl(point.usuario!['foto_perfil'].toString()))
                           : null,
                       child: point.usuario!['foto_perfil'] == null || point.usuario!['foto_perfil'].toString().isEmpty
                           ? Icon(Icons.person_rounded, size: 14, color: AppTheme.primaryGreen)

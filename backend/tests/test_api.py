@@ -8,7 +8,7 @@ from sqlalchemy.orm import sessionmaker
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 
 from fastapi.testclient import TestClient
-from config.database import engine
+from config.db import engine
 from models.base import Base
 from models.core import LiquenPedia, Role, Usuario
 from models.validations import ArticuloCreate
@@ -47,7 +47,7 @@ def test_register_login_and_me():
     email = f"test{int(time.time())}@example.com"
     reg = client.post("/auth/register", json={"email": email, "password": "secret@", "name": "Tester"})
     assert reg.status_code == 201
-    login = client.post("/auth/login", json={"email": email, "password": "secret@"})
+    login = client.post("/auth/login", data={"email": email, "password": "secret@"})
     assert login.status_code == 200
     token = login.json().get("access_token")
     assert token
@@ -71,8 +71,12 @@ def test_image_upload_and_delete():
 
 
 def test_analysis_process_accepts_multipart_file():
-    files = {"file": ("analysis.jpg", b"fake-image-content", "image/jpeg")}
-    response = client.post("/analysis/process", files=files)
+    login = client.post("/auth/login", data={"username": "admin@gmail.com", "password": "admin123"})
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    files = {"file": ("analysis.jpg", b"\xff\xd8\xff\xe0" + b"fake-image-content", "image/jpeg")}
+    response = client.post("/analysis/process", files=files, headers=headers)
 
     assert response.status_code == 200
     payload = response.json()
@@ -83,10 +87,13 @@ def test_analysis_process_accepts_multipart_file():
 def test_liquenpedia_create_respects_requested_state():
     db = SessionLocal()
     try:
-        role = Role(nombre_rol="admin", descripcion="Admin", nivel_acceso=1)
-        db.add(role)
-        db.commit()
-        db.refresh(role)
+        # Reusar el rol 'admin' ya sembrado por el bootstrap (o crearlo).
+        role = db.query(Role).filter(Role.nombre_rol == "admin").first()
+        if role is None:
+            role = Role(nombre_rol="admin", descripcion="Admin", nivel_acceso=1)
+            db.add(role)
+            db.commit()
+            db.refresh(role)
 
         admin = Usuario(
             nombre="Admin",

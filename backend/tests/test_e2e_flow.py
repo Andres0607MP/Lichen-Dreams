@@ -44,7 +44,7 @@ def test_flujo_completo_end_to_end():
 
         login = client.post(
             "/auth/login",
-            json={"email": "e2e@example.com", "password": "Password123!"},
+            data={"email": "e2e@example.com", "password": "Password123!"},
         )
         assert login.status_code == 200
         token = login.json()["access_token"]
@@ -82,6 +82,6 @@ def test_flujo_completo_end_to_end():
         assert history.status_code == 200
         assert isinstance(history.json(), list)
 
-        points = client.get("/api/maps/points")
+        points = client.get("/api/maps/points", headers=headers)
         assert points.status_code == 200
         assert isinstance(points.json(), list)

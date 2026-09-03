@@ -502,16 +502,16 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: TweenAnimationBuilder<int>(
-                  tween: IntTween(begin: 0, end: stats.zoneCount),
+                  tween: IntTween(begin: 0, end: stats.zonasAmbientalesCount),
                   duration: const Duration(milliseconds: 800),
                   curve: Curves.easeOutCubic,
                   builder: (context, value, child) {
                     return _buildStatCard(
-                      title: 'Zonas',
+                      title: 'Zonas Ambientales',
                       value: value.toString(),
                       icon: Icons.location_on_rounded,
                       color: AppTheme.mapaPrimary,
-                      trendText: 'Ubicaciones exploradas',
+                      trendText: 'Zonas registradas',
                     );
                   },
                 ),

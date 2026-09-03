@@ -73,6 +73,19 @@ def fake_google(monkeypatch):
         return dict(state["claims"])
 
     monkeypatch.setattr(auth_routes, "verify_google_id_token", _verify)
+
+    # Mock download_and_save_profile_image para devolver una ruta local simulada,
+    # de modo que los tests no dependan de red descargar imágenes de Google.
+    import services.upload_service as upload_service
+    from services.upload_service import IMAGE_TYPE_PROFILE
+    monkeypatch.setattr(
+        upload_service,
+        "download_and_save_profile_image",
+        lambda url, uid: f"/uploads/profiles/user_{uid}/fake_google_photo.jpg",
+    )
+    # El módulo auth_routes importó la referencia directamente, hay que parchear allí también.
+    monkeypatch.setattr(auth_routes, "download_and_save_profile_image",
+                        lambda url, uid: f"/uploads/profiles/user_{uid}/fake_google_photo.jpg")
     return set_claims
 
 
@@ -88,6 +101,10 @@ def client():
 
 def _google_login(client, id_token="x", modo="registro"):
     return client.post("/auth/google", json={"id_token": id_token, "modo": modo})
+
+
+def _valid_jpeg_bytes():
+    return b"\xff\xd8\xff" + b"test-image-content"
 
 
 def test_token_google_invalido_rechazado(client, fake_google):
@@ -107,7 +124,7 @@ def test_usuario_google_nuevo_se_crea(client, fake_google):
     assert data["token_type"] == "bearer"
     assert data["user"]["correo"] == claims["email"].lower()
     assert data["user"]["rol"] == "user"
-    assert data["user"]["foto_perfil"] == claims["picture"]
+    assert data["user"]["foto_perfil"] == f"/uploads/profiles/user_{data['user']['id_usuario']}/fake_google_photo.jpg"
 
     db = SessionLocal()
     try:
@@ -120,7 +137,7 @@ def test_usuario_google_nuevo_se_crea(client, fake_google):
         assert user.estado_cuenta == "active"
         assert user.nombre == "Google"
         assert user.apellido == "User"
-        assert user.foto_perfil == claims["picture"]
+        assert user.foto_perfil == f"/uploads/profiles/user_{user.id_usuario}/fake_google_photo.jpg"
         role = user.rol
         assert role is not None and role.nombre_rol == "user"
         assert user.id_usuario is not None
@@ -141,7 +158,7 @@ def test_google_existente_actualiza_foto(client, fake_google):
     db = SessionLocal()
     try:
         user = db.query(Usuario).filter(Usuario.proveedor_id == claims["sub"]).first()
-        assert user.foto_perfil == "https://lh3.googleusercontent.com/nueva-foto"
+        assert user.foto_perfil == f"/uploads/profiles/user_{user.id_usuario}/fake_google_photo.jpg"
     finally:
         db.close()
 
@@ -199,6 +216,84 @@ def test_google_sin_foto_no_borra_la_existente(client, fake_google):
         assert user.foto_perfil == "/uploads/profiles/mi_foto.jpg"
     finally:
         db.close()
+
+
+def test_google_articulo_con_foto_autor(client, fake_google):
+    """Verifica que un usuario Google con foto descargada localmente pueda crear
+    un artículo y que foto_perfil_articulo se genere y sea públicamente accesible."""
+    from models.core import Role
+
+    # 1. Login como Google y obtener token
+    claims = _google_claims()
+    fake_google(claims)
+    login = _google_login(client, modo="registro")
+    assert login.status_code == 200
+    token = login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Verificar que foto_perfil es una ruta local
+    me = client.get("/auth/me", headers=headers)
+    assert me.status_code == 200
+    assert me.json()["foto_perfil"].startswith("/uploads/profiles/user_"), \
+        f"Expected local profile path, got: {me.json()['foto_perfil']}"
+
+    # 3. Subir una imagen de perfil REAL (para que copy_to_article_author_photo funcione)
+    upload = client.post(
+        "/imagenes/upload",
+        headers=headers,
+        data={"imagen_tipo": "profile"},
+        files={"file": ("profile.jpg", _valid_jpeg_bytes(), "image/jpeg")},
+    )
+    assert upload.status_code == 200
+    local_profile_path = upload.json()["url"]
+    assert "/uploads/profiles/" in local_profile_path
+
+    # 4. Actualizar foto_perfil con la ruta local
+    client.put("/profile", headers=headers, json={"foto_perfil": local_profile_path})
+
+    # 5. Ascender a admin
+    db = SessionLocal()
+    try:
+        user = db.query(Usuario).filter(Usuario.proveedor_id == claims["sub"]).first()
+        admin_role = db.query(Role).filter(Role.nombre_rol == "admin").first()
+        if not admin_role:
+            admin_role = Role(nombre_rol="admin", descripcion="Admin", nivel_acceso=10)
+            db.add(admin_role)
+            db.commit()
+            db.refresh(admin_role)
+        user.id_rol = admin_role.id_rol
+        db.commit()
+        db.refresh(user)
+    finally:
+        db.close()
+
+    # 6. Crear artículo como admin
+    article = client.post(
+        "/liquenpedia",
+        headers=headers,
+        json={
+            "titulo": "Artículo con foto de autor Google",
+            "contenido": "Contenido del artículo de prueba con foto de Google",
+            "categoria": "Ecología",
+            "autor": "Google User",
+            "estado_publicacion": "published",
+        },
+    )
+    assert article.status_code == 201, article.text
+    foto_articulo = article.json().get("foto_perfil_articulo")
+    assert foto_articulo is not None, "foto_perfil_articulo no fue generada"
+    assert foto_articulo.startswith("/uploads/articles/author_"), \
+        f"Expected /uploads/articles/author_* path, got: {foto_articulo}"
+
+    # 7. Acceder a la imagen públicamente (SIN autenticación)
+    public = client.get(foto_articulo)
+    assert public.status_code == 200, f"Image not publicly accessible: {public.status_code}"
+
+    # 8. serve_private_image debe rechazar rutas públicas de artículos (403)
+    file_subpath = foto_articulo.replace("/uploads/", "")
+    private_attempt = client.get(f"/imagenes/file/{file_subpath}", headers=headers)
+    assert private_attempt.status_code == 403, \
+        "serve_private_image should reject public article paths"
 
 
 def test_segundo_login_mismo_sub_no_duplica_usuario(client, fake_google):

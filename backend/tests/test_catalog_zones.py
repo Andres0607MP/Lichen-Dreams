@@ -208,6 +208,11 @@ def test_zona_con_analisis_calcula_indicadores(client):
     db = SessionLocal()
     try:
         _seed_analysis_for_user(db, email, 4.7111, -74.0710)  # ~ dentro del radio
+        # Sincronizar membresía M2M (el análisis queda asociado a la zona por proximidad)
+        from services.zone_membership import sync_zone_to_analyses
+        zona = db.query(ZonaAmbiental).first()
+        sync_zone_to_analyses(db, zona.id_zona)
+        db.commit()
     finally:
         db.close()
 
@@ -231,6 +236,11 @@ def test_zona_ignora_analisis_fuera_de_radio(client):
     db = SessionLocal()
     try:
         _seed_analysis_for_user(db, email, 4.9000, -74.0700)  # ~20 km de distancia
+        # Sincronizar membresía M2M: el análisis queda fuera del radio → no se asocia
+        from services.zone_membership import sync_zone_to_analyses
+        zona = db.query(ZonaAmbiental).first()
+        sync_zone_to_analyses(db, zona.id_zona)
+        db.commit()
     finally:
         db.close()
 

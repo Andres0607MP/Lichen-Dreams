@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../services/api_service.dart';
 import '../models/map_analysis_point.dart';
+import '../models/environmental_zone_model.dart';
+import 'package:flutter/material.dart';
 
 class MapState extends ChangeNotifier {
   final ApiService _apiService;
@@ -23,6 +25,14 @@ class MapState extends ChangeNotifier {
 
   Set<Circle> _cachedCircles = const {};
   Set<Circle> get circles => _cachedCircles;
+
+  List<EnvironmentalZoneModel> _catalogZones = [];
+  bool _loadingZones = false;
+  String? _zonesError;
+
+  List<EnvironmentalZoneModel> get catalogZones => List.unmodifiable(_catalogZones);
+  bool get loadingZones => _loadingZones;
+  String? get zonesError => _zonesError;
 
   void updateUserId(int? userId) {
     if (_userId == userId) return;
@@ -51,6 +61,29 @@ class MapState extends ChangeNotifier {
       notifyListeners();
     } finally {
       _loading = false;
+    }
+  }
+
+  Future<void> loadZones() async {
+    if (_loadingZones) return;
+    _loadingZones = true;
+    _zonesError = null;
+    notifyListeners();
+    try {
+      debugPrint('MAP STATE: cargando zonas del catálogo...');
+      final jsonList = await _apiService.getCatalogZones();
+      debugPrint('MAP STATE: recibidas ${jsonList.length} zonas del catálogo');
+      _catalogZones = jsonList
+          .map((json) => EnvironmentalZoneModel.fromJson(
+              json as Map<String, dynamic>))
+          .toList();
+      notifyListeners();
+    } catch (e) {
+      _zonesError = e.toString();
+      _catalogZones = [];
+      notifyListeners();
+    } finally {
+      _loadingZones = false;
     }
   }
 
@@ -103,8 +136,11 @@ class MapState extends ChangeNotifier {
   Future<void> reset() {
     _allPoints = [];
     _cachedCircles = const {};
+    _catalogZones = [];
     _error = null;
     _loading = false;
+    _loadingZones = false;
+    _zonesError = null;
     notifyListeners();
     return Future.value();
   }

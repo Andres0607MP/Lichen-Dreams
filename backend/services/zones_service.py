@@ -3,29 +3,19 @@
 Fuente de verdad para calidad y riesgo de una zona: se deriva de los análisis
 reales (resultados de la IA) cuyas ubicaciones caen dentro del radio geográfico
 de la zona. Flutter únicamente presenta estos valores.
-"""
-import math
 
+La membresía se materializa en la tabla `analisis_zonas_ambientales` (M2M),
+poblada por `sync_zone_to_analyses` / `sync_analysis_to_zones` en
+`services.zone_membership`. Este módulo consume esa tabla M2M como fuente de
+verdad, evitando recálculos de Haversine en cada lectura.
+"""
 from sqlalchemy.orm import Session
 
-from models.core import Analisis, Ubicacion, ZonaAmbiental
+from models.core import Analisis, AnalisisZonaAmbiental, ZonaAmbiental
 
-# Valores reales de resultado_ia usados por la IA del proyecto.
 HEALTHY = 'liquen saludable'
 AFFECTED = 'liquen contaminado'
 UNKNOWN = 'liquen desconocido'
-
-
-def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """Distancia en kilómetros entre dos coordenadas (Haversine)."""
-    r = 6371.0
-    dlat = math.radians(lat2 - lat1)
-    dlon = math.radians(lon2 - lon1)
-    a = (
-        math.sin(dlat / 2) ** 2
-        + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2) ** 2
-    )
-    return 2 * r * math.asin(math.sqrt(a))
 
 
 def _calcular_calidad_riesgo(healthy_count: int, affected_count: int):
@@ -50,9 +40,10 @@ def _calcular_calidad_riesgo(healthy_count: int, affected_count: int):
 def calculate_zone_indicators(db: Session, zona: ZonaAmbiental) -> dict:
     """Calcula los indicadores de una zona a partir de los análisis reales.
 
-    La membresía es geográfica (derivada): ningún análisis pertenece a la zona
-    de forma almacenada; se agrupan bajo demanda por distancia al centro.
-    Devuelve también los totales serializados para usar como datos de reporte.
+    La membresía está materializada en la tabla M2M `analisis_zonas_ambientales`,
+    poblada geográficamente por `sync_zone_to_analyses`. Este método consume esa
+    tabla en lugar de recalcular Haversine en cada lectura, manteniendo coherencia
+    con la membresía y evitando scans completos.
     """
     if not zona.latitud or not zona.longitud or not zona.radio_metros:
         return {
@@ -66,36 +57,23 @@ def calculate_zone_indicators(db: Session, zona: ZonaAmbiental) -> dict:
             'porcentaje_saludable': None,
         }
 
-    radius_km = float(zona.radio_metros) / 1000.0
-    center_lat = float(zona.latitud)
-    center_lng = float(zona.longitud)
-
-    analyses = (
-        db.query(Analisis, Ubicacion)
-        .join(Ubicacion, Analisis.id_ubicacion == Ubicacion.id_ubicacion)
-        .filter(
-            Ubicacion.latitud.isnot(None),
-            Ubicacion.longitud.isnot(None),
-            Analisis.estado_validacion != 'error',
+    rows = (
+        db.query(Analisis.resultado_ia)
+        .join(
+            AnalisisZonaAmbiental,
+            AnalisisZonaAmbiental.id_analisis == Analisis.id_analisis,
         )
+        .filter(AnalisisZonaAmbiental.id_zona == zona.id_zona)
         .all()
     )
 
     healthy = affected = unknown = 0
-    for analysis, ubicacion in analyses:
-        dist_km = _haversine_km(
-            center_lat,
-            center_lng,
-            float(ubicacion.latitud),
-            float(ubicacion.longitud),
-        )
-        if dist_km > radius_km:
-            continue
-        if analysis.resultado_ia == HEALTHY:
+    for (resultado,) in rows:
+        if resultado == HEALTHY:
             healthy += 1
-        elif analysis.resultado_ia == AFFECTED:
+        elif resultado == AFFECTED:
             affected += 1
-        elif analysis.resultado_ia == UNKNOWN:
+        elif resultado == UNKNOWN:
             unknown += 1
 
     calidad_aire, nivel_riesgo = _calcular_calidad_riesgo(healthy, affected)

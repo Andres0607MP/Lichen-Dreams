@@ -239,10 +239,17 @@ class ApiService {
   }
 
   /// Descargar imagen: URLs remotas (http/https, p. ej. lh3.googleusercontent.com)
-  /// se obtienen directamente; rutas privadas locales (/uploads/...) usan el
+  /// se obtienen directamente; rutas públicas locales (/uploads/articles/...
+  /// o /uploads/species/...) se descargan directamente (StaticFiles sin auth);
+  /// rutas privadas (/uploads/profiles/..., /uploads/analyses/...) usan el
   /// endpoint autenticado del backend.
   Future<Uint8List> downloadImageBytes(String imagePath) async {
     final normalized = imagePath.trim();
+    if (normalized.isEmpty) {
+      throw ApiException('Path de imagen vacío');
+    }
+
+    // Absolute URL -> download directly.
     if (normalized.startsWith('http://') ||
         normalized.startsWith('https://')) {
       final response = await _client.get(Uri.parse(normalized));
@@ -253,6 +260,19 @@ class ApiService {
       }
       return response.bodyBytes;
     }
+
+    // Public local paths are served by StaticFiles (no auth required).
+    if (!AppConfig.isPrivateImagePath(normalized)) {
+      final fullUrl = AppConfig.getImageUrl(normalized);
+      final response = await _client.get(Uri.parse(fullUrl));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          'Error ${response.statusCode} al descargar imagen: $fullUrl',
+        );
+      }
+      return Uint8List.fromList(response.bodyBytes);
+    }
+
     return downloadPrivateImageBytes(normalized);
   }
 
@@ -946,6 +966,7 @@ class ApiService {
   Future<Map<String, dynamic>> submitAnalysis(
     File imageFile, {
     int? id_ubicacion,
+    int? id_especie,
     String imageSource = 'camera',
   }) async {
     final uri = AppConfig.buildUri('/analysis/process');
@@ -960,6 +981,9 @@ class ApiService {
     );
     if (id_ubicacion != null) {
       request.fields['id_ubicacion'] = id_ubicacion.toString();
+    }
+    if (id_especie != null) {
+      request.fields['id_especie'] = id_especie.toString();
     }
     request.fields['image_source'] = imageSource;
 
@@ -1489,6 +1513,21 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
         _parseResponseMessage(response, 'Error ${response.statusCode} al eliminar especie'),
       );
     }
+  }
+
+  // ==================== ZONAS AMBIENTALES (Catálogo público) ====================
+
+  Future<List<dynamic>> getCatalogZones() async {
+    final response = await _client.get(
+      AppConfig.buildUri('/catalog/zones'),
+      headers: await _headers(authorized: true),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener zonas del catálogo'),
+      );
+    }
+    return jsonDecode(response.body) as List<dynamic>;
   }
 
   // ==================== ZONAS AMBIENTALES (Admin) ====================

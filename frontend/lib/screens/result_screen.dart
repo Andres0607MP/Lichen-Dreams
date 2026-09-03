@@ -39,13 +39,6 @@ class _ResultScreenState extends State<ResultScreen> {
   String? _speciesCommonName;
   String? _speciesScientificName;
   String? _speciesImageRef;
-  bool _savingSpecies = false;
-
-  int get _analysisId {
-    final rawId = widget.analysis.raw['id_analisis'];
-    if (rawId is int) return rawId;
-    return widget.analysis.id ?? 0;
-  }
 
   void _initSpeciesFromRecord() {
     final raw = widget.analysis.raw;
@@ -264,9 +257,9 @@ class _ResultScreenState extends State<ResultScreen> {
   }
 
   Widget _buildSpeciesSection() {
-    if (!_canBeSaved) return const SizedBox.shrink();
-    final colorScheme = Theme.of(context).colorScheme;
     final hasSpecies = _speciesId != null;
+    if (!hasSpecies) return const SizedBox.shrink();
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       elevation: 0,
@@ -298,7 +291,7 @@ class _ResultScreenState extends State<ResultScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Identifica la especie',
+                    'Especie registrada',
                     style: GoogleFonts.poppins(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -308,231 +301,42 @@ class _ResultScreenState extends State<ResultScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Text(
-              'La IA solo evalúa el estado ambiental del líquen. '
-              'Si tú reconoces la especie, puedes asociarla al análisis.',
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                color: colorScheme.onSurfaceVariant,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 14),
-            if (_savingSpecies)
-              const LinearProgressIndicator(color: AppTheme.primaryGreen)
-            else if (hasSpecies)
-              _buildSelectedSpeciesChip(colorScheme)
-            else
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  FilledButton.icon(
-                    onPressed: _openSpeciesPicker,
-                    icon: const Icon(Icons.category_rounded, size: 18),
-                    label: const Text('Seleccionar especie'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppTheme.primaryGreen,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      textStyle: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  TextButton(
-                    onPressed: () => _saveSpecies(null),
-                    child: Text(
-                      'Omitir',
-                      style: GoogleFonts.poppins(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-  Widget _buildSelectedSpeciesChip(ColorScheme colorScheme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppTheme.primaryGreen.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AppTheme.primaryGreen.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          _SpeciesThumb(imageRef: _speciesImageRef, size: 44),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(height: 12),
+            Row(
               children: [
-                Text(
-                  _speciesCommonName ?? 'Especie registrada',
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (_speciesScientificName != null)
-                  Text(
-                    _speciesScientificName!,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                      color: AppTheme.primaryGreen,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                Text(
-                  'Seleccionada por ti',
-                  style: GoogleFonts.poppins(
-                    fontSize: 11,
-                    color: colorScheme.onSurfaceVariant,
+                _SpeciesThumb(imageRef: _speciesImageRef, size: 44),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _speciesCommonName ?? 'Especie registrada',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.onSurface,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (_speciesScientificName != null)
+                        Text(
+                          _speciesScientificName!,
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            color: AppTheme.primaryGreen,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          Flexible(
-            fit: FlexFit.loose,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextButton(
-                  onPressed: () => _openSpeciesPicker(),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Cambiar',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: AppTheme.primaryGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => _saveSpecies(null),
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    size: 20,
-                    color: AppTheme.errorColor,
-                  ),
-                  tooltip: 'Quitar especie',
-                  constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-                  padding: const EdgeInsets.all(4),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _saveSpecies(
-    int? idEspecie, {
-    String? sciName,
-    String? common,
-    String? imageRef,
-  }) async {
-    if (_savingSpecies) return;
-    final analysisId = _analysisId;
-    if (analysisId == 0) return;
-    setState(() => _savingSpecies = true);
-    try {
-      final result = await context
-          .read<AnalysisState>()
-          .saveAnalysisSpecies(analysisId, idEspecie);
-      if (mounted) {
-        setState(() {
-          _speciesId = result['id_especie'] as int?;
-          _speciesScientificName = result['nombre_cientifico']?.toString();
-          _speciesCommonName = result['nombre_comun']?.toString();
-          _speciesImageRef = idEspecie == null ? null : imageRef;
-          _savingSpecies = false;
-        });
-        AppNotification.show(
-          context,
-          message: idEspecie == null
-              ? 'Especie omitida'
-              : 'Especie seleccionada correctamente',
-          isError: idEspecie == null,
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _savingSpecies = false);
-        AppNotification.show(
-          context,
-          message: 'No se pudo guardar la especie',
-          isError: true,
-        );
-      }
-    }
-  }
-
-  Future<void> _openSpeciesPicker() async {
-    final analysisState = context.read<AnalysisState>();
-    if (analysisState.availableSpecies.isEmpty &&
-        !analysisState.speciesLoading) {
-      await analysisState.loadSpecies();
-    }
-    if (!mounted) return;
-
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-          ),
-          child: DraggableScrollableSheet(
-            expand: false,
-            initialChildSize: 0.75,
-            maxChildSize: 0.95,
-            minChildSize: 0.4,
-            builder: (context, scrollController) =>
-                _SpeciesPickerSheet(
-                  analysisState: analysisState,
-                  scrollController: scrollController,
-                  onSelect: (id, sciname, common, imageRef) {
-                    Navigator.pop(context);
-                    if (id != _speciesId) {
-                      _saveSpecies(id,
-                          sciName: sciname, common: common, imageRef: imageRef);
-                    }
-                  },
-                ),
-          ),
+          ],
         ),
       ),
     );
@@ -1198,227 +1002,6 @@ class _SpeciesThumb extends StatelessWidget {
               color: AppTheme.primaryGreen,
               size: 22,
             ),
-    );
-  }
-}
-
-class _SpeciesPickerSheet extends StatefulWidget {
-  final AnalysisState analysisState;
-  final ScrollController scrollController;
-  final void Function(int id, String? sciname, String? common, String? imageRef)
-      onSelect;
-
-  const _SpeciesPickerSheet({
-    required this.analysisState,
-    required this.scrollController,
-    required this.onSelect,
-  });
-
-  @override
-  State<_SpeciesPickerSheet> createState() => _SpeciesPickerSheetState();
-}
-
-class _SpeciesPickerSheetState extends State<_SpeciesPickerSheet> {
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(20),
-          topRight: Radius.circular(20),
-        ),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Selecciona la especie',
-                  style: GoogleFonts.poppins(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded),
-                onPressed: () => Navigator.pop(context),
-                tooltip: 'Cerrar',
-              ),
-            ],
-          ),
-          Text(
-            'Catálogo de líquenes de Lichen Dreams',
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            onChanged: (v) => setState(() => _query = v.trim().toLowerCase()),
-            decoration: InputDecoration(
-              hintText: 'Buscar especie…',
-              prefixIcon: const Icon(Icons.search_rounded),
-              isDense: true,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: colorScheme.outline),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Expanded(
-            child: ListenableBuilder(
-              listenable: widget.analysisState,
-              builder: (context, _) {
-                if (widget.analysisState.speciesLoading) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      color: AppTheme.primaryGreen,
-                    ),
-                  );
-                }
-                final all = widget.analysisState.availableSpecies;
-                final filtered = _query.isEmpty
-                    ? all
-                    : all
-                        .where((s) =>
-                            (s['nombre_comun']?.toString().toLowerCase() ?? '')
-                                .contains(_query) ||
-                            (s['nombre_cientifico']
-                                    ?.toString()
-                                    .toLowerCase() ??
-                                '')
-                                .contains(_query))
-                        .toList();
-                if (filtered.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.search_off_rounded,
-                          size: 40,
-                          color: Colors.grey,
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'No se encontraron especies',
-                          style: GoogleFonts.poppins(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  controller: widget.scrollController,
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    final species = filtered[index];
-                    final id = species['id_especie'];
-                    return _SpeciesRow(
-                      species: species,
-                      onTap: () => widget.onSelect(
-                        id is int ? id : int.parse(id.toString()),
-                        species['nombre_cientifico']?.toString(),
-                        species['nombre_comun']?.toString(),
-                        species['imagen_referencia']?.toString(),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SpeciesRow extends StatelessWidget {
-  final Map<String, dynamic> species;
-  final VoidCallback onTap;
-
-  const _SpeciesRow({required this.species, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      elevation: 0,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: colorScheme.outlineVariant, width: 1),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Row(
-            children: [
-              _SpeciesThumb(imageRef: species['imagen_referencia']?.toString()),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      species['nombre_comun']?.toString() ?? 'Especie',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      species['nombre_cientifico']?.toString() ?? '',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontStyle: FontStyle.italic,
-                        color: AppTheme.primaryGreen,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    if ((species['habitat']?.toString() ?? '').isNotEmpty)
-                      Text(
-                        species['habitat'].toString(),
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                  ],
-                ),
-              ),
-              const Icon(
-                Icons.add_circle_outline_rounded,
-                color: AppTheme.primaryGreen,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

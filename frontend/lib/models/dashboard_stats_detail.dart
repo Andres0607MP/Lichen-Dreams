@@ -30,6 +30,8 @@ class DashboardStatsDetail {
   final List<DailyAnalysisStat> dailyActivity;
   final EnvironmentalDistribution environmentalDistribution;
   final int zoneCount;
+  final int ubicacionesCount;
+  final int zonasAmbientalesCount;
   final double? averageHumidity;
   final double? averageConfidence;
   final DateTime? lastAnalysisDate;
@@ -39,6 +41,8 @@ class DashboardStatsDetail {
     required this.dailyActivity,
     required this.environmentalDistribution,
     required this.zoneCount,
+    this.ubicacionesCount = 0,
+    this.zonasAmbientalesCount = 0,
     this.averageHumidity,
     this.averageConfidence,
     this.lastAnalysisDate,
@@ -65,7 +69,9 @@ class DashboardStatsDetail {
     return DashboardStatsDetail(
       dailyActivity: dailyActivity,
       environmentalDistribution: environmentalDistribution,
-      zoneCount: stats?.zoneCount ?? 0,
+      zoneCount: stats?.ubicacionesCount ?? 0,
+      ubicacionesCount: stats?.ubicacionesCount ?? 0,
+      zonasAmbientalesCount: stats?.zonasAmbientalesCount ?? 0,
       averageHumidity: averageHumidity,
       averageConfidence: averageConfidence,
       lastAnalysisDate: lastAnalysisDate,

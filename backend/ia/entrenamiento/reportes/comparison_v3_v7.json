@@ -1,0 +1,23 @@
+{
+  "v3": {
+    "accuracy": 0.4517133956386293,
+    "f1_macro": 0.24064131245339296,
+    "balanced_accuracy": null,
+    "recall_saludable": 0.0,
+    "recall_contaminado": 0.08450704225352113,
+    "recall_desconocido": 0.7942857142857143
+  },
+  "v7": {
+    "accuracy": 0.25597269624573377,
+    "f1_macro": 0.1358695652173913,
+    "balanced_accuracy": 0.3333333333333333,
+    "recall_saludable": 1.0,
+    "recall_contaminado": 0.0,
+    "recall_desconocido": 0.0
+  },
+  "mejora_v7_sobre_v3": {
+    "f1_macro": -0.10477174723600166,
+    "balanced_accuracy": null
+  },
+  "decision": "V7 candidato solo si f1_macro y balanced accuracy superan claramente a V3; no se activa automaticamente."
+}

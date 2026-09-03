@@ -7,13 +7,15 @@ from sqlalchemy import func, exists, and_, or_
 
 from auth.auth_service import get_current_user
 from config.db import get_db
-from models.core import Analisis, Usuario, Imagen, HistorialActividad
+from models.core import Analisis, Usuario, Imagen, HistorialActividad, ZonaAmbiental
 
 router = APIRouter()
 
 
 class DashboardStatsResponse(BaseModel):
     analysis_count: int
+    ubicaciones_count: int
+    zonas_ambientales_count: int
     zone_count: int
     air_quality: str
     healthy_count: int = 0
@@ -33,10 +35,15 @@ def get_dashboard_stats(
     analysis_count = db.query(HistorialActividad).filter(
         HistorialActividad.id_usuario == current_user.id_usuario
     ).count()
-    zone_count = db.query(Analisis.id_ubicacion).filter(
+    # Contador de ubicaciones (puntos GPS únicos) visitados por el usuario.
+    # Se renombra semanticamente: esto NO son Zonas Ambientales.
+    ubicaciones_count = db.query(Analisis.id_ubicacion).filter(
         Analisis.id_usuario == current_user.id_usuario,
         Analisis.id_ubicacion != None,
     ).distinct().count()
+
+    # Contador real de Zonas Ambientales del catálogo.
+    zonas_ambientales_count = db.query(ZonaAmbiental).count()
 
     eligible_analyses = (
         db.query(Analisis)
@@ -70,7 +77,9 @@ def get_dashboard_stats(
 
     return {
         'analysis_count': analysis_count,
-        'zone_count': zone_count,
+        'ubicaciones_count': ubicaciones_count,
+        'zonas_ambientales_count': zonas_ambientales_count,
+        'zone_count': zonas_ambientales_count,
         'air_quality': air_quality,
         'healthy_count': healthy_count,
         'affected_count': affected_count,

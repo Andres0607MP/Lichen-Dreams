@@ -351,14 +351,25 @@ class _MetricsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metrics = <Widget>[];
-    if (detail.zoneCount > 0) {
+    if (detail.ubicacionesCount > 0) {
       metrics.add(
         _MetricItem(
           icon: Icons.location_on_rounded,
-          label: 'Zonas',
-          value: '${detail.zoneCount}',
+          label: 'Ubicaciones',
+          value: '${detail.ubicacionesCount}',
           subtitle: 'exploradas',
           color: AppTheme.mapaPrimary,
+        ),
+      );
+    }
+    if (detail.zonasAmbientalesCount > 0) {
+      metrics.add(
+        _MetricItem(
+          icon: Icons.circle_rounded,
+          label: 'Zonas Ambientales',
+          value: '${detail.zonasAmbientalesCount}',
+          subtitle: 'registradas',
+          color: AppTheme.especiesPrimary,
         ),
       );
     }

@@ -14,7 +14,7 @@ import uuid
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 
 from fastapi.testclient import TestClient
-from config.database import engine
+from config.db import engine
 from models.base import Base
 from models.core import Role
 from config.db import SessionLocal
@@ -42,7 +42,7 @@ def _register_and_login(email_prefix: str) -> tuple[str, dict]:
     })
     assert reg.status_code == 201, f"Registration failed: {reg.text}"
 
-    login = client.post("/auth/login", json={"email": email, "password": password})
+    login = client.post("/auth/login", data={"username": email, "password": password})
     assert login.status_code == 200, f"Login failed: {login.text}"
 
     token = login.json().get("access_token")
@@ -122,7 +122,7 @@ def test_admin_cannot_access_other_users_private_image():
         finally:
             db.close()
 
-        admin_login = client.post("/auth/login", json={"email": "admin@gmail.com", "password": "admin123"})
+    admin_login = client.post("/auth/login", data={"username": "admin@gmail.com", "password": "admin123"})
     assert admin_login.status_code == 200, f"Admin login failed: {admin_login.text}"
     admin_token = admin_login.json().get("access_token")
     admin_headers = {"Authorization": f"Bearer {admin_token}"}

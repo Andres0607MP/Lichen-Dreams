@@ -8,9 +8,11 @@ Centraliza la logica de:
 """
 import os
 import uuid
+import shutil
 from pathlib import Path
 from typing import Optional, Tuple
 
+import requests
 from fastapi import UploadFile, HTTPException, status
 from config.settings import (
     UPLOADS_BASE_DIR,
@@ -191,7 +193,61 @@ def copy_to_article_author_photo(source_relative_path: str, user_id: int) -> str
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest_path = dest_dir / unique_name
 
-    import shutil
     shutil.copy2(source_path, dest_path)
 
     return f"/uploads/articles/{unique_name}"
+
+
+def download_and_save_profile_image(image_url: str, user_id: int) -> Optional[str]:
+    """Descarga una imagen externa (p. ej. foto de Google) y la guarda localmente
+    como foto de perfil del usuario.
+
+    Esto garantiza que ``foto_perfil`` siempre sea una ruta local accesible
+    por el sistema de uploads, lo que permite a ``copy_to_article_author_photo``
+    funcionar correctamente y evita depender de URLs externas que pueden expirar.
+
+    - Si la descarga falla, devuelve ``None`` (no lanza).
+    - Preserva la extensión original (.jpg, .png, .webp, etc.).
+    - Si la extensión no se puede determinar, asume .jpg.
+    """
+    if not image_url or not image_url.strip().startswith(("http://", "https://")):
+        return None
+
+    try:
+        response = requests.get(image_url, timeout=15)
+        response.raise_for_status()
+        content = response.content
+        if not content:
+            return None
+    except Exception:
+        return None
+
+    # Determinar extensión desde la URL o el content-type
+    ext = None
+    lower_url = image_url.lower()
+    for allowed_ext in ALLOWED_IMAGE_EXTENSIONS:
+        if lower_url.endswith(allowed_ext):
+            ext = allowed_ext
+            break
+    if ext is None:
+        try:
+            response2 = requests.head(image_url, timeout=10, allow_redirects=True)
+            content_type = (response2.headers.get("Content-Type") or "").lower()
+            for mime, allowed_ext in zip(ALLOWED_MIME_TYPES, ALLOWED_IMAGE_EXTENSIONS):
+                if content_type == mime:
+                    ext = allowed_ext
+                    break
+        except Exception:
+            pass
+    if ext is None:
+        ext = ".jpg"
+
+    try:
+        return save_file(
+            content=content,
+            extension=ext,
+            image_type=IMAGE_TYPE_PROFILE,
+            user_id=user_id,
+        )
+    except Exception:
+        return None

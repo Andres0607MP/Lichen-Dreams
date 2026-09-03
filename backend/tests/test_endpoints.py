@@ -3,6 +3,9 @@
 import os
 from io import BytesIO
 
+# Use a local sqlite DB for tests — must be set BEFORE importing app modules
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -37,20 +40,23 @@ def override_get_db():
 
 @pytest.fixture(scope="function")
 def db():
-    Base.metadata.drop_all(bind=engine)
+    # Aislamiento limpio: el esquema lo crea el bootstrap del conftest y este
+    # fixture solo asegura filas mínimas (modelo/dataset) de forma idempotente.
+    # NO se hace drop_all sobre el motor compartido (destruiría tablas que otros
+    # módulos de tests necesitan).
     Base.metadata.create_all(bind=engine)
 
-    model = ModeloIA(id_modelo=1, nombre_modelo="modelo_test", version="1.0")
-    dataset = Dataset(id_dataset=1, nombre_dataset="dataset_test", tipo_datos="imagenes")
     db_session = TestingSessionLocal()
-    db_session.add(model)
-    db_session.add(dataset)
-    db_session.commit()
-    db_session.close()
+    try:
+        if not db_session.query(ModeloIA).filter(ModeloIA.id_modelo == 1).first():
+            db_session.add(ModeloIA(id_modelo=1, nombre_modelo="modelo_test", version="1.0"))
+        if not db_session.query(Dataset).filter(Dataset.id_dataset == 1).first():
+            db_session.add(Dataset(id_dataset=1, nombre_dataset="dataset_test", tipo_datos="imagenes"))
+        db_session.commit()
+    finally:
+        db_session.close()
 
     yield TestingSessionLocal()
-
-    Base.metadata.drop_all(bind=engine)
 
 
 @pytest.fixture(scope="function")
@@ -263,12 +269,14 @@ def test_eliminar_analisis_propio(client, test_regular_user):
 
 
 def test_eliminar_analisis_de_otro_usuario_es_forbidden(client, db, test_regular_user):
+    # Usuario NO propietario con rol real 'user' (evaluar 403, no 204 admin).
+    user_role = db.query(Role).filter(Role.nombre_rol == "user").first()
     other_user = Usuario(
         nombre="Otro",
         apellido="User",
         correo="other@example.com",
         contrasena=hash_password("Other123!"),
-        id_rol=1,
+        id_rol=user_role.id_rol if user_role else 2,
         estado_cuenta="active",
     )
     db.add(other_user)
@@ -295,6 +303,8 @@ def test_dashboard_stats(client, test_regular_user):
     payload = response.json()
     assert "analysis_count" in payload
     assert "zone_count" in payload
+    assert "ubicaciones_count" in payload
+    assert "zonas_ambientales_count" in payload
 
 
 def test_crear_articulo_liquenpedia_admin(client, db, test_admin_user):
@@ -304,7 +314,7 @@ def test_crear_articulo_liquenpedia_admin(client, db, test_admin_user):
         headers=headers,
         json={
             "titulo": "Artículo de prueba",
-            "contenido": "Contenido de prueba",
+            "contenido": "Contenido de prueba para el artículo",
             "categoria": "Ecología",
             "autor": "Admin",
             "estado_publicacion": "published",
@@ -312,6 +322,64 @@ def test_crear_articulo_liquenpedia_admin(client, db, test_admin_user):
     )
     assert response.status_code == 201
     assert response.json()["titulo"] == "Artículo de prueba"
+
+
+def test_crear_articulo_con_foto_perfil_autor_publica(client, db, test_admin_user):
+    """Verifica que la foto histórica del autor se copie a /uploads/articles/
+    y que la imagen sea accesible públicamente sin autenticación."""
+    headers = _login_headers(client, "adminqa@example.com", "Admin123!")
+
+    # 1. Subir foto de perfil (privada)
+    upload_resp = client.post(
+        "/imagenes/upload",
+        headers=headers,
+        data={"imagen_tipo": "profile"},
+        files={"file": ("profile.jpg", _valid_jpeg_bytes(), "image/jpeg")},
+    )
+    assert upload_resp.status_code == 200, upload_resp.text
+    profile_image_url = upload_resp.json()["url"]
+    assert "/uploads/profiles/user_" in profile_image_url
+
+    # 2. Asignar foto_perfil al usuario admin
+    profile_resp = client.put(
+        "/profile",
+        headers=headers,
+        json={"foto_perfil": profile_image_url},
+    )
+    assert profile_resp.status_code == 200
+    assert profile_resp.json()["foto_perfil"] == profile_image_url
+
+    # 3. Crear artículo (debe copiar foto_perfil_articulo)
+    article_resp = client.post(
+        "/liquenpedia",
+        headers=headers,
+        json={
+            "titulo": "Artículo con foto",
+            "contenido": "Contenido del artículo con foto de autor",
+            "categoria": "Ecología",
+            "autor": "Admin Test",
+            "estado_publicacion": "published",
+        },
+    )
+    assert article_resp.status_code == 201, article_resp.text
+    foto_articulo = article_resp.json().get("foto_perfil_articulo")
+    assert foto_articulo is not None, "foto_perfil_articulo no fue copiada"
+    assert foto_articulo.startswith("/uploads/articles/author_"), \
+        f"Expected /uploads/articles/author_* path, got: {foto_articulo}"
+
+    # 4. Verificar que GET /liquenpedia devuelve photo_perfil_articulo
+    list_resp = client.get("/liquenpedia", headers=headers)
+    assert list_resp.status_code == 200
+    articles = list_resp.json()
+    found = [a for a in articles if a["foto_perfil_articulo"] == foto_articulo]
+    assert len(found) == 1, "foto_perfil_articulo no encontrado en GET /liquenpedia"
+
+    # 5. Acceder a la imagen públicamente (SIN autenticación)
+    public_resp = client.get(foto_articulo)
+    assert public_resp.status_code == 200, \
+        f"Imagen pública no accesible sin auth: {public_resp.status_code}"
+    assert public_resp.content == _valid_jpeg_bytes(), \
+        "El contenido de la imagen pública no coincide con la original"
 
 
 def test_listar_articulos_publicos(client, db):

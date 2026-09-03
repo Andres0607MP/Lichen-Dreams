@@ -6,7 +6,6 @@ import numpy as np
 
 MODEL_FILENAME = "lichen_model.keras"
 MODEL_DIR = Path(__file__).resolve().parent
-MODEL_PATH = MODEL_DIR / MODEL_FILENAME
 INPUT_SIZE = (224, 224)
 NUM_CLASSES = 3
 CLASS_NAMES = [
@@ -14,6 +13,28 @@ CLASS_NAMES = [
     "liquen contaminado",
     "liquen desconocido",
 ]
+
+
+def _resolve_model_path():
+    """Modelo activo: resolución ESTRICTA vía BD (sin fallback silencioso).
+
+    Politica de producción:
+    - El .keras usado en inferencia DEBE ser el del modelo registrado como
+      'activo' en la tabla modelos_ia (via sus observaciones JSON -> 'archivo').
+    - Si la BD no está disponible o no hay registro válido, NO se elige
+      silenciosamente el último .keras del directorio: se lanza ActiveModelError.
+    """
+    from ia.resolver_modelo_activo import resolver_modelo_activo, ActiveModelError
+    return resolver_modelo_activo()
+
+
+try:
+    MODEL_PATH = _resolve_model_path()
+except Exception as e:
+    # No matar el arranque del servidor por falta de registro; el error real
+    # se produce en _load_model()/predict() (fallo explícito).
+    print(f"[lichen_classifier] aviso: no se pudo resolver el activo en import: {e}")
+    MODEL_PATH = None
 
 CONTAMINATION_MAP = {
     "liquen saludable": "baja",
@@ -28,20 +49,28 @@ AIR_QUALITY_MAP = {
 }
 
 _model = None
+_model_path = None
 
 
 def _load_model():
-    global _model
-    if _model is not None:
+    """Carga el modelo ACTIVO resuelto en cada llamada (sin cache estatico obsoleto).
+
+    La ruta se re-resuelve por BD; si cambió (p. ej. otra version activada), se
+    recarga. Si no se puede resolver, ActiveModelError (fallo explicito).
+    """
+    global _model, _model_path
+    current = _resolve_model_path()
+    if _model is not None and _model_path == current:
         return _model
-    if not MODEL_PATH.exists():
+    if not current.exists():
         raise FileNotFoundError(
-            f"Modelo IA no encontrado en {MODEL_PATH}. "
-            "Ejecuta train_model.py primero."
+            f"Modelo activo no encontrado en {current}. "
+            "Verifica el registro del modelo activo en BD."
         )
     import tensorflow as tf
 
-    _model = tf.keras.models.load_model(str(MODEL_PATH))
+    _model = tf.keras.models.load_model(str(current), compile=False)
+    _model_path = current
     return _model
 
 
@@ -80,7 +109,7 @@ def predict(image_path: str) -> dict:
     nivel_contaminacion = CONTAMINATION_MAP[categoria]
     calidad_aire = AIR_QUALITY_MAP[categoria]
 
-    print(f"[PREDICT] model_path={MODEL_PATH}")
+    print(f"[PREDICT] model_path={_model_path or MODEL_PATH}")
     print(f"[PREDICT] image_path={image_path}")
     print(f"[PREDICT] class_index={class_index} categoria={categoria} confidence={confidence}")
     print(f"[PREDICT] predictions={predictions[0].tolist()}")

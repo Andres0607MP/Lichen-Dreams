@@ -1,0 +1,33 @@
+{
+  "liquen saludable": {
+    "precision": 0.25597269624573377,
+    "recall": 1.0,
+    "f1-score": 0.4076086956521739,
+    "support": 75.0
+  },
+  "liquen contaminado": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 49.0
+  },
+  "desconocido": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 169.0
+  },
+  "accuracy": 0.25597269624573377,
+  "macro avg": {
+    "precision": 0.08532423208191126,
+    "recall": 0.3333333333333333,
+    "f1-score": 0.1358695652173913,
+    "support": 293.0
+  },
+  "weighted avg": {
+    "precision": 0.06552202122331069,
+    "recall": 0.25597269624573377,
+    "f1-score": 0.10433669683929367,
+    "support": 293.0
+  }
+}

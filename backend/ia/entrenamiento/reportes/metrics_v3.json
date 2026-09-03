@@ -1,0 +1,74 @@
+{
+  "accuracy": 0.4517133956386293,
+  "precision_macro": 0.2111594637855142,
+  "recall_macro": 0.2929309188464118,
+  "f1_macro": 0.24064131245339296,
+  "confianza_promedio": 68.3078408241272,
+  "confusion_matrix": [
+    [
+      0,
+      7,
+      68
+    ],
+    [
+      0,
+      6,
+      65
+    ],
+    [
+      0,
+      36,
+      139
+    ]
+  ],
+  "classification_report": "                    precision    recall  f1-score   support\n\n  liquen saludable     0.0000    0.0000    0.0000        75\nliquen contaminado     0.1224    0.0845    0.1000        71\n       desconocido     0.5110    0.7943    0.6219       175\n\n          accuracy                         0.4517       321\n         macro avg     0.2112    0.2929    0.2406       321\n      weighted avg     0.3057    0.4517    0.3612       321\n",
+  "per_class": {
+    "liquen saludable": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 75.0
+    },
+    "liquen contaminado": {
+      "precision": 0.12244897959183673,
+      "recall": 0.08450704225352113,
+      "f1-score": 0.1,
+      "support": 71.0
+    },
+    "desconocido": {
+      "precision": 0.5110294117647058,
+      "recall": 0.7942857142857143,
+      "f1-score": 0.6219239373601789,
+      "support": 175.0
+    },
+    "accuracy": 0.4517133956386293,
+    "macro avg": {
+      "precision": 0.2111594637855142,
+      "recall": 0.2929309188464118,
+      "f1-score": 0.24064131245339296,
+      "support": 321.0
+    },
+    "weighted avg": {
+      "precision": 0.3056823196568347,
+      "recall": 0.4517133956386293,
+      "f1-score": 0.361173486099786,
+      "support": 321.0
+    }
+  },
+  "per_class_counts": {
+    "saludable": 500,
+    "contaminado": 500,
+    "desconocido": 1159,
+    "total": 2159
+  },
+  "split": {
+    "train": 1524,
+    "val": 314,
+    "test": 321
+  },
+  "class_mapping": {
+    "0": "liquen saludable",
+    "1": "liquen contaminado",
+    "2": "desconocido"
+  }
+}

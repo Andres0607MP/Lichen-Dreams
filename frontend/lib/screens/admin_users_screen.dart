@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import '../config/app_config.dart';
 import '../services/api_service.dart';
 import '../state/users_state.dart';
 import '../state/auth_state.dart';
@@ -1160,9 +1161,9 @@ class _Avatar extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: photo != null && photo!.isNotEmpty
-            ? Image.network(
-                photo!,
-                fit: BoxFit.cover,
+             ? Image.network(
+                 AppConfig.getImageUrl(photo!),
+                 fit: BoxFit.cover,
                 errorBuilder: (_, _, _) => _buildInitialsFallback(initials),
               )
             : _buildInitialsFallback(initials),

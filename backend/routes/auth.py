@@ -18,6 +18,7 @@ from auth.jwt_handler import create_access_token, create_refresh_token, decode_t
 from auth.auth_service import authenticate_user, get_current_user
 from models.validations import PasswordResetRequest, PasswordResetConfirm, PasswordResetResponse, EmailVerificationRequest, EmailVerificationConfirm, RegisterResponse, RecoverWithCodeRequest, RegenerateRecoveryCodeResponse
 from services.email_service import email_service
+from services.upload_service import download_and_save_profile_image
 
 router = APIRouter()
 
@@ -289,8 +290,8 @@ def google_login(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Esta cuenta de Google ya está registrada. Inicia sesión para continuar."
             )
-        # Desde Login: refrescar la foto de Google (sin sobrescribir una foto
-        # personalizada local).
+        # Desde Login: sincronizar la foto de Google descargándola localmente
+        # (sin sobrescribir una foto personalizada local).
         google_picture = info.get("picture")
         if google_picture:
             current_foto = user.foto_perfil or ""
@@ -299,9 +300,12 @@ def google_login(
                 or current_foto.startswith("https://")
             )
             if not current_foto or is_google_photo:
-                user.foto_perfil = google_picture
-                db.commit()
-                db.refresh(user)
+                local_path = download_and_save_profile_image(
+                    google_picture, user.id_usuario)
+                if local_path:
+                    user.foto_perfil = local_path
+                    db.commit()
+                    db.refresh(user)
     elif body.modo == "login":
         # Login con Google NO registrado: rechazar sin crear cuenta ni sesión.
         raise HTTPException(
@@ -339,7 +343,7 @@ def google_login(
             apellido=info.get("family_name"),
             correo=email,
             contrasena=None,
-            foto_perfil=info.get("picture"),
+            foto_perfil=None,
             estado_cuenta="active",
             id_rol=user_role.id_rol,
             proveedor="google",
@@ -348,6 +352,16 @@ def google_login(
         db.add(user)
         db.commit()
         db.refresh(user)
+
+        # Descargar la foto de Google y guardarla localmente como foto de perfil.
+        google_picture = info.get("picture")
+        if google_picture:
+            local_path = download_and_save_profile_image(
+                google_picture, user.id_usuario)
+            if local_path:
+                user.foto_perfil = local_path
+                db.commit()
+                db.refresh(user)
 
     if user.estado_cuenta != "active":
         raise HTTPException(

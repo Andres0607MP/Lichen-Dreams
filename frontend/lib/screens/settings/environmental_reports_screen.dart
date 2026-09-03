@@ -618,14 +618,23 @@ class _RecentReportCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Expanded(
-                      child: _ModernStatChip(
-                        icon: Icons.place_rounded,
-                        label: 'Zonas',
-                        value: '${stats['zonas_analizadas'] ?? 0}',
-                        colorScheme: colorScheme,
+                      Expanded(
+                        child: _ModernStatChip(
+                          icon: Icons.place_rounded,
+                          label: 'Ubicaciones',
+                          value: '${stats['ubicaciones_analizadas'] ?? 0}',
+                          colorScheme: colorScheme,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _ModernStatChip(
+                          icon: Icons.circle_rounded,
+                          label: 'Zonas',
+                          value: '${stats['zonas_ambientales_count'] ?? 0}',
+                          colorScheme: colorScheme,
+                        ),
+                      ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: _ModernStatChip(
@@ -857,7 +866,7 @@ class _PreviousReportCard extends StatelessWidget {
                         children: [
                           _CompactMetric(value: '${stats['total_analisis'] ?? 0}', label: 'análisis'),
                           const SizedBox(width: 10),
-                          _CompactMetric(value: '${stats['zonas_analizadas'] ?? 0}', label: 'zonas'),
+                          _CompactMetric(value: '${stats['zonas_ambientales_count'] ?? 0}', label: 'zonas'),
                           const SizedBox(width: 10),
                           Text(
                             _formatDate(fecha),

@@ -8,7 +8,7 @@ from sqlalchemy import func
 
 from auth.auth_service import get_current_user
 from config.db import get_db
-from models.core import Usuario, Analisis, EspecieLiquen, Imagen, HistorialActividad, Reporte
+from models.core import Usuario, Analisis, EspecieLiquen, Imagen, HistorialActividad, Reporte, ZonaAmbiental
 
 router = APIRouter()
 
@@ -37,7 +37,9 @@ class EnvironmentalReportCreate(BaseModel):
 
 class EnvironmentalReportStats(BaseModel):
     total_analisis: int
+    ubicaciones_analizadas: int
     zonas_analizadas: int
+    zonas_ambientales_count: int
     liquidos_saludables: int
     liquidos_afectados: int
     liquidos_desconocidos: int
@@ -68,10 +70,15 @@ def _calculate_environmental_stats(user_id: int, db: Session) -> dict:
         if any(img.tipo_captura != 'gallery' for img in a.imagenes)
     ]
 
-    zone_count = db.query(Analisis.id_ubicacion).filter(
+    # Contador de ubicaciones (puntos GPS únicos) visitados.
+    # Renombrado semánticamente: esto NO son Zonas Ambientales.
+    ubicaciones_analizadas = db.query(Analisis.id_ubicacion).filter(
         Analisis.id_usuario == user_id,
         Analisis.id_ubicacion != None,
     ).distinct().count()
+
+    # Contador real de Zonas Ambientales del catálogo.
+    zonas_ambientales = db.query(ZonaAmbiental).count()
 
     healthy_count = sum(1 for a in eligible_analyses if a.resultado_ia == 'liquen saludable')
     affected_count = sum(1 for a in eligible_analyses if a.resultado_ia == 'liquen contaminado')
@@ -124,7 +131,9 @@ def _calculate_environmental_stats(user_id: int, db: Session) -> dict:
 
     return {
         'total_analisis': analysis_count,
-        'zonas_analizadas': zone_count,
+        'ubicaciones_analizadas': ubicaciones_analizadas,
+        'zonas_analizadas': zonas_ambientales,
+        'zonas_ambientales_count': zonas_ambientales,
         'liquidos_saludables': healthy_count,
         'liquidos_afectados': affected_count,
         'liquidos_desconocidos': unknown_count,
@@ -199,7 +208,7 @@ def create_environmental_report(
     descripcion = (
         f"Resumen ambiental basado en {stats['total_analisis']} análisis. "
         f"Calidad del aire predominante: {stats['calidad_aire_predominante']}. "
-        f"Zonas analizadas: {stats['zonas_analizadas']}."
+        f"Ubicaciones analizadas: {stats['ubicaciones_analizadas']}."
     )
 
     reporte = Reporte(

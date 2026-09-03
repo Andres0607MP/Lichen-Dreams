@@ -9,6 +9,7 @@ from config.db import get_db
 from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion, EspecieLiquen, ZonaAmbiental
 from auth.auth_service import get_current_user
 from auth.password_handler import hash_password
+from services.zone_membership import sync_zone_to_analyses
 from models.validations import (
     EspecieLiquenCreate, EspecieLiquenUpdate, EspecieLiquenResponse,
     ZonaAmbientalCreate, ZonaAmbientalUpdate, ZonaAmbientalResponse,
@@ -586,8 +587,13 @@ def create_zone(
         longitud=request.longitud,
         radio_metros=request.radio_metros,
         descripcion=request.descripcion,
+        id_usuario_creador=current_user.id_usuario,
     )
     db.add(zona)
+    db.commit()
+    db.refresh(zona)
+    # Asociar análisis existentes que caen dentro de la nueva zona
+    sync_zone_to_analyses(db, zona.id_zona)
     db.commit()
     db.refresh(zona)
     return _zona_to_dict(zona, db)
@@ -622,6 +628,17 @@ def update_zone(
 
     zona.fecha_actualizacion = datetime.utcnow()
     db.commit()
+
+    # Re-sincronizar membresías si la geometría cambió
+    geometry_changed = (
+        request.latitud is not None
+        or request.longitud is not None
+        or request.radio_metros is not None
+    )
+    if geometry_changed:
+        sync_zone_to_analyses(db, zona.id_zona)
+        db.commit()
+
     db.refresh(zona)
     return _zona_to_dict(zona, db)
 

@@ -8,9 +8,9 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from auth.auth_service import get_current_user
+from auth.auth_service import get_current_user, get_current_user_optional
 from models.core import Analisis, EspecieLiquen, Usuario, HistorialActividad, ProcesamientoIA, Notificacion, Imagen
-from config.db import get_db
+from config.db import get_db, SessionLocal
 from services.analysis_service import AnalysisService
 from services.upload_service import (
     validate_image,
@@ -33,6 +33,9 @@ class AnalysisBaseResponse(BaseModel):
     categoria: str = ""
     confianza: float = 0.0
     nombre_especie: str | None = None
+    id_especie: int | None = None
+    especie_nombre_cientifico: str | None = None
+    especie_nombre_comun: str | None = None
     estado: str = ""
     status: str = ""
     humedad: float = 0.0
@@ -131,9 +134,10 @@ async def process_analysis(
     request: Request,
     file: UploadFile | None = File(default=None),
     image_url: str | None = Form(default=None),
-    id_modelo: int = Form(default=1),
+    id_modelo: int | None = Form(default=None),
     id_dataset: int | None = Form(default=None),
     id_ubicacion: int | None = Form(default=None),
+    id_especie: int | None = Form(default=None),
     image_source: str | None = Form(default=None),
     current_user: Usuario = Depends(get_current_user),
 ):
@@ -147,6 +151,7 @@ async def process_analysis(
     resolved_dataset = id_dataset
     resolved_usuario = current_user.id_usuario
     resolved_ubicacion = id_ubicacion
+    resolved_especie = id_especie
     resolved_image_source = image_source if image_source in ('camera', 'gallery') else 'upload'
 
     if file is not None:
@@ -170,9 +175,10 @@ async def process_analysis(
 
         if isinstance(body, dict):
             resolved_image_url = body.get("image_url", resolved_image_url)
-            resolved_modelo = int(body.get("id_modelo", resolved_modelo) or 1)
+            resolved_modelo = int(body.get("id_modelo", resolved_modelo)) if body.get("id_modelo") is not None else resolved_modelo
             resolved_dataset = body.get("id_dataset", resolved_dataset)
             resolved_ubicacion = body.get("id_ubicacion", resolved_ubicacion)
+            resolved_especie = body.get("id_especie", resolved_especie)
 
     if not resolved_image_url:
         raise HTTPException(status_code=422, detail="Debes enviar una imagen o image_url")
@@ -183,12 +189,24 @@ async def process_analysis(
             detail="Los análisis desde cámara requieren una ubicación válida. Activa el GPS e intenta de nuevo.",
         )
 
+    if resolved_especie is not None:
+        db = SessionLocal()
+        try:
+            especie = db.query(EspecieLiquen).filter(
+                EspecieLiquen.id_especie == resolved_especie
+            ).first()
+            if not especie:
+                raise HTTPException(status_code=404, detail=f"Especie {resolved_especie} no encontrada")
+        finally:
+            db.close()
+
     return analysis_service.process_analysis(
         image_url=resolved_image_url,
         id_modelo=resolved_modelo,
         id_dataset=resolved_dataset,
         id_usuario=resolved_usuario,
         id_ubicacion=resolved_ubicacion,
+        id_especie=resolved_especie,
         image_source=resolved_image_source,
     )
 
@@ -198,7 +216,8 @@ def get_analysis_status(analysis_id: int, current_user: Usuario = Depends(get_cu
     """
     Endpoint para obtener el estado de un análisis
     """
-    return analysis_service.get_status(analysis_id=analysis_id, user_id=current_user.id_usuario)
+    user_id = current_user.id_usuario if current_user else None
+    return analysis_service.get_status(analysis_id=analysis_id, user_id=user_id)
 
 
 @router.get("/{analysis_id}/humidity", response_model=HumidityResponse, summary="Obtener datos de humedad")
@@ -207,7 +226,8 @@ def get_humidity(analysis_id: int, current_user: Usuario = Depends(get_current_u
     Endpoint para obtener información de humedad estimada
     - RF05: Sistema estimar humedad
     """
-    payload = analysis_service.get_humidity(analysis_id=analysis_id, user_id=current_user.id_usuario)
+    user_id = current_user.id_usuario if current_user else None
+    payload = analysis_service.get_humidity(analysis_id=analysis_id, user_id=user_id)
     payload["ubicacion"] = "Bosque tropical"
     return payload
 
@@ -218,7 +238,8 @@ def get_air_quality(analysis_id: int, current_user: Usuario = Depends(get_curren
     Endpoint para obtener información de calidad del aire
     - RF011: Sistema estimar aire
     """
-    return analysis_service.get_air_quality(analysis_id=analysis_id, user_id=current_user.id_usuario)
+    user_id = current_user.id_usuario if current_user else None
+    return analysis_service.get_air_quality(analysis_id=analysis_id, user_id=user_id)
 
 
 @router.get("/{analysis_id}/recommendation", response_model=RecommendationResponse, summary="Obtener recomendación ecológica")
@@ -227,7 +248,8 @@ def get_recommendation(analysis_id: int, current_user: Usuario = Depends(get_cur
     Endpoint para obtener recomendaciones ambientales
     - RF012: Sistema generar recomendación ecológica
     """
-    return analysis_service.get_recommendation(analysis_id=analysis_id, user_id=current_user.id_usuario)
+    user_id = current_user.id_usuario if current_user else None
+    return analysis_service.get_recommendation(analysis_id=analysis_id, user_id=user_id)
 
 
 @router.get("/my", response_model=List[dict], summary="Obtener análisis del usuario")
@@ -261,7 +283,8 @@ def get_results(analysis_id: int, current_user: Usuario = Depends(get_current_us
     Endpoint para obtener resultados completos del análisis
     - RF09: Usuario consultar resultados
     """
-    return analysis_service.get_results(analysis_id=analysis_id, user_id=current_user.id_usuario)
+    user_id = current_user.id_usuario if current_user else None
+    return analysis_service.get_results(analysis_id=analysis_id, user_id=user_id)
 
 
 @router.get("/{analysis_id}", response_model=AnalysisResponse, summary="Obtener análisis por ID")
@@ -269,7 +292,8 @@ def get_analysis(analysis_id: int, current_user: Usuario = Depends(get_current_u
     """
     Endpoint para obtener un análisis específico
     """
-    return analysis_service.get_analysis(analysis_id=analysis_id, user_id=current_user.id_usuario)
+    user_id = current_user.id_usuario if current_user else None
+    return analysis_service.get_analysis(analysis_id=analysis_id, user_id=user_id)
 
 
 @router.delete("/{analysis_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar análisis")

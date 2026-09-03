@@ -13,6 +13,7 @@ from config.settings import normalize_image_path
 from services.upload_service import resolve_file_path
 from services.weather_service import WeatherService
 from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen, Notificacion, ProcesamientoIA
+from services.zone_membership import sync_analysis_to_zones
 
 
 class AnalysisService:
@@ -68,6 +69,9 @@ class AnalysisService:
             "categoria": analysis.resultado_ia or "",
             "confianza": float(analysis.porcentaje_confianza or 0.0),
             "nombre_especie": analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None,
+            "id_especie": analysis.id_especie,
+            "especie_nombre_cientifico": analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None,
+            "especie_nombre_comun": analysis.especie.nombre_comun if analysis.especie else None,
             "estado": status_value,
             "status": status_value,
             "humedad": humidity,
@@ -84,7 +88,43 @@ class AnalysisService:
             "visibilidad": analysis.visibilidad or "private",
         }
 
-    def process_analysis(self, image_url: str, id_modelo: int = 1, id_dataset: Optional[int] = None, id_usuario: int = 1, id_ubicacion: Optional[int] = None, image_source: str = 'upload') -> Dict[str, Any]:
+    def _resolve_id_modelo(self, db) -> int:
+        """ID del modelo activo registrado, coherente con el .keras en uso.
+
+        Resuelve la ruta del modelo activo vía resolver_modelo_activo (misma
+        politica que lichen_classifier) y devuelve el id_modelo de esa fila.
+        Si no se puede resolver, lanza ActiveModelError (NO id inventado 1).
+        """
+        from ia.resolver_modelo_activo import resolver_modelo_activo, ActiveModelError
+
+        try:
+            active = resolver_modelo_activo()
+        except ActiveModelError as e:
+            raise ActiveModelError(f"no se pudo resolver el modelo activo: {e}") from e
+
+        rows = (
+            db.query(ModeloIA)
+            .filter(ModeloIA.estado_modelo == "activo")
+            .order_by(ModeloIA.id_modelo.desc())
+            .all()
+        )
+        import json as _json
+        from pathlib import Path as _Path
+
+        active_name = _Path(active).name
+        for row in rows:
+            f = None
+            if row.observaciones:
+                try:
+                    f = _json.loads(row.observaciones).get("archivo")
+                except Exception:
+                    f = None
+            if f and _Path(str(f)).name == active_name:
+                return row.id_modelo
+        raise ActiveModelError(
+            f"el activo resuelto ({active}) no coincide con ninguna fila 'activa' en BD")
+
+    def process_analysis(self, image_url: str, id_modelo: Optional[int] = None, id_dataset: Optional[int] = None, id_usuario: int = 1, id_ubicacion: Optional[int] = None, id_especie: Optional[int] = None, image_source: str = 'upload') -> Dict[str, Any]:
         ia_result = None
         try:
             from ia.modelos.lichen_classifier import predict
@@ -135,6 +175,9 @@ class AnalysisService:
                 "categoria": resultado_ia,
                 "confianza": porcentaje_confianza,
                 "nombre_especie": None,
+                "id_especie": None,
+                "especie_nombre_cientifico": None,
+                "especie_nombre_comun": None,
                 "estado": estado_validacion,
                 "status": estado_validacion,
                 "humedad": 0.0,
@@ -182,6 +225,10 @@ class AnalysisService:
         # Persistent flow for camera/upload
         with SessionLocal() as db:
             print(f"[PROCESS] GUARDANDO resultado_ia={resultado_ia} image_source={image_source}")
+            # Coherencia archivo activo <-> registro BD: resolver el id_real
+            # (nunca se hardcodea: corresponde al modelo que hizo la inferencia).
+            resolved_model_id = self._resolve_id_modelo(db)
+            print(f"[PROCESS] modelo activo id_modelo={resolved_model_id}")
             analysis_date = datetime.utcnow()
             humidity_value = None
             if id_ubicacion is not None:
@@ -195,8 +242,9 @@ class AnalysisService:
                         humidity_value = None
             analysis = Analisis(
                 id_usuario=id_usuario,
-                id_modelo=id_modelo,
+                id_modelo=resolved_model_id,
                 id_dataset=id_dataset,
+                id_especie=id_especie,
                 resultado_ia=resultado_ia,
                 porcentaje_confianza=porcentaje_confianza,
                 nivel_contaminacion=nivel_contaminacion,
@@ -243,7 +291,7 @@ class AnalysisService:
             db.add(image)
             db.flush()
 
-            modelo_ia = db.query(ModeloIA).filter(ModeloIA.id_modelo == id_modelo).first()
+            modelo_ia = db.query(ModeloIA).filter(ModeloIA.id_modelo == resolved_model_id).first()
             precision_modelo = float(modelo_ia.precision_modelo) if modelo_ia and modelo_ia.precision_modelo is not None else None
 
             procesamiento = ProcesamientoIA(
@@ -304,6 +352,15 @@ class AnalysisService:
             db.refresh(analysis)
             db.refresh(image)
 
+            # Sincronizar membresía de zonas: asociar el análisis a las zonas
+            # cuyo círculo geográfico contiene la ubicación del análisis.
+            try:
+                sync_analysis_to_zones(db, analysis.id_analisis, analysis.id_ubicacion)
+                db.commit()
+            except Exception as sync_exc:
+                db.rollback()
+                logging.error(f"Error al sincronizar zonas para análisis {analysis.id_analisis}: {sync_exc}")
+
             analysis = db.query(Analisis).options(
                 joinedload(Analisis.imagenes),
                 joinedload(Analisis.especie),
@@ -314,29 +371,73 @@ class AnalysisService:
     def get_status(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         with SessionLocal() as db:
             analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
-        if not analysis:
-            raise HTTPException(status_code=404, detail="Análisis no encontrado")
-        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
-            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
-        status_value = self._normalize_status(analysis.estado_validacion)
-        return {
-            "id": analysis.id_analisis,
-            "estado": status_value,
-            "status": status_value,
-            "progreso": 100 if status_value == "completed" else 50,
-        }
+            if not analysis:
+                raise HTTPException(status_code=404, detail="Análisis no encontrado")
+            if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+                raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+            status_value = self._normalize_status(analysis.estado_validacion)
+            image = analysis.imagenes[0] if analysis.imagenes else None
+            image_url = ""
+            if image:
+                image_url = image.url or image.ruta_imagen or ""
+            return {
+                "id": analysis.id_analisis,
+                "id_usuario": analysis.id_usuario,
+                "url_imagen": image_url,
+                "resultado": analysis.resultado_ia or "",
+                "categoria": analysis.resultado_ia or "",
+                "confianza": float(analysis.porcentaje_confianza or 0.0),
+                "nombre_especie": analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None,
+                "id_especie": analysis.id_especie,
+                "especie_nombre_cientifico": analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None,
+                "especie_nombre_comun": analysis.especie.nombre_comun if analysis.especie else None,
+                "estado": status_value,
+                "status": status_value,
+                "humedad": float(analysis.humedad_relativa or 0.0),
+                "humidity": float(analysis.humedad_relativa or 0.0),
+                "calidad_del_aire": analysis.calidad_aire or "",
+                "air_quality": analysis.calidad_aire or "",
+                "recomendacion": analysis.observaciones or "",
+                "recommendation": analysis.observaciones or "",
+                "imagen_base64": None,
+                "image_base64": None,
+                "fecha_creacion": analysis.fecha or datetime.utcnow(),
+                "rechazado": False,
+                "mensaje_rechazo": None,
+                "progreso": 100 if status_value == "completed" else 50,
+            }
 
     def get_humidity(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         with SessionLocal() as db:
             analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
-        if not analysis:
-            raise HTTPException(status_code=404, detail="Análisis no encontrado")
-        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
-            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+            if not analysis:
+                raise HTTPException(status_code=404, detail="Análisis no encontrado")
+            if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+                raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+            especie_nombre_cientifico = analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None
+            especie_nombre_comun = analysis.especie.nombre_comun if analysis.especie else None
+            id_especie = analysis.id_especie
         return {
             "id": analysis.id_analisis,
+            "id_usuario": analysis.id_usuario,
+            "url_imagen": "",
+            "resultado": analysis.resultado_ia or "",
+            "categoria": analysis.resultado_ia or "",
+            "confianza": float(analysis.porcentaje_confianza or 0.0),
+            "nombre_especie": especie_nombre_cientifico,
+            "id_especie": id_especie,
+            "especie_nombre_cientifico": especie_nombre_cientifico,
+            "especie_nombre_comun": especie_nombre_comun,
+            "estado": self._normalize_status(analysis.estado_validacion),
+            "status": self._normalize_status(analysis.estado_validacion),
             "humedad": float(analysis.humedad_relativa or 0.0),
             "humidity": float(analysis.humedad_relativa or 0.0),
+            "calidad_del_aire": analysis.calidad_aire or "",
+            "air_quality": analysis.calidad_aire or "",
+            "recomendacion": analysis.observaciones or "",
+            "recommendation": analysis.observaciones or "",
+            "imagen_base64": None,
+            "image_base64": None,
             "fecha_creacion": analysis.fecha or datetime.utcnow(),
             "ubicacion": "",
         }
@@ -344,31 +445,72 @@ class AnalysisService:
     def get_air_quality(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         with SessionLocal() as db:
             analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
-        if not analysis:
-            raise HTTPException(status_code=404, detail="Análisis no encontrado")
-        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
-            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+            if not analysis:
+                raise HTTPException(status_code=404, detail="Análisis no encontrado")
+            if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+                raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+            especie_nombre_cientifico = analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None
+            especie_nombre_comun = analysis.especie.nombre_comun if analysis.especie else None
+            id_especie = analysis.id_especie
         return {
             "id": analysis.id_analisis,
+            "id_usuario": analysis.id_usuario,
+            "url_imagen": "",
+            "resultado": analysis.resultado_ia or "",
+            "categoria": analysis.resultado_ia or "",
+            "confianza": float(analysis.porcentaje_confianza or 0.0),
+            "nombre_especie": especie_nombre_cientifico,
+            "id_especie": id_especie,
+            "especie_nombre_cientifico": especie_nombre_cientifico,
+            "especie_nombre_comun": especie_nombre_comun,
+            "estado": self._normalize_status(analysis.estado_validacion),
+            "status": self._normalize_status(analysis.estado_validacion),
+            "humedad": float(analysis.humedad_relativa or 0.0),
+            "humidity": float(analysis.humedad_relativa or 0.0),
             "calidad_del_aire": analysis.calidad_aire or "",
             "air_quality": analysis.calidad_aire or "",
+            "recomendacion": analysis.observaciones or "",
+            "recommendation": analysis.observaciones or "",
+            "imagen_base64": None,
+            "image_base64": None,
+            "fecha_creacion": analysis.fecha or datetime.utcnow(),
             "indice_calidad": 45.2,
             "contaminantes": {"PM2.5": 12.3, "PM10": 25.5, "NO2": 15.0},
-            "fecha_creacion": analysis.fecha or datetime.utcnow(),
         }
 
     def get_recommendation(self, analysis_id: int, user_id: Optional[int] = None) -> Dict[str, Any]:
         with SessionLocal() as db:
             analysis = db.query(Analisis).filter(Analisis.id_analisis == analysis_id).first()
-        if not analysis:
-            raise HTTPException(status_code=404, detail="Análisis no encontrado")
-        if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
-            raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+            if not analysis:
+                raise HTTPException(status_code=404, detail="Análisis no encontrado")
+            if user_id is not None and not self._ensure_owner_or_admin(analysis, user_id):
+                raise HTTPException(status_code=403, detail="No tienes acceso a este análisis")
+            especie_nombre_cientifico = analysis.especie.nombre_cientifico if analysis.especie and analysis.especie.nombre_cientifico else None
+            especie_nombre_comun = analysis.especie.nombre_comun if analysis.especie else None
+            id_especie = analysis.id_especie
         recommendation = analysis.observaciones or "Aumentar cobertura vegetal en zona"
         return {
             "id": analysis.id_analisis,
+            "id_usuario": analysis.id_usuario,
+            "url_imagen": "",
+            "resultado": analysis.resultado_ia or "",
+            "categoria": analysis.resultado_ia or "",
+            "confianza": float(analysis.porcentaje_confianza or 0.0),
+            "nombre_especie": especie_nombre_cientifico,
+            "id_especie": id_especie,
+            "especie_nombre_cientifico": especie_nombre_cientifico,
+            "especie_nombre_comun": especie_nombre_comun,
+            "estado": self._normalize_status(analysis.estado_validacion),
+            "status": self._normalize_status(analysis.estado_validacion),
+            "humedad": float(analysis.humedad_relativa or 0.0),
+            "humidity": float(analysis.humedad_relativa or 0.0),
+            "calidad_del_aire": analysis.calidad_aire or "",
+            "air_quality": analysis.calidad_aire or "",
             "recomendacion": recommendation,
             "recommendation": recommendation,
+            "imagen_base64": None,
+            "image_base64": None,
+            "fecha_creacion": analysis.fecha or datetime.utcnow(),
             "prioridad": "alta",
             "acciones": ["Plantar árboles nativos", "Reducir contaminación", "Proteger ecosistema"],
         }

@@ -15,8 +15,10 @@ void main() {
   testWidgets('renders the login screen', (WidgetTester tester) async {
     await tester.pumpWidget(LichenDreamsApp(authState: AuthState(), apiService: ApiService()));
 
-    expect(find.text('Lichen\nDreams'), findsOneWidget);
+    expect(find.text('Lichen Dreams'), findsOneWidget);
     expect(find.text('Iniciar sesión'), findsOneWidget);
-    expect(find.text('¿No tienes cuenta? Regístrate'), findsOneWidget);
+    expect(find.text('Crear una cuenta'), findsOneWidget);
+
+    await tester.pump(const Duration(milliseconds: 200));
   });
 }

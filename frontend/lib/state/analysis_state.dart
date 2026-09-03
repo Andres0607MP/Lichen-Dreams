@@ -67,7 +67,7 @@ class AnalysisState extends ChangeNotifier {
   DateTime? get startedAt => _startedAt;
   double get estimatedProgress => _estimatedProgress;
 
-  Future<void> startAnalysis({required File image, int? locationId, String imageSource = 'camera'}) async {
+  Future<void> startAnalysis({required File image, int? locationId, int? idEspecie, String imageSource = 'camera'}) async {
     if (_activeAnalysisId != null && _status == 'processing') {
       throw ApiException('Ya tienes un análisis en proceso. Espera a que termine.');
     }
@@ -82,7 +82,7 @@ class AnalysisState extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final resultJson = await _apiService.submitAnalysis(image, id_ubicacion: locationId, imageSource: _imageSource ?? 'camera');
+      final resultJson = await _apiService.submitAnalysis(image, id_ubicacion: locationId, id_especie: idEspecie, imageSource: _imageSource ?? 'camera');
 
       if (resultJson['rechazado'] == true) {
         _status = 'rejected';

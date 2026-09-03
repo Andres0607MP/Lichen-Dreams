@@ -10,6 +10,8 @@ sys.path.append(
     )
 )
 
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
+
 from fastapi.testclient import TestClient
 from main import app
 
@@ -20,7 +22,7 @@ def obtener_token():
 
     login = client.post(
         "/auth/login",
-        json={
+        data={
             "username": "admin@gmail.com",
             "password": "admin123"
         }
@@ -66,11 +68,13 @@ def test_crear_analisis():
 def test_obtener_resultado_analisis():
 
     token = obtener_token()
+    headers = {"Authorization": f"Bearer {token}"}
 
     analysis_id = crear_analisis_prueba(token)
 
     response = client.get(
-        f"/analysis/results/{analysis_id}"
+        f"/analysis/results/{analysis_id}",
+        headers=headers
     )
 
     assert response.status_code == 200
@@ -86,11 +90,13 @@ def test_obtener_resultado_analisis():
 def test_estado_analisis():
 
     token = obtener_token()
+    headers = {"Authorization": f"Bearer {token}"}
 
     analysis_id = crear_analisis_prueba(token)
 
     response = client.get(
-        f"/analysis/{analysis_id}/status"
+        f"/analysis/{analysis_id}/status",
+        headers=headers
     )
 
     assert response.status_code == 200
@@ -104,7 +110,7 @@ def test_admin_no_login_with_old_password():
 
     login = client.post(
         "/auth/login",
-        json={
+        data={
             "username": "admin@gmail.com",
             "password": "admin"
         }

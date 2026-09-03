@@ -585,7 +585,8 @@ class _QuickStatsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _QuickStatItem(label: 'Análisis', value: '${stats['total_analisis'] ?? 0}', icon: Icons.analytics_rounded, color: AppTheme.primaryGreen),
-      _QuickStatItem(label: 'Zonas', value: '${stats['zonas_analizadas'] ?? 0}', icon: Icons.place_rounded, color: AppTheme.mapaPrimary),
+      _QuickStatItem(label: 'Ubicaciones', value: '${stats['ubicaciones_analizadas'] ?? 0}', icon: Icons.place_rounded, color: AppTheme.mapaPrimary),
+      _QuickStatItem(label: 'Zonas Ambientales', value: '${stats['zonas_ambientales_count'] ?? 0}', icon: Icons.circle_rounded, color: AppTheme.especiesPrimary),
       _QuickStatItem(label: 'Saludables', value: '${stats['liquidos_saludables'] ?? 0}', icon: Icons.favorite_rounded, color: AppTheme.successColor),
       _QuickStatItem(label: 'Afectados', value: '${stats['liquidos_afectados'] ?? 0}', icon: Icons.warning_amber_rounded, color: AppTheme.errorColor),
     ];
@@ -1238,13 +1239,23 @@ class _InsightsSection extends StatelessWidget {
       ));
     }
 
-    final zonas = stats['zonas_analizadas'] ?? 0;
-    if (zonas > 0) {
+    final ubicaciones = stats['ubicaciones_analizadas'] ?? 0;
+    if (ubicaciones > 0) {
       insights.add(_Insight(
         icon: Icons.place_rounded,
         title: 'Cobertura ambiental',
-        description: 'Se analizaron $zonas ${zonas == 1 ? 'zona diferente' : 'zonas diferentes'}.',
+        description: 'Se analizaron $ubicaciones ${ubicaciones == 1 ? 'ubicación diferente' : 'ubicaciones diferentes'}.',
         color: AppTheme.mapaPrimary,
+      ));
+    }
+
+    final zonasReg = stats['zonas_ambientales_count'] ?? 0;
+    if (zonasReg > 0) {
+      insights.add(_Insight(
+        icon: Icons.circle_rounded,
+        title: 'Zonas Ambientales',
+        description: 'Hay $zonasReg ${zonasReg == 1 ? 'zona ambiental' : 'zonas ambientales'} registradas.',
+        color: AppTheme.especiesPrimary,
       ));
     }
 

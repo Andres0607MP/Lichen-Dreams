@@ -1,0 +1,100 @@
+{
+  "accuracy": 0.22935779816513763,
+  "precision_macro": 0.07645259938837921,
+  "recall_macro": 0.3333333333333333,
+  "f1_macro": 0.12437810945273632,
+  "balanced_accuracy": 0.3333333333333333,
+  "confianza_promedio": 42.49285161495209,
+  "prediction_distribution": {
+    "liquen saludable": 327,
+    "liquen contaminado": 0,
+    "desconocido": 0
+  },
+  "confusion_matrix": [
+    [
+      75,
+      0,
+      0
+    ],
+    [
+      66,
+      0,
+      0
+    ],
+    [
+      186,
+      0,
+      0
+    ]
+  ],
+  "classification_report": "                    precision    recall  f1-score   support\n\n  liquen saludable     0.2294    1.0000    0.3731        75\nliquen contaminado     0.0000    0.0000    0.0000        66\n       desconocido     0.0000    0.0000    0.0000       186\n\n          accuracy                         0.2294       327\n         macro avg     0.0765    0.3333    0.1244       327\n      weighted avg     0.0526    0.2294    0.0856       327\n",
+  "per_class": {
+    "liquen saludable": {
+      "precision": 0.22935779816513763,
+      "recall": 1.0,
+      "f1-score": 0.373134328358209,
+      "support": 75.0
+    },
+    "liquen contaminado": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 66.0
+    },
+    "desconocido": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 186.0
+    },
+    "accuracy": 0.22935779816513763,
+    "macro avg": {
+      "precision": 0.07645259938837921,
+      "recall": 0.3333333333333333,
+      "f1-score": 0.12437810945273632,
+      "support": 327.0
+    },
+    "weighted avg": {
+      "precision": 0.052604999579160004,
+      "recall": 0.22935779816513763,
+      "f1-score": 0.08558126797206629,
+      "support": 327.0
+    }
+  },
+  "split": {
+    "train": {
+      "sal": 350,
+      "cont": 369,
+      "desc": 815
+    },
+    "val": {
+      "sal": 75,
+      "cont": 65,
+      "desc": 158
+    },
+    "test": {
+      "sal": 75,
+      "cont": 66,
+      "desc": 186
+    }
+  },
+  "epochs": {
+    "phase1": 10,
+    "phase2": 12,
+    "best_val_macro_epoch": 1
+  },
+  "focal": {
+    "gamma": 2.0,
+    "alpha": [
+      1.4609524011611938,
+      1.3857271671295166,
+      0.6274028420448303
+    ]
+  },
+  "class_mapping": {
+    "0": "liquen saludable",
+    "1": "liquen contaminado",
+    "2": "desconocido"
+  },
+  "backbone": "efficientnetb1"
+}

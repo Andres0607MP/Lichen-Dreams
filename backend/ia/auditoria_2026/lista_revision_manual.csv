@@ -1,0 +1,445 @@
+archivo,clase_actual,categoria,ruta,motivo,sospecha,confianza
+ls_0001.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0002.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0003.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0004.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0006.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0011.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0016.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0023.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0024.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0026.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0029.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0044.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0045.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0046.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0047.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0048.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0049.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0050.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0051.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0058.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0060.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0061.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0062.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0063.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0064.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0065.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0066.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0067.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0068.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0069.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0070.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0071.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0072.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0073.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0074.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0075.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0076.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0082.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0083.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0084.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0087.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0088.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0090.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0091.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0092.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0093.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0094.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0095.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0096.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0097.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0098.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0099.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0101.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0102.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0103.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0104.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0105.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0116.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0117.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0118.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0119.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0120.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0121.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0122.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0123.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0124.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0125.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0127.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0129.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0130.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0131.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0133.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0134.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0139.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0144.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0145.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0147.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0148.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0156.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0158.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0159.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0162.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0163.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0170.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0174.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0181.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0185.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0188.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0190.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0194.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0196.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0199.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0215.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0219.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0220.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0223.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0226.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0227.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0231.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0236.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0237.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0238.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0239.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0240.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0241.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0242.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0248.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0251.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0252.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0253.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0258.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0266.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0267.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0270.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0278.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0284.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0296.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0300.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0303.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0304.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0306.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0311.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0312.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0313.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0326.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0334.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0336.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0337.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0340.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0343.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0344.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0345.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0348.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0350.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0355.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0362.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0364.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0374.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0376.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0377.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0378.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0381.jpg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0383.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0385.jpg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0386.jpg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0389.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0397.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0403.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0404.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0406.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0413.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0423.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0429.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0433.jpeg,saludable,-,liquenes_saludables,"marron-centro alto (>=45%) sin verde, con textura de deterioro",probablemente contaminado,0.9
+ls_0435.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0439.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0441.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0452.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0466.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0469.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0470.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0473.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0474.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0478.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0485.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0490.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0492.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+ls_0494.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0496.jpeg,saludable,-,liquenes_saludables,verde muy bajo en centro,dudosa,0.6
+ls_0498.jpeg,saludable,-,liquenes_saludables,marron-centro alto (>=45%) sin verde,dudosa,0.6
+ls_0500.jpeg,saludable,-,liquenes_saludables,gris dominante; revisar si es liquen gris sano o corteza,dudosa,0.6
+lcp_0073.jpg,contaminado,lcp,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_0370.jpg,contaminado,lcp,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_0372.jpg,contaminado,lcp,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lcp_0477.jpeg,contaminado,lcp,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0006.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0012.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0013.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0014.jpg,contaminado,lcp_aug,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lcp_aug_0031.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0033.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0034.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0041.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0047.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0064.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0065.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0068.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0072.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0073.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0078.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0080.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0081.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0082.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0083.jpg,contaminado,lcp_aug,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lcp_aug_0084.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0085.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0086.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0087.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0089.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0090.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0092.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0095.jpg,contaminado,lcp_aug,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lcp_aug_0096.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0097.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0103.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0104.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0105.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0106.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0108.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0109.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0116.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0118.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0120.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0131.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0132.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0136.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0137.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0143.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lcp_aug_0154.jpg,contaminado,lcp_aug,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lcp_aug_0158.jpg,contaminado,lcp_aug,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0001.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0016.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0017.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0018.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0030.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0032.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0036.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0040.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0052.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0055.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0056.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0060.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0065.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0074.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0078.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0080.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0082.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0083.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0088.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0092.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0097.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0105.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0108.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0109.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0112.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0113.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0116.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0117.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0121.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0123.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0125.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0128.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0131.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0132.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0133.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0136.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0140.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0141.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0142.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0146.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0148.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0151.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0152.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0153.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0155.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0158.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0159.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0160.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0165.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0168.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0169.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0170.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0171.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0172.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0175.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0176.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0182.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0187.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0188.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0190.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0192.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0193.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0194.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0197.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0198.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0199.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0200.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0201.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0205.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0208.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0210.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0212.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0213.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0215.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0216.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0217.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0218.jpg,contaminado,lc,liquenes_contaminados,marron centro presente pero textura baja,dudoso,0.6
+lc_0219.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0222.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0223.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0225.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0226.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0228.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0231.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0236.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0237.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0238.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0242.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0243.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0244.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0247.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0248.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0252.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0253.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0254.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0256.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0258.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0264.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0265.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0266.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0268.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0270.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0274.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0275.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0279.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0281.jpg,contaminado,lc,liquenes_contaminados,marron centro presente pero textura baja,dudoso,0.6
+lc_0287.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0293.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0301.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0304.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0305.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0323.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0333.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0341.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0343.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0344.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0346.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0347.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0350.jpeg,contaminado,lc,liquenes_contaminados,marron centro presente pero textura baja,dudoso,0.6
+lc_0371.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0374.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0375.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0376.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0377.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0378.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0379.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0380.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0381.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0382.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0383.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0384.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0385.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0388.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0389.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0391.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0392.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0393.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0394.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0395.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0405.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0407.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0410.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0413.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0417.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0419.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0422.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0423.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0425.jpg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0429.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0430.jpg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0435.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0480.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0481.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0483.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0486.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0487.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0488.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0489.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0490.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0491.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0493.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0494.jpeg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0495.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0496.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0497.jpeg,contaminado,lc,liquenes_contaminados,verde centro >=15% (parece liquen sano),sospechosamente saludable,0.8
+lc_0498.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0499.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+lc_0500.jpeg,contaminado,lc,liquenes_contaminados,senial de color muy debil,dudoso,0.6
+ca_0002.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.00 / marron-centro 0.63: riesgo de confundirse con liquen,revisar manualmente,0.7
+ca_0003.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.07 / marron-centro 0.54: riesgo de confundirse con liquen,revisar manualmente,0.7
+ca_0006.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.57 / marron-centro 0.01: riesgo de confundirse con liquen,revisar manualmente,0.6
+ca_0009.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.33 / marron-centro 0.21: riesgo de confundirse con liquen,revisar manualmente,0.6
+ca_0010.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.13 / marron-centro 0.11: riesgo de confundirse con liquen,revisar manualmente,0.6
+ca_0011.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.31 / marron-centro 0.03: riesgo de confundirse con liquen,revisar manualmente,0.6
+ca_0013.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.00 / marron-centro 0.87: riesgo de confundirse con liquen,revisar manualmente,0.7
+ca_0015.jpg,desconocido,casos_ambiguos,liquenes_desconocidos/casos_ambiguos,verde-centro 0.28 / marron-centro 0.00: riesgo de confundirse con liquen,revisar manualmente,0.6
+cs_0001.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.03 / marron-centro 0.65: riesgo de confundirse con liquen,revisar manualmente,0.7
+cs_0003.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.02 / marron-centro 0.33: riesgo de confundirse con liquen,revisar manualmente,0.7
+cs_0005.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.00 / marron-centro 0.41: riesgo de confundirse con liquen,revisar manualmente,0.7
+cs_0006.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.03 / marron-centro 0.51: riesgo de confundirse con liquen,revisar manualmente,0.7
+cs_0008.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.12 / marron-centro 0.50: riesgo de confundirse con liquen,revisar manualmente,0.7
+cs_0009.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.00 / marron-centro 0.74: riesgo de confundirse con liquen,revisar manualmente,0.7
+cs_0011.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.01 / marron-centro 0.47: riesgo de confundirse con liquen,revisar manualmente,0.7
+cs_0013.jpg,desconocido,corteza_sin_liquen,liquenes_desconocidos/corteza_sin_liquen,verde-centro 0.00 / marron-centro 0.55: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0007.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.57: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0010.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.90: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0012.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.61: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0013.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.58: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0014.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.97: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0019.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.41: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0021.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.88: riesgo de confundirse con liquen,revisar manualmente,0.7
+ma_0022.jpg,desconocido,madera,liquenes_desconocidos/madera,verde-centro 0.00 / marron-centro 0.88: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0021.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.99: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0022.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.99: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0023.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.56: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0024.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.56: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0025.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.37: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0026.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.37: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0027.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.74: riesgo de confundirse con liquen,revisar manualmente,0.7
+st_0028.jpg,desconocido,suelo_tierra,liquenes_desconocidos/suelo_tierra,verde-centro 0.00 / marron-centro 0.74: riesgo de confundirse con liquen,revisar manualmente,0.7
+sm_0002.jpg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 0.00 / marron-centro 0.40: riesgo de confundirse con liquen,revisar manualmente,0.7
+sm_0008.jpg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 0.45 / marron-centro 0.06: riesgo de confundirse con liquen,revisar manualmente,0.6
+sm_0010.jpg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 0.16 / marron-centro 0.04: riesgo de confundirse con liquen,revisar manualmente,0.6
+sm_0011.jpg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 0.06 / marron-centro 0.53: riesgo de confundirse con liquen,revisar manualmente,0.7
+sm_0013.jpg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 0.14 / marron-centro 0.02: riesgo de confundirse con liquen,revisar manualmente,0.6
+sm_0015.jpg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 0.01 / marron-centro 0.81: riesgo de confundirse con liquen,revisar manualmente,0.7
+sm_0016.jpg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 1.00 / marron-centro 0.00: riesgo de confundirse con liquen,revisar manualmente,0.6
+sm_0021.jpeg,desconocido,superficies_manchadas,liquenes_desconocidos/superficies_manchadas,verde-centro 0.35 / marron-centro 0.00: riesgo de confundirse con liquen,revisar manualmente,0.6
+mu_0001.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.00 / marron-centro 0.81: riesgo de confundirse con liquen,revisar manualmente,0.7
+mu_0002.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.98 / marron-centro 0.00: riesgo de confundirse con liquen,revisar manualmente,0.6
+mu_0003.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.31 / marron-centro 0.02: riesgo de confundirse con liquen,revisar manualmente,0.6
+mu_0004.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.38 / marron-centro 0.22: riesgo de confundirse con liquen,revisar manualmente,0.6
+mu_0005.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.72 / marron-centro 0.01: riesgo de confundirse con liquen,revisar manualmente,0.6
+mu_0006.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.01 / marron-centro 0.46: riesgo de confundirse con liquen,revisar manualmente,0.7
+mu_0007.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.07 / marron-centro 0.40: riesgo de confundirse con liquen,revisar manualmente,0.7
+mu_0008.jpg,desconocido,musgo,liquenes_desconocidos/musgo,verde-centro 0.28 / marron-centro 0.11: riesgo de confundirse con liquen,revisar manualmente,0.6
+hp_0001.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.86 / marron-centro 0.00: riesgo de confundirse con liquen,revisar manualmente,0.6
+hp_0002.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.27 / marron-centro 0.07: riesgo de confundirse con liquen,revisar manualmente,0.6
+hp_0003.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.01 / marron-centro 0.46: riesgo de confundirse con liquen,revisar manualmente,0.7
+hp_0004.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.21 / marron-centro 0.26: riesgo de confundirse con liquen,revisar manualmente,0.6
+hp_0005.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.55 / marron-centro 0.07: riesgo de confundirse con liquen,revisar manualmente,0.6
+hp_0006.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.20 / marron-centro 0.24: riesgo de confundirse con liquen,revisar manualmente,0.6
+hp_0007.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.69 / marron-centro 0.17: riesgo de confundirse con liquen,revisar manualmente,0.6
+hp_0008.jpg,desconocido,hojas_plantas,liquenes_desconocidos/hojas_plantas,verde-centro 0.38 / marron-centro 0.19: riesgo de confundirse con liquen,revisar manualmente,0.6

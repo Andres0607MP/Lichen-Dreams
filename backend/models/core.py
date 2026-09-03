@@ -270,6 +270,31 @@ class ZonaAmbiental(Base):
     calidad_promedio_aire = Column(String(50))
     descripcion = Column(Text)
     fecha_actualizacion = Column(TIMESTAMP, nullable=True)
+    id_usuario_creador = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=True)
+
+    analisis_asociados = relationship(
+        'Analisis',
+        secondary='analisis_zonas_ambientales',
+        backref='zonas_asociadas',
+        lazy='selectin',
+        overlaps='zona_mappings,zonas_asociadas,analisis_asociados',
+    )
+
+
+class AnalisisZonaAmbiental(Base):
+    __tablename__ = 'analisis_zonas_ambientales'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_analisis = Column(Integer, ForeignKey('analisis.id_analisis', ondelete='CASCADE'), nullable=False)
+    id_zona = Column(Integer, ForeignKey('zonas_ambientales.id_zona', ondelete='CASCADE'), nullable=False)
+    fecha_asociacion = Column(TIMESTAMP, server_default=func.now())
+
+    __table_args__ = (
+        Index('idx_analisis_zona_id_zona', 'id_zona'),
+        Index('idx_analisis_zona_id_analisis', 'id_analisis'),
+    )
+
+    analisis = relationship('Analisis', overlaps='zonas_asociadas,analisis_asociados')
+    zona = relationship('ZonaAmbiental', overlaps='zona_mappings,analisis_asociados,zonas_asociadas')
 
 
 class Notificacion(Base):
