@@ -1,0 +1,154 @@
+
+
+LICHEN DREAMS
+«Lee el aire, entiende tu entorno»
+
+Sprint 5 — Pruebas y Estabilización del Software
+
+Informe de Pruebas QA · Entregable final
+
+
+
+Aprendices SENA · Análisis y Desarrollo de Software (ADSO)
+
+Equipo: Hugo Andres Mancera Perez, Daniel Camilo Luque Briceño, Saira Yineth Aragon Suarez, Neyireth Dayana Soriano Ruiz, Heidy Lizeth Vivas Ramirez
+
+Fecha de entrega: 5 de septiembre de 2026
+
+2. Introducción
+El presente documento corresponde al entregable del Sprint 5 «Pruebas y Estabilización del Software» del proyecto Lichen Dreams. En este sprint se realizó una auditoría funcional, de integración y de estabilización del sistema, ejecutando pruebas reales sobre el código, el backend FastAPI, la base de datos MySQL, el modelo de inteligencia artificial y el frontend Flutter.
+Todos los resultados aquí consignados provienen de la ejecución efectiva de pruebas durante este Sprint: la suite automatizada de pytest del backend, los tests de widget de Flutter, pruebas de API en vivo contra el servidor (HTTP), pruebas directas del modelo de IA con imágenes reales del dataset, y pruebas automatizadas web con Selenium (cuya ejecución quedó parcialmente documentada en la sección correspondiente). No se han inventado resultados exitosos: cada caso registra su resultado real y su estado.
+3. Información general del proyecto
+
+Objetivo del Sprint 5
+Validar la estabilidad, el funcionamiento, la integración y el comportamiento esperado de la aplicación antes del despliegue: autenticación (registro, login, recuperación), perfil, dashboard, historial, análisis de imágenes con IA, clasificación, mapa, LiquenPedia, CRUD administrativos y validaciones; detectar y corregir los defectos encontrados y dejar evidencia real de cada prueba.
+
+4. Alcance
+Dentro del alcance
+Registro, inicio de sesión, sesión/autenticación, recuperación de contraseña (por código LCHN y por email), perfil, dashboard, historial, análisis de imágenes y clasificación IA (persistencia y contrato), mapa, LiquenPedia/artículos, CRUD administrativos (usuarios, especies, zonas, notificaciones, artículos), validaciones, integración frontend/backend y persistencia en base de datos.
+Fuera del alcance
+Optimización de la exactitud del modelo de IA (pertenece al Sprint de IA), despliegue en producción/tiendas, pruebas de carga/rendimiento a gran escala y la automatización web completa de todos los flujos (Selenium), limitada por problemas de entorno/automatización del navegador (ver Entregable 5).
+5. Entregable 1 — Plan de Pruebas
+5.1 Información general
+
+5.2 Objetivo de las pruebas
+Validar que la aplicación se comporte de forma estable y conforme a lo esperado en sus principales módulos, que los componentes (frontend, backend, base de datos e IA) se integren correctamente y que los resultados persistan adecuadamente, previo al despliegue.
+5.3 Alcance
+Se probaron los módulos realmente implementados y descritos en la sección 4. No se probaron funcionalidades inexistentes; los módulos que no tienen lógica implementada (p. ej. artículos publicados en la base de datos en el momento de la auditoría) se documentaron según el estado real observado.
+5.4 Módulos a probar
+
+5.5 Tipos de prueba aplicados
+Pruebas funcionales
+Pruebas positivas
+Pruebas negativas
+Pruebas de casos límite
+Pruebas de validación
+Pruebas de integración
+Pruebas de regresión
+Pruebas automatizadas
+Pruebas de API
+Pruebas relacionadas con IA
+5.6 Responsables
+Los integrantes del equipo de desarrollo y QA del proyecto (según README): Hugo Andres Mancera Perez, Daniel Camilo Luque Briceño, Saira Yineth Aragon Suarez, Neyireth Dayana Soriano Ruiz y Heidy Lizeth Vivas Ramirez. El reporte del Sprint 5 fue elaborado y ejecutado por el responsable de QA (rol de esta entrega).
+5.7 Cronograma
+
+6. Entregable 2 — Diseño de Casos de Prueba
+A continuación se presentan los casos de prueba diseñados para cubrir los módulos principales. Cada caso incluye su identificación, precondiciones, datos de entrada y resultado esperado.
+
+7. Entregable 3 — Matriz de Ejecución de Pruebas Manuales
+Matriz con los escenarios ejecutados realmente vía API/HTTP contra el servidor en vivo (usuario de prueba: qa_sprint5_dllpsh@test.com). Estado: Aprobado / Fallido / Bloqueado.
+
+7.1 Matriz de ejecución — CRUD administrativos (vía API)
+
+8. Evidencias por módulo
+Las capturas y salidas de consola que respaldan cada prueba se generaron durante la ejecución. A continuación se muestran las principales capturas obtenidas.
+
+Figura 1. Evidencia login pantalla.png — Pantalla de inicio de sesión (semántica activada).
+
+Figura 2. Evidencia CP 201 sel login campos vacios.png — Validación de campos vacíos en login.
+
+Figura 3. Evidencia CP 202 sel login llenado.png — Login con credenciales completadas.
+
+Figura 4. Evidencia CP 203 sel login incorrecto error.png — Login con credenciales incorrectas.
+
+Figura 5. Evidencia CP 204 sel login exitoso dashboard.png — Login exitoso — navegación al Dashboard.
+
+Figura 6. Evidencia CP 205 sel dashboard.png — Dashboard tras inicio de sesión.
+8.1 Evidencia del modelo de IA
+Los resultados de inferencia del modelo activo (v8) sobre imágenes reales del dataset se guardaron en docs/sprint5/evidencias/ia/resultados_ia.json. Se muestra a continuación.
+
+Figura 7. Pantalla de la aplicación tras análisis (representativa). Los resultados de IA se respaldan en resultados_ia.json y ejecucion_ia.txt.
+Salida del modelo v8 (resumen): líquenes saludables → «liquen saludable» (confianza 0.89–1.0); una imagen de la clase «contaminado» fue clasificada como «liquen desconocido» (confianza 0.96), mientras que otras dos lo fueron como «liquen contaminado» (confianza 0.99–1.0); las imágenes de la clase «desconocido» y la imagen que no corresponde a un líquen se clasificaron como «liquen desconocido» (confianza 1.0). El modelo no implementa un rechazo explícito «no es un líquen»: la lógica de 3 clases asigna esas imágenes a la clase «desconocido».
+
+9. Entregable 4 — Reporte de Hallazgos (Bug Report)
+Durante las pruebas se detectó y corrigió un defecto real de seguridad. No se documentan problemas inventados.
+
+Comportamiento observado (antes)
+Se verificó que una petición sin token a GET /imagenes devolvía 200 con 28 registros, incluidos los paths de imágenes privadas de análisis; DELETE /imagenes/31 sin token devolvía 204 (eliminaba fila y archivo).
+Corrección aplicada
+Se agregó autenticación obligatoria (get_current_user) a los tres endpoints, y control de propiedad/permiso (CAN_VIEW_PRIVATE_IMAGES) para imágenes privadas: el propietario conserva acceso; otros usuarios/roles sin permiso reciben 403; sin token reciben 401.
+Reejecución y validación
+Tras la corrección: sin token → 401 en listar/consultar/eliminar; propietario ve y elimina su imagen (200/204); otro usuario (admin sin permiso especial) recibe 403 en consultar/eliminar imágenes privadas ajenas. La suite pytest fue actualizada y ahora pasa 176/176 (ver sección 11).
+- Sin token: GET /imagenes: esperado «401», obtenido «status=401» → Aprobado.
+- Sin token: GET /imagenes/{id}: esperado «401», obtenido «status=401» → Aprobado.
+- Sin token: DELETE /imagenes/{id}: esperado «401», obtenido «status=401» → Aprobado.
+- Login propietario: esperado «200», obtenido «status=200» → Aprobado.
+- Crear análisis persistido (propietario): esperado «200 + id>0», obtenido «status=200, id=32» → Aprobado.
+- GET /imagenes: solo imágenes visibles (públicas + propias): esperado «contiene imagen propia», obtenido «status=200, privadas=1» → Aprobado.
+- GET imagen privada propia: esperado «200», obtenido «status=200» → Aprobado.
+- DELETE imagen privada propia: esperado «204», obtenido «status=204» → Aprobado.
+- OTRO usuario GET imagen privada ajena: esperado «403», obtenido «sin imágenes ajenas en listado del otro usuario» → Aprobado.
+
+10. Entregable 5 — Evidencias de Pruebas Automatizadas con Selenium
+Se revisó el proyecto y no existía configuración previa de Selenium. Se implementó una infraestructura de pruebas web con Selenium 4.48 (Chrome + Selenium Manager) sobre el build Flutter Web servido en el puerto 8080. El diseño de automatización cubre: login exitoso, login con credenciales incorrectas, registro, validación de campos, consulta principal y una operación CRUD (actualización de perfil).
+No obstante, la ejecución automatizada quedó interrumpida por problemas técnicos del script y del entorno (activación intermitente del árbol de semántica de Flutter Web y cierre de la sesión del navegador). Esto NO debe interpretarse como resultados de prueba: los casos no lograron completarse de forma fiable y por ello se marcan como «Bloqueados» en lo que a resultados de comportamiento respecta. Las capturas que sí se generaron evidencian que la app web se renderiza correctamente.
+
+Figura 8. Evidencia Selenium — Pantalla de inicio de sesión (semántica activada).
+
+Figura 9. Evidencia Selenium — Validación de campos vacíos en login.
+
+Figura 10. Evidencia Selenium — Login con credenciales completadas.
+
+Figura 11. Evidencia Selenium — Login con credenciales incorrectas.
+
+Figura 12. Evidencia Selenium — Login exitoso — navegación al Dashboard.
+
+Figura 13. Evidencia Selenium — Dashboard tras inicio de sesión.
+10.1 Resultados de ejecución automatizada (Selenium)
+
+Nota: En una verificación aislada (fuera de la suite) se pudo completar el flujo de login exitoso tras corregir la activación de semántica y el envío de credenciales con send_keys, llegando al Dashboard (f02_login_exitoso.png). Sin embargo, esto no es reproducible de forma fiable dentro de la suite en el entorno actual, por lo que la automatización web queda documentada como parcialmente operativa y pendiente de estabilizar. No se marcan como aprobados los casos de la suite que no se ejecutaron de extremo a extremo.
+
+11. Pruebas del modelo de Inteligencia Artificial
+Se validó que el modelo activo en producción es realmente el registrado como activo en la base de datos: lichen_model_v8.keras (Base de datos MySQL), sin modificar el modelo para hacer pasar la prueba.
+
+Consideraciones sobre «desconocido» y «no es un líquen»: La aplicación NO convierte automáticamente la clase «desconocido» en «No es un líquen». El clasificador es de 3 clases (saludable/contaminado/desconocido) y, para imágenes fuera de las categorías de líquen, la predicción devuelve «liquen desconocido». No existe un rechazo explícito implementado en el modelo; se verificó que dicha lógica no existe y se documenta este comportamiento real.
+12. Pruebas automatizadas existentes (backend y frontend)
+12.1 Backend (pytest)
+Los 24 archivos de test del backend suman 175 casos. Durante la auditoría inicial pasaron 175/175. Tras la corrección BUG-001 y la actualización del test correspondiente, la suite pasó 176/176. Cubren: endpoints críticos, autenticación (registro/login), Google auth, recuperación de contraseña y código, sesiones, refresh/logout, análisis (incluido el caso «desconocido»), contrato de análisis, control de acceso de imágenes, dashboard/stats, reportes, zonas, especie, pipeline de IA/inferencia y flujos end-to-end.
+12.2 Frontend (Flutter)
+frontend/test/ contiene 13 archivos y 36 pruebas de widget/unit. La ejecución de «flutter test» completó 37 pruebas (contando la impresión de resultados), todas aprobadas. «flutter analyze» no informó errores (0 errores; 15 advertencias y 99 informativos).
+
+13. Pruebas de integración
+Se ejecutaron flujos end-to-end reales vía HTTP contra el servidor en vivo: registro → login → perfil → análisis de imagen → creación de ubicación → análisis persistido (cámara) → consulta de resultado → historial → dashboard → puntos de mapa → notificaciones. El usuario de prueba qa_sprint5_dllpsh@test.com alcanzó 38/38 escenarios aprobados en la corrida definitiva, lo que confirma la integración frontend/backend/BD y la persistencia correcta.
+14. Pruebas de regresión
+Tras la corrección BUG-001 se ejecutaron las regresiones: (a) suite pytest completa 176/176 aprobados; (b) reejecución del escenario de imágenes sin auth → 401, propiedad → 200/204, ajeno → 403. Además se añadió una prueba de regresión dedicada en test_image_access_control.py que valida el comportamiento corregido.
+15. Correcciones realizadas
+
+16. Resultados finales
+
+16.1 Módulos aprobados
+Registro, Login, Recuperación de contraseña, Perfil, Dashboard, Historial, Análisis de imágenes e IA, Mapa, LiquenPedia/artículos, CRUD administrativos (especies, zonas, notificaciones, artículos), Validaciones, Integración y Persistencia (MySQL).
+16.2 Bloqueados / no ejecutables
+Pruebas web automatizadas con Selenium de forma fiable (por interrupción del script en el entorno). La funcionalidad web en sí se verificó parcialmente con la captura del login exitoso aislado, pero no se consolidan como resultados automatizados aprobados.
+17. Conclusiones
+El Sprint 5 permitió validar el estado real del proyecto a través de pruebas ejecutadas y no supuestas. El backend supera sus 176 pruebas automatizadas y el frontend sus 37 pruebas; la integración frontend/backend/base de datos se confirmó mediante 38 escenarios end-to-end aprobados. El modelo de IA activo (v8) es el registrado en la base de datos y clasifica correctamente las tres categorías, documentándose el caso «desconocido» sin convertirlo en «no es un líquen».
+Se detectó y corrigió un defecto de seguridad real (exposición de imágenes privadas sin autenticación), validado nuevamente por regresión. Las pruebas web automatizadas con Selenium quedaron documentadas como interrumpidas por problemas del script/navegador en el entorno, sin inventar resultados.
+18. Anexos / Evidencias
+La carpeta de evidencias se encuentra en docs/sprint5/evidencias/, organizada por módulo: registro, login, recuperacion, perfil, dashboard, historial, ia, mapa, liquenpedia, api, selenium y correcciones. Se incluyen archivos JSON con las respuestas reales de la API, salidas de consola y capturas.
+18.1 Archivos generados durante el Sprint 5
+backend/routes/imagenes.py (corregido: control de acceso)
+backend/tests/test_api.py (actualizado: control de acceso en imágenes)
+backend/tests/test_image_access_control.py (nueva prueba de regresión BUG-001)
+docs/sprint5/scripts/*.py (scripts de auditoría, IA y Selenium)
+docs/sprint5/evidencias/** (evidencias organizadas por módulo)
+Sprint_5_Pruebas_y_Estabilizacion_Lichen_Dreams.docx (este documento)

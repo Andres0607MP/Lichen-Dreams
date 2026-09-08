@@ -1,0 +1,60 @@
+{
+  "fecha": "2026-09-03 18:09:19",
+  "usuario": "qa_bug001_id4y7@test.com",
+  "resultados": [
+    {
+      "caso": "Sin token: GET /imagenes",
+      "esperado": "401",
+      "obtenido": "status=401",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "Sin token: GET /imagenes/{id}",
+      "esperado": "401",
+      "obtenido": "status=401",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "Sin token: DELETE /imagenes/{id}",
+      "esperado": "401",
+      "obtenido": "status=401",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "Login propietario",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "Crear análisis persistido (propietario)",
+      "esperado": "200 + id>0",
+      "obtenido": "status=200, id=32",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "GET /imagenes: solo imágenes visibles (públicas + propias)",
+      "esperado": "contiene imagen propia",
+      "obtenido": "status=200, privadas=1",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "GET imagen privada propia",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "DELETE imagen privada propia",
+      "esperado": "204",
+      "obtenido": "status=204",
+      "estado": "Aprobado"
+    },
+    {
+      "caso": "OTRO usuario GET imagen privada ajena",
+      "esperado": "403",
+      "obtenido": "sin imágenes ajenas en listado del otro usuario",
+      "estado": "Aprobado"
+    }
+  ]
+}

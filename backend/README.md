@@ -4,28 +4,100 @@ Pequeñas instrucciones para inicializar el backend (FastAPI).
 
 ## Requisitos
 
-- Python 3.12
+- **Python 3.12** (obligatorio)
 - `pip`
+
+> ⚠️ El backend debe ejecutarse con **Python 3.12**. No uses Python 3.13 o 3.14
+> para crear el entorno virtual: **TensorFlow aún no admite Python 3.14** y
+> `pip install -r requirements.txt` fallará con
+> `Could not find a version that satisfies the requirement tensorflow`.
+> Por eso las instrucciones crean el entorno con `python3.12` (Linux/macOS) o
+> `py -3.12` (Windows), en lugar de un `python` genérico que podría apuntar a
+> otra versión.
 
 ## Instalación (Linux / macOS / Git Bash)
 
 ```bash
-python -m venv venv
-source venv/bin/activate
+python3.12 --version                 # debe mostrar Python 3.12.x
+python3.12 -m venv .venv
+source .venv/bin/activate
+python --version                     # debe seguir mostrando Python 3.12.x
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 cp .env.example .env
+python -m alembic upgrade head
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+Se usa `python3.12` de forma intencionada para garantizar que el entorno
+virtual se cree con la versión correcta, aunque el sistema tenga instalada
+otra versión (por ejemplo, Python 3.14).
 
 ## Instalación (Windows PowerShell)
 
 ```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+py -3.12 --version                   # debe mostrar Python 3.12.x
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python --version                     # debe seguir mostrando Python 3.12.x
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 copy .env.example .env
+python -m alembic upgrade head
 uvicorn main:app --reload --host 127.0.0.1 --port 8000
 ```
+
+El launcher `py -3.12` permite elegir explícitamente Python 3.12 aunque en el
+sistema esté instalada otra versión de Python (por ejemplo, Python 3.14).
+
+> Dentro del entorno `.venv` activado, el comando `python` ya apunta al
+> intérprete de Python 3.12 con el que se creó el entorno.
+
+## Problemas frecuentes
+
+### TensorFlow no se puede instalar
+
+Si al instalar dependencias aparece:
+
+```text
+ERROR: Could not find a version that satisfies the requirement tensorflow
+ERROR: No matching distribution found for tensorflow
+```
+
+comprueba la versión actual de Python dentro del entorno:
+
+```bash
+python --version
+```
+
+Si muestra **Python 3.14.x** (u otra versión distinta de 3.12), el entorno fue
+creado con una versión incorrecta. Solución:
+
+**Linux / macOS:**
+
+```bash
+deactivate
+rm -rf .venv
+python3.12 -m venv .venv
+source .venv/bin/activate
+python --version                     # debe mostrar Python 3.12.x
+pip install -r requirements.txt
+```
+
+**Windows PowerShell:**
+
+```powershell
+deactivate
+Remove-Item -Recurse -Force .venv
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python --version                     # debe mostrar Python 3.12.x
+pip install -r requirements.txt
+```
+
+No soluciones este problema cambiando al azar la versión de TensorFlow del
+`requirements.txt`: primero usa **Python 3.12** y conserva las dependencias
+definidas en el proyecto.
 
 ## Variables de entorno
 

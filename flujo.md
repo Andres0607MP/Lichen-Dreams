@@ -58,7 +58,11 @@ DB_NAME=lichen_dreams
 cd backend
 
 # 2. Crear environment virtual (si no existe)
-python -m venv .venv
+# Requiere Python 3.12 (TensorFlow no admite Python 3.14).
+# Linux/macOS:
+python3.12 -m venv .venv
+# Windows (con el launcher py):
+# py -3.12 -m venv .venv
 
 # 3. Activar environment
 # Windows:

@@ -1,0 +1,195 @@
+{
+  "fecha": "2026-09-03 18:07:38",
+  "base": "http://127.0.0.1:8000",
+  "resultados": [
+    {
+      "modulo": "login",
+      "caso": "login administrador",
+      "esperado": "200 + token",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBnbWFpbC5jb20iLCJzaWQiOiI4ZGYzYTZiZGZkOGI0NjYxYWZlYWJjM2YxOWU4NjU4MyIsImV4cCI6MTc4ODQ4NDA1OH0.gVjP52PTntHBUEeYA-C0A8kpjLLjfNEgSRDVUoqkPv0', 'refresh_token': 'eyJhbGciOiJIUzI1NiI",
+      "evidencia": "liquenpedia/CP-101-admin-login.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "admin: crear artículo publicado",
+      "esperado": "201 + id",
+      "obtenido": "status=201, id=1",
+      "estado": "Aprobado",
+      "detalle": "{'id_articulo': 1, 'titulo': 'Liquenes como bioindicadores a16d', 'contenido': 'Los liquenes son organismos simbioticos que reaccionan de forma sensible a la calidad del aire. Este articulo de prueba del Sprint 5 documenta su uso como bioindicadores ambientales.', 'autor': 'Hugo Andres Mancera Perez', 'categoria': 'Ecología', 'id_categoria': 1, 'categoria_nombre': 'Ecología', 'imagen_articulo': No",
+      "evidencia": "liquenpedia/CP-102-crear-articulo.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "listado público incluye artículo",
+      "esperado": "artículo visible",
+      "obtenido": "status=200, visible=True, total=1",
+      "estado": "Aprobado",
+      "detalle": "[{'id_articulo': 1, 'titulo': 'Liquenes como bioindicadores a16d', 'contenido': 'Los liquenes son organismos simbioticos que reaccionan de forma sensible a la calidad del aire. Este articulo de prueba del Sprint 5 documenta su uso como bioindicadores ambientales.', 'autor': 'Hugo Andres Mancera Perez', 'categoria': 'Ecología', 'imagen_articulo': None, 'foto_perfil_articulo': None, 'estado_publicacion': 'published', 'fecha_publicacion': '2026-09-03T18:07:38', 'fecha_actualizacion': '2026-09-03T23",
+      "evidencia": "liquenpedia/CP-103-listado-publico.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "detalle del artículo",
+      "esperado": "200 + título",
+      "obtenido": "status=200, titulo=Liquenes como bioindicadores a16d",
+      "estado": "Aprobado",
+      "detalle": "{'id_articulo': 1, 'titulo': 'Liquenes como bioindicadores a16d', 'contenido': 'Los liquenes son organismos simbioticos que reaccionan de forma sensible a la calidad del aire. Este articulo de prueba del Sprint 5 documenta su uso como bioindicadores ambientales.', 'autor': 'Hugo Andres Mancera Perez', 'categoria': 'Ecología', 'id_categoria': 1, 'categoria_nombre': 'Ecología', 'imagen_articulo': No",
+      "evidencia": "liquenpedia/CP-104-detalle-articulo.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "búsqueda por palabra clave",
+      "esperado": "200 + coincide",
+      "obtenido": "status=200, body=[{'id_articulo': 1, 'titulo': 'Liquenes como bioindicadores a16d', 'contenido': 'Los liquenes son organismos simbioticos que reaccionan de forma sensible a la calidad del aire. Este articulo de prueba",
+      "estado": "Aprobado",
+      "detalle": "[{'id_articulo': 1, 'titulo': 'Liquenes como bioindicadores a16d', 'contenido': 'Los liquenes son organismos simbioticos que reaccionan de forma sensible a la calidad del aire. Este articulo de prueba del Sprint 5 documenta su uso como bioindicadores ambientales.', 'autor': 'Hugo Andres Mancera Pere",
+      "evidencia": "liquenpedia/CP-105-busqueda.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "actualizar artículo",
+      "esperado": "200 + título nuevo",
+      "obtenido": "status=200, titulo=Liquenes como bioindicadores a16d (editado)",
+      "estado": "Aprobado",
+      "detalle": "{'id_articulo': 1, 'titulo': 'Liquenes como bioindicadores a16d (editado)', 'contenido': 'Los liquenes son organismos simbioticos que reaccionan de forma sensible a la calidad del aire. Este articulo de prueba del Sprint 5 documenta su uso como bioindicadores ambientales.', 'autor': 'Hugo Andres Man",
+      "evidencia": "liquenpedia/CP-106-actualizar-articulo.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "eliminar artículo",
+      "esperado": "204",
+      "obtenido": "status=204",
+      "estado": "Aprobado",
+      "detalle": "204",
+      "evidencia": "liquenpedia/CP-107-eliminar-articulo.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "dato inexistente tras eliminar",
+      "esperado": "404",
+      "obtenido": "status=404",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Artículo no encontrado'}",
+      "evidencia": "liquenpedia/CP-108-articulo-inexistente.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "crear artículo draft sin foto",
+      "esperado": "201",
+      "obtenido": "status=201, id=2",
+      "estado": "Aprobado",
+      "detalle": "{'id_articulo': 2, 'titulo': 'Articulo borrador sin imagen a16d', 'contenido': 'Articulo de prueba creado en estado draft para validar que no aparece en el listado publico y el manejo de autor sin foto.', 'autor': 'Autor Sin Foto QA', 'categoria': 'Educación', 'id_categoria': 2, 'categoria_nombre': ",
+      "evidencia": "liquenpedia/CP-109-articulo-draft.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "draft no visible para público",
+      "esperado": "no visible",
+      "obtenido": "visible_en_listado=False",
+      "estado": "Aprobado",
+      "detalle": "[]",
+      "evidencia": "liquenpedia/CP-110-draft-oculto.json"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "draft denegado a público",
+      "esperado": "403",
+      "obtenido": "status=403",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'No tienes permiso para ver este artículo'}",
+      "evidencia": "liquenpedia/CP-111-draft-403.json"
+    },
+    {
+      "modulo": "especies",
+      "caso": "admin: crear especie",
+      "esperado": "201/200 + id",
+      "obtenido": "status=201, id=2",
+      "estado": "Aprobado",
+      "detalle": "{'id_especie': 2, 'nombre_cientifico': 'Pseudotestia sprinta a16d', 'nombre_comun': 'Liquen de prueba', 'descripcion': 'Especie de prueba del Sprint 5.', 'color_predominante': None, 'tipo_crecimiento': None, 'nivel_tolerancia_contaminacion': None, 'indicador_calidad_aire': 'buena', 'habitat': None, 'imagen_referencia': None, 'fecha_registro': '2026-09-03T18:07:38'}",
+      "evidencia": "liquenpedia/CP-112-crear-especie.json"
+    },
+    {
+      "modulo": "especies",
+      "caso": "especie duplicada",
+      "esperado": "409",
+      "obtenido": "status=409",
+      "estado": "Aprobado",
+      "detalle": "{'detail': \"Ya existe una especie con el nombre científico 'Pseudotestia sprinta a16d'\"}",
+      "evidencia": "liquenpedia/CP-113-especie-duplicada.json"
+    },
+    {
+      "modulo": "especies",
+      "caso": "actualizar especie",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'id_especie': 2, 'nombre_cientifico': 'Pseudotestia sprinta a16d', 'nombre_comun': 'Liquen de prueba editado', 'descripcion': 'Especie de prueba del Sprint 5.', 'color_predominante': None, 'tipo_crecimiento': None, 'nivel_tolerancia_contaminacion': None, 'indicador_calidad_aire': 'buena', 'habitat'",
+      "evidencia": "liquenpedia/CP-114-actualizar-especie.json"
+    },
+    {
+      "modulo": "especies",
+      "caso": "catálogo consultable",
+      "esperado": "200 + contiene",
+      "obtenido": "status=200, body=[{'id_especie': 2, 'nombre_cientifico': 'Pseudotestia sprinta a16d', 'nombre_comun': 'Liquen de prueba editado', 'descripcion': 'Especie de prueba del Sprint 5.', 'color_predominante': None, 'tipo_crecimiento': None, 'nivel_tolerancia_contaminacion':",
+      "estado": "Aprobado",
+      "detalle": "[{'id_especie': 2, 'nombre_cientifico': 'Pseudotestia sprinta a16d', 'nombre_comun': 'Liquen de prueba editado', 'descripcion': 'Especie de prueba del Sprint 5.', 'color_predominante': None, 'tipo_crecimiento': None, 'nivel_tolerancia_contaminacion': None, 'indicador_calidad_aire': 'buena', 'habitat",
+      "evidencia": "liquenpedia/CP-115-catalogo-especies.json"
+    },
+    {
+      "modulo": "especies",
+      "caso": "eliminar especie",
+      "esperado": "200/204",
+      "obtenido": "status=204",
+      "estado": "Aprobado",
+      "detalle": "204",
+      "evidencia": "liquenpedia/CP-116-eliminar-especie.json"
+    },
+    {
+      "modulo": "zonas",
+      "caso": "admin: crear zona",
+      "esperado": "200/201 + id",
+      "obtenido": "status=201, id=2",
+      "estado": "Aprobado",
+      "detalle": "{'id_zona': 2, 'nombre_zona': 'Zona prueba Sprint5 a16d', 'latitud': 4.65, 'longitud': -74.1, 'radio_metros': 1500.0, 'nivel_riesgo': 'bajo', 'calidad_promedio_aire': 'buena', 'total_analisis': 1, 'saludables': 1, 'afectados': 0, 'desconocidos': 0, 'porcentaje_saludable': 100.0, 'descripcion': 'Zona ambiental de prueba.', 'fecha_actualizacion': None}",
+      "evidencia": "mapa/CP-117-crear-zona.json"
+    },
+    {
+      "modulo": "zonas",
+      "caso": "actualizar zona",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'id_zona': 2, 'nombre_zona': 'Zona prueba Sprint5 a16d editada', 'latitud': 4.65, 'longitud': -74.1, 'radio_metros': 2500.0, 'nivel_riesgo': 'bajo', 'calidad_promedio_aire': 'buena', 'total_analisis': 1, 'saludables': 1, 'afectados': 0, 'desconocidos': 0, 'porcentaje_saludable': 100.0, 'descripcion",
+      "evidencia": "mapa/CP-118-actualizar-zona.json"
+    },
+    {
+      "modulo": "zonas",
+      "caso": "catálogo de zonas",
+      "esperado": "200 + contiene",
+      "obtenido": "status=200, body=[{'id_zona': 2, 'nombre_zona': 'Zona prueba Sprint5 a16d editada', 'latitud': 4.65, 'longitud': -74.1, 'radio_metros': 2500.0, 'nivel_riesgo': 'bajo', 'calidad_promedio_aire': 'buena', 'total_analisis': 1, 'saludables': 1, 'afectados': 0, 'desconocid",
+      "estado": "Aprobado",
+      "detalle": "[{'id_zona': 2, 'nombre_zona': 'Zona prueba Sprint5 a16d editada', 'latitud': 4.65, 'longitud': -74.1, 'radio_metros': 2500.0, 'nivel_riesgo': 'bajo', 'calidad_promedio_aire': 'buena', 'total_analisis': 1, 'saludables': 1, 'afectados': 0, 'desconocidos': 0, 'porcentaje_saludable': 100.0, 'descripcio",
+      "evidencia": "mapa/CP-119-catalogo-zonas.json"
+    },
+    {
+      "modulo": "zonas",
+      "caso": "eliminar zona",
+      "esperado": "200/204",
+      "obtenido": "status=204",
+      "estado": "Aprobado",
+      "detalle": "204",
+      "evidencia": "mapa/CP-120-eliminar-zona.json"
+    },
+    {
+      "modulo": "notificaciones",
+      "caso": "admin: notificación a todos",
+      "esperado": "200/201",
+      "obtenido": "status=201",
+      "estado": "Aprobado",
+      "detalle": "{'message': 'Notificaciones creadas correctamente', 'count': 6, 'destino': 'all'}",
+      "evidencia": "dashboard/CP-121-notificacion-admin.json"
+    }
+  ]
+}

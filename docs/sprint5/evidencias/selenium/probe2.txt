@@ -1,0 +1,49 @@
+﻿python.exe : Traceback (most recent call last):
+En línea: 4 Carácter: 1
++ & "backend\.venv\Scripts\python.exe" docs\sprint5\scripts\selenium_pr ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\mance\Documents\Steffi\Lichen-Dreams\docs\sprint5\scripts\selenium_probe.py", line 13, in <module>
+    driver.get("http://127.0.0.1:8080/")
+  File "C:\Users\mance\Documents\Steffi\Lichen-Dreams\backend\.venv\Lib\site-packages\selenium\webdriver\remote\webdriv
+er.py", line 523, in get
+    self.execute(Command.GET, {"url": url})
+  File "C:\Users\mance\Documents\Steffi\Lichen-Dreams\backend\.venv\Lib\site-packages\selenium\webdriver\remote\webdriv
+er.py", line 503, in execute
+    self.error_handler.check_response(response)
+  File "C:\Users\mance\Documents\Steffi\Lichen-Dreams\backend\.venv\Lib\site-packages\selenium\webdriver\remote\errorha
+ndler.py", line 232, in check_response
+    raise exception_class(message, screen, stacktrace)
+selenium.common.exceptions.WebDriverException: Message: unknown error: net::ERR_CONNECTION_REFUSED
+  (Session info: chrome=152.0.7977.82)
+Stacktrace:
+	chromedriver!GetHandleVerifier [0x7ff70ac6e035+5745]
+	chromedriver!(No symbol) [0x7ff70ab96a90]
+	chromedriver!(No symbol) [0x7ff70a9c5d7d]
+	chromedriver!(No symbol) [0x7ff70a9c2b49]
+	chromedriver!(No symbol) [0x7ff70a9b2fc1]
+	chromedriver!(No symbol) [0x7ff70a9b4e25]
+	chromedriver!(No symbol) [0x7ff70a9b3563]
+	chromedriver!(No symbol) [0x7ff70a9b2d2b]
+	chromedriver!(No symbol) [0x7ff70a9b29e1]
+	chromedriver!(No symbol) [0x7ff70a9b0697]
+	chromedriver!(No symbol) [0x7ff70a9b0e12]
+	chromedriver!(No symbol) [0x7ff70a9c9fd6]
+	chromedriver!(No symbol) [0x7ff70aa6f314]
+	chromedriver!(No symbol) [0x7ff70aa495ca]
+	chromedriver!(No symbol) [0x7ff70aa6e502]
+	chromedriver!(No symbol) [0x7ff70aa12e4b]
+	chromedriver!(No symbol) [0x7ff70aa13d83]
+	chromedriver!GetHandleVerifier [0x7ff70b082f8b+41a69b]
+	chromedriver!GetHandleVerifier [0x7ff70b0b0132+447842]
+	chromedriver!GetHandleVerifier [0x7ff70b0a3e7e+43b58e]
+	chromedriver!GetHandleVerifier [0x7ff70ad63f5e+fb66e]
+	chromedriver!(No symbol) [0x7ff70aba419c]
+	chromedriver!(No symbol) [0x7ff70ab9fdd4]
+	chromedriver!(No symbol) [0x7ff70ab9ff64]
+	chromedriver!(No symbol) [0x7ff70ab8a91c]
+	KERNEL32!BaseThreadInitThunk [0x7ff9a5b9ccb7+17]
+	ntdll!RtlUserThreadStart [0x7ff9a7d2caec+2c]
+

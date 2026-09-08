@@ -1,0 +1,54 @@
+{
+  "base": "http://127.0.0.1:8080",
+  "fecha": "2026-09-05 15:29:52",
+  "casos": [
+    {
+      "id": "S-03",
+      "caso": "Validación de campos vacíos en login",
+      "esperado": "No permite enviar el formulario vacío",
+      "obtenido": "boton_deshabilitado=False; error=False; url=http://127.0.0.1:8080/#/login",
+      "estado": "Fallido",
+      "evidencia": "selenium\\CP-201-sel-login-campos-vacios.png"
+    },
+    {
+      "id": "S-02",
+      "caso": "Login con credenciales incorrectas",
+      "esperado": "Mensaje de error y permanece en /login",
+      "obtenido": "url=http://127.0.0.1:8080/#/login; mensaje=",
+      "estado": "Fallido",
+      "evidencia": "selenium\\CP-203-sel-login-incorrecto-error.png"
+    },
+    {
+      "id": "S-01",
+      "caso": "Login exitoso",
+      "esperado": "Redirige a Dashboard y muestra datos",
+      "obtenido": "url=http://127.0.0.1:8080/#/login; contenido=",
+      "estado": "Fallido",
+      "evidencia": "selenium\\CP-204-sel-login-exitoso-dashboard.png"
+    },
+    {
+      "id": "S-05",
+      "caso": "Consulta/listado principal (Dashboard)",
+      "esperado": "Se muestra el dashboard con estadísticas cargadas",
+      "obtenido": "url=http://127.0.0.1:8080/#/login; labels=",
+      "estado": "Fallido",
+      "evidencia": "selenium\\CP-205-sel-dashboard.png"
+    },
+    {
+      "id": "S-06",
+      "caso": "Operación CRUD: actualización de perfil",
+      "esperado": "Datos actualizados en la pantalla de perfil",
+      "obtenido": "labels=; placeholders_perfil=['', '']",
+      "estado": "Fallido",
+      "evidencia": "selenium\\CP-208-sel-perfil-resultado.png"
+    },
+    {
+      "id": "S-04",
+      "caso": "Registro de usuario",
+      "esperado": "Se muestra el código de recuperación LCHN",
+      "obtenido": "url=http://127.0.0.1:8080/#/login; labels=; placeholders=['Correo electrónico', 'Contraseña']",
+      "estado": "Fallido",
+      "evidencia": "selenium\\CP-211-sel-registro-resultado.png"
+    }
+  ]
+}

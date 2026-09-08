@@ -1,0 +1,124 @@
+{
+  "Sprint_5_Entregable_1_Plan_de_Pruebas.docx": {
+    "file": "Sprint_5_Entregable_1_Plan_de_Pruebas.docx",
+    "exists": true,
+    "testzip": "OK",
+    "document_xml": true,
+    "styles_xml": true,
+    "media": [],
+    "parrafos": 61,
+    "tablas": 4,
+    "header": "Lichen Dreams — Sprint 5 · Pruebas y Estabilización del Software",
+    "pie_num": true,
+    "banned_hits": [
+      "6 pruebas"
+    ],
+    "required_missing": [],
+    "selenium_count": 1,
+    "headings": 13
+  },
+  "Sprint_5_Entregable_2_Diseno_de_Casos_de_Prueba.docx": {
+    "file": "Sprint_5_Entregable_2_Diseno_de_Casos_de_Prueba.docx",
+    "exists": true,
+    "testzip": "OK",
+    "document_xml": true,
+    "styles_xml": true,
+    "media": [],
+    "parrafos": 27,
+    "tablas": 5,
+    "header": "Lichen Dreams — Sprint 5 · Pruebas y Estabilización del Software",
+    "pie_num": true,
+    "banned_hits": [],
+    "required_missing": [
+      "FastAPI",
+      "MySQL",
+      "176/176",
+      "37/37",
+      "38/38",
+      "21/21",
+      "lichen_model_v8.keras",
+      "integration_test",
+      "Patrol",
+      "Appium",
+      "Maestro"
+    ],
+    "selenium_count": 0,
+    "headings": 6
+  },
+  "Sprint_5_Entregable_3_Matriz_Ejecucion_Pruebas_Manuales.docx": {
+    "file": "Sprint_5_Entregable_3_Matriz_Ejecucion_Pruebas_Manuales.docx",
+    "exists": true,
+    "testzip": "OK",
+    "document_xml": true,
+    "styles_xml": true,
+    "media": [],
+    "parrafos": 28,
+    "tablas": 5,
+    "header": "Lichen Dreams — Sprint 5 · Pruebas y Estabilización del Software",
+    "pie_num": true,
+    "banned_hits": [],
+    "required_missing": [
+      "Aplicación móvil (Android)",
+      "Flutter es un framework multiplataforma",
+      "FastAPI",
+      "MySQL",
+      "lichen_model_v8.keras",
+      "integration_test",
+      "Patrol",
+      "Appium",
+      "Maestro"
+    ],
+    "selenium_count": 0,
+    "headings": 6
+  },
+  "Sprint_5_Entregable_4_Reporte_Hallazgos_Bug_Report.docx": {
+    "file": "Sprint_5_Entregable_4_Reporte_Hallazgos_Bug_Report.docx",
+    "exists": true,
+    "testzip": "OK",
+    "document_xml": true,
+    "styles_xml": true,
+    "media": [],
+    "parrafos": 33,
+    "tablas": 5,
+    "header": "Lichen Dreams — Sprint 5 · Pruebas y Estabilización del Software",
+    "pie_num": true,
+    "banned_hits": [],
+    "required_missing": [
+      "Aplicación móvil (Android)",
+      "Flutter es un framework multiplataforma",
+      "FastAPI",
+      "MySQL",
+      "lichen_model_v8.keras",
+      "9 inferencias",
+      "integration_test",
+      "Patrol",
+      "Appium",
+      "Maestro"
+    ],
+    "selenium_count": 0,
+    "headings": 12
+  },
+  "Sprint_5_Entregable_5_Evidencias_Pruebas_Automatizadas.docx": {
+    "file": "Sprint_5_Entregable_5_Evidencias_Pruebas_Automatizadas.docx",
+    "exists": true,
+    "testzip": "OK",
+    "document_xml": true,
+    "styles_xml": true,
+    "media": [],
+    "parrafos": 65,
+    "tablas": 2,
+    "header": "Lichen Dreams — Sprint 5 · Pruebas y Estabilización del Software",
+    "pie_num": true,
+    "banned_hits": [
+      "6 pruebas"
+    ],
+    "required_missing": [
+      "Flutter es un framework multiplataforma",
+      "FastAPI",
+      "MySQL",
+      "lichen_model_v8.keras"
+    ],
+    "selenium_count": 6,
+    "headings": 8
+  }
+}

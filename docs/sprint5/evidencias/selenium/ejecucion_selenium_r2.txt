@@ -1,0 +1,63 @@
+﻿=== S-03 Validaci�n de campos vac�os en login ===
+=== S-02 Login con credenciales incorrectas ===
+=== S-01 Login exitoso ===
+=== S-05 Dashboard / S-06 Perfil (CRUD) ===
+=== S-04 Registro ===
+  [registro] inputs=4 email_i=1 pws=[2, 3]
+{
+  "base": "http://127.0.0.1:8080",
+  "api": "http://127.0.0.1:8000",
+  "fecha": "2026-09-05 18:03:12",
+  "iteracion": 2,
+  "nota": "Reintento con esperas de 20 s y selectores robustos.",
+  "casos": [
+    {
+      "id": "S-03",
+      "caso": "Validaci�n de campos vac�os en login (reintento r2)",
+      "esperado": "El formulario vac�o no puede enviarse (bot�n deshabilitado)",
+      "obtenido": "boton_deshabilitado=True; url=http://127.0.0.1:8080/#/login",
+      "estado": "Aprobado",
+      "evidencia": "CP-201-r2-sel-login-campos-vacios.png"
+    },
+    {
+      "id": "S-02",
+      "caso": "Login con credenciales incorrectas (reintento r2)",
+      "esperado": "Muestra error y permanece en /login",
+      "obtenido": "clic=True; url=http://127.0.0.1:8080/#/login; mensaje=(no capturado)",
+      "estado": "Fallido",
+      "evidencia": "CP-203-r2-sel-login-incorrecto-error.png"
+    },
+    {
+      "id": "S-01",
+      "caso": "Login exitoso (reintento r2)",
+      "esperado": "Redirige a Dashboard tras la autenticaci�n",
+      "obtenido": "clic=True; url=http://127.0.0.1:8080/#/dashboard; contenido=Lichen Dreams\nLee el aire, entiende tu entornoMen�Hola, SeleniumExplora el estado del aire mediante los l�quenesNo hay art�culos publicadosAnalizar li",
+      "estado": "Aprobado",
+      "evidencia": "CP-204-r2-sel-login-exitoso-dashboard.png"
+    },
+    {
+      "id": "S-05",
+      "caso": "Consulta/listado principal Dashboard (reintento r2)",
+      "esperado": "Se muestra dashboard con estad�sticas cargadas",
+      "obtenido": "url=http://127.0.0.1:8080/#/dashboard; labels=Lichen Dreams\nLee el aire, entiende tu entornoMen�Hola, SeleniumExplora el estado del aire mediante los l�quenesNo hay art�culos publicadosAnalizar liquen\nIdentifica especies con I",
+      "estado": "Aprobado",
+      "evidencia": "CP-205-r2-sel-dashboard.png"
+    },
+    {
+      "id": "S-06",
+      "caso": "Operaci�n CRUD: actualizaci�n de perfil (reintento r2)",
+      "esperado": "Se guarda el nombre en el perfil (verificado v�a API)",
+      "obtenido": "clic_perfil=True; clic_guardar=True; nombre_api=Selenium Usuario Actualizado",
+      "estado": "Aprobado",
+      "evidencia": "CP-208-r2-sel-perfil-resultado.png"
+    },
+    {
+      "id": "S-04",
+      "caso": "Registro de usuario (reintento r2)",
+      "esperado": "Se crea la cuenta y se muestra/muestra el flujo de recuperaci�n",
+      "obtenido": "clic=True; api_login=True; url=http://127.0.0.1:8080/#/recovery-code; labels=�Tu cuenta est� lista!Este es tu c�digo de recuperaci�n. Es la �nica forma de recuperar tu cuenta si pierdes acceso a tu correo.LCHN-5YKK-9DF7-PXC9\nToca para copiarGu�rda",
+      "estado": "Aprobado",
+      "evidencia": "CP-211-r2-sel-registro-resultado.png"
+    }
+  ]
+}

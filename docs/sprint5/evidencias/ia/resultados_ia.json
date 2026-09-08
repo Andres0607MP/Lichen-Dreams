@@ -1,0 +1,160 @@
+{
+  "prueba": "Pruebas del modelo de IA - Sprint 5",
+  "fecha": "2026-09-03 18:05:21",
+  "modelo_cargando_reales": {},
+  "activo_resuelto": {
+    "path": "C:\\Users\\mance\\Documents\\Steffi\\Lichen-Dreams\\backend\\ia\\modelos\\lichen_model_v8.keras",
+    "archivo_existe": true,
+    "input_size": [
+      224,
+      224
+    ],
+    "clases_modelo": [
+      "liquen saludable",
+      "liquen contaminado",
+      "liquen desconocido"
+    ]
+  },
+  "casos": [
+    {
+      "caso": "saludable",
+      "imagen": "ia\\datasets\\liquenes_saludables\\ls_0001.jpg",
+      "tiempo_s": 6.969,
+      "prediccion": {
+        "categoria": "liquen saludable",
+        "confianza": 0.9997085928916931,
+        "nombre_especie": null,
+        "nivel_contaminacion": "baja",
+        "calidad_aire": "buena"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "saludable",
+      "imagen": "ia\\datasets\\liquenes_saludables\\ls_0167.jpg",
+      "tiempo_s": 0.185,
+      "prediccion": {
+        "categoria": "liquen saludable",
+        "confianza": 0.9995036125183105,
+        "nombre_especie": null,
+        "nivel_contaminacion": "baja",
+        "calidad_aire": "buena"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "saludable",
+      "imagen": "ia\\datasets\\liquenes_saludables\\ls_0333.jpg",
+      "tiempo_s": 0.163,
+      "prediccion": {
+        "categoria": "liquen saludable",
+        "confianza": 0.8913994431495667,
+        "nombre_especie": null,
+        "nivel_contaminacion": "baja",
+        "calidad_aire": "buena"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "contaminado",
+      "imagen": "ia\\datasets\\liquenes_contaminados\\lc_0001.jpg",
+      "tiempo_s": 0.111,
+      "prediccion": {
+        "categoria": "liquen desconocido",
+        "confianza": 0.9556652903556824,
+        "nombre_especie": null,
+        "nivel_contaminacion": "desconocida",
+        "calidad_aire": "desconocida"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "contaminado",
+      "imagen": "ia\\datasets\\liquenes_contaminados\\lc_0237.jpg",
+      "tiempo_s": 0.128,
+      "prediccion": {
+        "categoria": "liquen contaminado",
+        "confianza": 0.9999971389770508,
+        "nombre_especie": null,
+        "nivel_contaminacion": "alta",
+        "calidad_aire": "mala"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "contaminado",
+      "imagen": "ia\\datasets\\liquenes_contaminados\\lcp_0372.jpg",
+      "tiempo_s": 0.128,
+      "prediccion": {
+        "categoria": "liquen contaminado",
+        "confianza": 0.997359573841095,
+        "nombre_especie": null,
+        "nivel_contaminacion": "alta",
+        "calidad_aire": "mala"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "desconocido",
+      "imagen": "ia\\datasets\\liquenes_desconocidos\\agua\\ag_0001.jpg",
+      "tiempo_s": 0.122,
+      "prediccion": {
+        "categoria": "liquen desconocido",
+        "confianza": 0.999982476234436,
+        "nombre_especie": null,
+        "nivel_contaminacion": "desconocida",
+        "calidad_aire": "desconocida"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "desconocido",
+      "imagen": "ia\\datasets\\liquenes_desconocidos\\hojas_plantas\\hp_0014.jpg",
+      "tiempo_s": 0.114,
+      "prediccion": {
+        "categoria": "liquen desconocido",
+        "confianza": 0.9999943971633911,
+        "nombre_especie": null,
+        "nivel_contaminacion": "desconocida",
+        "calidad_aire": "desconocida"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "desconocido",
+      "imagen": "ia\\datasets\\liquenes_desconocidos\\personas\\per_0002.jpg",
+      "tiempo_s": 0.125,
+      "prediccion": {
+        "categoria": "liquen desconocido",
+        "confianza": 0.9996654987335205,
+        "nombre_especie": null,
+        "nivel_contaminacion": "desconocida",
+        "calidad_aire": "desconocida"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "no_liquen",
+      "imagen": "C:\\Users\\mance\\Documents\\Steffi\\Lichen-Dreams\\docs\\sprint5\\evidencias\\ia\\imagen_no_liquen.png",
+      "tiempo_s": 0.105,
+      "prediccion": {
+        "categoria": "liquen desconocido",
+        "confianza": 0.9999599456787109,
+        "nombre_especie": null,
+        "nivel_contaminacion": "desconocida",
+        "calidad_aire": "desconocida"
+      },
+      "resultado": "OK"
+    },
+    {
+      "caso": "archivo_inexistente",
+      "resultado": "ERROR_ESPERADO",
+      "error": "FileNotFoundError: Imagen no encontrada: C:\\Users\\mance\\Documents\\Steffi\\Lichen-Dreams\\backend\\ia\\datasets\\no_existe_esta_imagen.jpg"
+    },
+    {
+      "caso": "archivo_corrupto",
+      "resultado": "ERROR_ESPERADO",
+      "error": "ValueError: No se pudo leer la imagen: C:\\Users\\mance\\Documents\\Steffi\\Lichen-Dreams\\docs\\sprint5\\evidencias\\ia\\imagen_corrupta.txt"
+    }
+  ]
+}

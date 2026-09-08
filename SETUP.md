@@ -83,13 +83,24 @@ python -c "from config import database; print(database.DATABASE_URL.split('://')
 
 ## 5. Backend — instalación y ejecución
 
+> El backend requiere **Python 3.12** (TensorFlow no admite Python 3.13+/3.14).
+> Crea el entorno virtual con `python3.12` en Linux/macOS o `py -3.12` en
+> Windows, y comprueba la versión después de activarlo.
+
 ```bash
 cd backend
-python -m venv .venv
-# Windows PowerShell:
-.\.venv\Scripts\activate
-# macOS / Linux:
-# source .venv/bin/activate
+
+# Linux / macOS (crear el entorno con Python 3.12):
+python3.12 --version
+python3.12 -m venv .venv
+source .venv/bin/activate
+
+# Windows PowerShell (con el launcher py de Python):
+# py -3.12 --version
+# py -3.12 -m venv .venv
+# .\.venv\Scripts\Activate.ps1
+
+python --version   # debe mostrar Python 3.12.x
 
 pip install -r requirements.txt
 ```

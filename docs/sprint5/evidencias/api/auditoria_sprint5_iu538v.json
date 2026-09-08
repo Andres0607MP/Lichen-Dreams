@@ -1,0 +1,312 @@
+{
+  "sesion": "sprint5_iu538v",
+  "fecha": "2026-09-03 18:06:46",
+  "base": "http://127.0.0.1:8000",
+  "usuario_prueba": "qa_sprint5_iu538v@test.com",
+  "resultados": [
+    {
+      "modulo": "api",
+      "caso": "raiz",
+      "esperado": "status 200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'message': 'Lichen Dreams API funcionando', 'db_host': 'localhost'}"
+    },
+    {
+      "modulo": "api",
+      "caso": "api_test",
+      "esperado": "status 200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'message': 'Conexion exitosa con FastAPI'}"
+    },
+    {
+      "modulo": "api",
+      "caso": "config",
+      "esperado": "status 200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'google_maps_api_key': 'AIzaSyCZkHKRJykBDSed3XPaf_HewdB4crfXfrw', 'backend_url': 'http://127.0.0.1:8000'}"
+    },
+    {
+      "modulo": "registro",
+      "caso": "registro exitoso",
+      "esperado": "200/201 + recovery_code",
+      "obtenido": "status=201, recovery_code=sí",
+      "estado": "Aprobado",
+      "detalle": "{'message': 'Registro exitoso. Tu cuenta está activa. Guarda tu código de recuperación en un lugar seguro.', 'email': 'qa_sprint5_iu538v@test.com', 'recovery_code': 'LCHN-G6EQ-DVTY-HZXP', 'requires_email_verification': False}"
+    },
+    {
+      "modulo": "registro",
+      "caso": "correo inválido",
+      "esperado": "status 422",
+      "obtenido": "status=422",
+      "estado": "Aprobado",
+      "detalle": "{'detail': [{'type': 'value_error', 'loc': ['body', 'email'], 'msg': 'value is not a valid email address: The email address is not valid. It must have exactly one @-sign.', 'input': 'correo-invalido', 'ctx': {'reason': 'The email address is not valid. It must have exactly one @-sign.'}}]}"
+    },
+    {
+      "modulo": "registro",
+      "caso": "contraseña inválida (<6)",
+      "esperado": "status 422",
+      "obtenido": "status=422",
+      "estado": "Aprobado",
+      "detalle": "{'detail': [{'type': 'value_error', 'loc': ['body', 'password'], 'msg': 'Value error, La contraseña debe tener al menos 6 caracteres', 'input': '123', 'ctx': {'error': {}}}]}"
+    },
+    {
+      "modulo": "registro",
+      "caso": "correo ya registrado",
+      "esperado": "status 400 'Usuario ya existe'",
+      "obtenido": "status=400 Usuario ya existe",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Usuario ya existe'}"
+    },
+    {
+      "modulo": "registro",
+      "caso": "campos obligatorios vacíos",
+      "esperado": "status 422",
+      "obtenido": "status=422",
+      "estado": "Aprobado",
+      "detalle": "{'detail': [{'type': 'missing', 'loc': ['body', 'email'], 'msg': 'Field required', 'input': {}}, {'type': 'missing', 'loc': ['body', 'password'], 'msg': 'Field required', 'input': {}}, {'type': 'missing', 'loc': ['body', 'name'], 'msg': 'Field required', 'input': {}}]}"
+    },
+    {
+      "modulo": "login",
+      "caso": "login exitoso",
+      "esperado": "access_token + refresh_token",
+      "obtenido": "status=200, access_token=sí",
+      "estado": "Aprobado",
+      "detalle": "{'id_usuario': 6, 'correo': 'qa_sprint5_iu538v@test.com', 'nombre': 'QA Prueba', 'apellido': None, 'telefono': None, 'tipo_documento': None, 'numero_documento': None, 'fecha_nacimiento': None, 'foto_perfil': None, 'estado_cuenta': None, 'id_rol': 2, 'rol': 'user', 'proveedor': 'local'}"
+    },
+    {
+      "modulo": "login",
+      "caso": "contraseña incorrecta",
+      "esperado": "status 401",
+      "obtenido": "status=401",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Credenciales inválidas'}"
+    },
+    {
+      "modulo": "login",
+      "caso": "usuario inexistente",
+      "esperado": "status 401",
+      "obtenido": "status=401",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Credenciales inválidas'}"
+    },
+    {
+      "modulo": "login",
+      "caso": "campos vacíos",
+      "esperado": "status 422",
+      "obtenido": "status=422",
+      "estado": "Aprobado",
+      "detalle": "{'detail': [{'type': 'missing', 'loc': ['body', 'password'], 'msg': 'Field required', 'input': None}]}"
+    },
+    {
+      "modulo": "login",
+      "caso": "sesión/autenticación válida",
+      "esperado": "200 + correo del usuario",
+      "obtenido": "status=200, email=None",
+      "estado": "Aprobado",
+      "detalle": "{'id_usuario': 6, 'correo': 'qa_sprint5_iu538v@test.com', 'nombre': 'QA Prueba', 'apellido': 'Sprint5', 'telefono': None, 'tipo_documento': None, 'numero_documento': None, 'fecha_nacimiento': None, 'foto_perfil': None, 'estado_cuenta': 'active', 'id_rol': 2, 'rol': 'user', 'proveedor': 'local'}"
+    },
+    {
+      "modulo": "recuperacion",
+      "caso": "token inválido rechazado",
+      "esperado": "status 401",
+      "obtenido": "status=401",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Token inválido'}"
+    },
+    {
+      "modulo": "recuperacion",
+      "caso": "solicitud código por email",
+      "esperado": "200 respuesta genérica",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'message': 'Si el correo está registrado, recibirás instrucciones para recuperar tu contraseña.'}"
+    },
+    {
+      "modulo": "recuperacion",
+      "caso": "código inválido",
+      "esperado": "status 400/401",
+      "obtenido": "status=400",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Código inválido o expirado. Solicita uno nuevo.'}"
+    },
+    {
+      "modulo": "recuperacion",
+      "caso": "recuperación con código LCHN válido",
+      "esperado": "200 + login posterior",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'message': 'Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña.'}"
+    },
+    {
+      "modulo": "recuperacion",
+      "caso": "login con nueva contraseña",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "{'access_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJxYV9zcHJpbnQ1X2l1NTM4dkB0ZXN0LmNvbSIsInNpZCI6IjM3OTk5ODViZTU0YjRiOTU5NWE5ZjU1NjNmMDVjYzYzIiwiZXhwIjoxNzg4NDg0MDExfQ.qWTrqsOvhpgxbZDpKuea3QzboCBmsfwvePoC0xsEf0g', 'refresh_token': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJxYV9zc"
+    },
+    {
+      "modulo": "perfil",
+      "caso": "carga del perfil",
+      "esperado": "200 con datos",
+      "obtenido": "status=200, nombre=QA Prueba",
+      "estado": "Aprobado",
+      "detalle": "{'id': 6, 'nombre': 'QA Prueba', 'apellido': 'Sprint5', 'correo': 'qa_sprint5_iu538v@test.com', 'telefono': None, 'tipo_documento': None, 'numero_documento': None, 'fecha_nacimiento': None, 'foto_perfil': None, 'fecha_registro': '2026-09-03T18:06:46'}"
+    },
+    {
+      "modulo": "perfil",
+      "caso": "actualización de datos",
+      "esperado": "200 + datos nuevos",
+      "obtenido": "status=200, nombre=QA Actualizado",
+      "estado": "Aprobado",
+      "detalle": "{'id': 6, 'nombre': 'QA Actualizado', 'apellido': 'Sprint5', 'correo': 'qa_sprint5_iu538v@test.com', 'telefono': '3001234567', 'tipo_documento': None, 'numero_documento': None, 'fecha_nacimiento': None, 'foto_perfil': None, 'fecha_registro': '2026-09-03T18:06:46'}"
+    },
+    {
+      "modulo": "perfil",
+      "caso": "datos inválidos (email)",
+      "esperado": "status 400/422",
+      "obtenido": "status=422",
+      "estado": "Aprobado",
+      "detalle": "{'detail': [{'type': 'value_error', 'loc': ['body', 'correo'], 'msg': 'value is not a valid email address: The email address is not valid. It must have exactly one @-sign.', 'input': 'correo-mal-formato', 'ctx': {'reason': 'The email address is not valid. It must have exactly one @-sign.'}}]}"
+    },
+    {
+      "modulo": "ia",
+      "caso": "análisis imagen líquen saludable",
+      "esperado": "200 + resultado",
+      "obtenido": "status=200, resultado=liquen saludable",
+      "estado": "Aprobado",
+      "detalle": "{'id': -1, 'id_usuario': 6, 'url_imagen': '/uploads/analyses/user_6/e6b80745d5174d4f9eb768cfb8981f59.jpg', 'resultado': 'liquen saludable', 'categoria': 'liquen saludable', 'confianza': 0.9997085928916931, 'nombre_especie': None, 'id_especie': None, 'especie_nombre_cientifico': None, 'especie_nombre_comun': None, 'estado': 'completed', 'status': 'completed', 'humedad': 0.0, 'humidity': 0.0, 'calid"
+    },
+    {
+      "modulo": "ia",
+      "caso": "análisis imagen que no es líquen",
+      "esperado": "200 (clasificación 3 clases, sin rechazo explícito)",
+      "obtenido": "status=200, resultado=liquen desconocido",
+      "estado": "Aprobado",
+      "detalle": "{'id': -1, 'id_usuario': 6, 'url_imagen': '/uploads/analyses/user_6/084c392554504aeaa04d44bd9273fab2.png', 'resultado': 'liquen desconocido', 'categoria': 'liquen desconocido', 'confianza': 0.9999599456787109, 'nombre_especie': None, 'id_especie': None, 'especie_nombre_cientifico': None, 'especie_nombre_comun': None, 'estado': 'completed', 'status': 'completed', 'humedad': 0.0, 'humidity': 0.0, 'c"
+    },
+    {
+      "modulo": "ia",
+      "caso": "análisis sin imagen (inválido)",
+      "esperado": "status 422",
+      "obtenido": "status=422",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Debes enviar una imagen o image_url'}"
+    },
+    {
+      "modulo": "ia",
+      "caso": "análisis cámara sin ubicación",
+      "esperado": "status 422 con mensaje GPS",
+      "obtenido": "status=422",
+      "estado": "Aprobado",
+      "detalle": "{'detail': 'Los análisis desde cámara requieren una ubicación válida. Activa el GPS e intenta de nuevo.'}"
+    },
+    {
+      "modulo": "mapa",
+      "caso": "creación/find-or-create de ubicación",
+      "esperado": "200/201 + id",
+      "obtenido": "status=200, location_id=3",
+      "estado": "Aprobado",
+      "detalle": "{'id_ubicacion': 3, 'latitud': 4.654, 'longitud': -74.097, 'existed': False, 'distance_meters': 0.0}"
+    },
+    {
+      "modulo": "ia",
+      "caso": "análisis persistido con ubicación (cámara)",
+      "esperado": "200 + id de análisis > 0",
+      "obtenido": "status=200, id=30, resultado=liquen saludable",
+      "estado": "Aprobado",
+      "detalle": "{'id': 30, 'id_usuario': 6, 'url_imagen': '/uploads/analyses/user_6/bf82e9f723464aeb94e52dc56cf4e193.jpg', 'resultado': 'liquen saludable', 'categoria': 'liquen saludable', 'confianza': 0.999709, 'nombre_especie': None, 'id_especie': None, 'especie_nombre_cientifico': None, 'especie_nombre_comun': None, 'estado': 'completed', 'status': 'completed', 'humedad': 61.0, 'humidity': 61.0, 'calidad_del_aire': 'buena', 'air_quality': 'buena', 'recomendacion': 'Calidad del aire buena. El liquen se encuen"
+    },
+    {
+      "modulo": "ia",
+      "caso": "persistencia: consulta resultados por id",
+      "esperado": "200 + resultado",
+      "obtenido": "status=404, resultado=-",
+      "estado": "Fallido",
+      "detalle": "{'detail': 'Not Found'}"
+    },
+    {
+      "modulo": "ia",
+      "caso": "estado del análisis",
+      "esperado": "200 + status completed",
+      "obtenido": "status=200, status=completed",
+      "estado": "Aprobado",
+      "detalle": "{'id': 30, 'id_usuario': 6, 'url_imagen': '/uploads/analyses/user_6/bf82e9f723464aeb94e52dc56cf4e193.jpg', 'resultado': 'liquen saludable', 'categoria': 'liquen saludable', 'confianza': 0.999709, 'nombre_especie': None, 'id_especie': None, 'especie_nombre_cientifico': None, 'especie_nombre_comun': N"
+    },
+    {
+      "modulo": "historial",
+      "caso": "carga del historial",
+      "esperado": "200 con análisis",
+      "obtenido": "status=200, items=1",
+      "estado": "Aprobado",
+      "detalle": "[{'id': 30, 'id_usuario': 6, 'id_analisis': 30, 'url_imagen': '/uploads/analyses/user_6/bf82e9f723464aeb94e52dc56cf4e193.jpg', 'resultado': 'liquen saludable', 'estado': 'completed', 'estado_validacion': 'completed', 'visibilidad': 'private', 'humedad': 61.0, 'calidad_del_aire': 'buena', 'recomendacion': 'Calidad del aire buena. El liquen se encuentra en condiciones saludables.', 'ubicacion': 'Pla"
+    },
+    {
+      "modulo": "dashboard",
+      "caso": "stats del dashboard",
+      "esperado": "200 con contadores",
+      "obtenido": "status=200, content={'analysis_count': 1, 'ubicaciones_count': 1, 'zonas_ambientales_count': 0, 'zone_count': 0, 'air_quality': 'buena', 'he",
+      "estado": "Aprobado",
+      "detalle": "{'analysis_count': 1, 'ubicaciones_count': 1, 'zonas_ambientales_count': 0, 'zone_count': 0, 'air_quality': 'buena', 'healthy_count': 1, 'affected_count': 0, 'unknown_count': 0}"
+    },
+    {
+      "modulo": "mapa",
+      "caso": "puntos del mapa",
+      "esperado": "200 con puntos",
+      "obtenido": "status=200, total=1",
+      "estado": "Aprobado",
+      "detalle": "[{'id': 30, 'id_usuario': 6, 'lat': 4.654, 'lng': -74.097, 'zone_name': 'Plaza Bolivar, Bogota', 'air_quality': 'buena', 'contamination_level': 'baja', 'species': 'Especie desconocida', 'confidence': 0.999709, 'date': '2026-09-03T23:06:51', 'status': 'completed', 'visibilidad': 'private', 'usuario': {'id': 6, 'nombre': 'QA Actualizado', 'foto_perfil': ''}, 'analysis_count': 1, 'analyses': [{'id': "
+    },
+    {
+      "modulo": "dashboard",
+      "caso": "notificaciones",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "[{'id': 30, 'id_usuario': 6, 'titulo': 'Tu análisis está listo', 'mensaje': 'analysis_id=30|Resultado disponible', 'tipo_notificacion': 'analysis', 'estado_notificacion': 'completed', 'fecha': '2026-0"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "listado de artículos",
+      "esperado": "200 con artículos",
+      "obtenido": "status=200, preview=[]",
+      "estado": "Aprobado",
+      "detalle": "[]"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "búsqueda",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "[]"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "categorías",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "[{'id_categoria': 1, 'nombre_categoria': 'Ecología', 'descripcion': 'Artículos sobre ecología, medio ambiente y conservación de líquenes', 'color': '#2E7D32', 'icono': 'eco', 'orden': 1, 'activo': True}, {'id_categoria': 2, 'nombre_categoria': 'Educación', 'descripcion': 'Artículos educativos, forma"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "catálogo de especies",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "[]"
+    },
+    {
+      "modulo": "liquenpedia",
+      "caso": "catálogo de zonas",
+      "esperado": "200",
+      "obtenido": "status=200",
+      "estado": "Aprobado",
+      "detalle": "[]"
+    }
+  ]
+}

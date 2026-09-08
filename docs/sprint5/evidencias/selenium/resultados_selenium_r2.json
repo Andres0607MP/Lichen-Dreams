@@ -1,0 +1,57 @@
+{
+  "base": "http://127.0.0.1:8080",
+  "api": "http://127.0.0.1:8000",
+  "fecha": "2026-09-05 18:03:12",
+  "iteracion": 2,
+  "nota": "Reintento con esperas de 20 s y selectores robustos.",
+  "casos": [
+    {
+      "id": "S-03",
+      "caso": "Validación de campos vacíos en login (reintento r2)",
+      "esperado": "El formulario vacío no puede enviarse (botón deshabilitado)",
+      "obtenido": "boton_deshabilitado=True; url=http://127.0.0.1:8080/#/login",
+      "estado": "Aprobado",
+      "evidencia": "CP-201-r2-sel-login-campos-vacios.png"
+    },
+    {
+      "id": "S-02",
+      "caso": "Login con credenciales incorrectas (reintento r2)",
+      "esperado": "Muestra error y permanece en /login",
+      "obtenido": "clic=True; url=http://127.0.0.1:8080/#/login; mensaje=(no capturado)",
+      "estado": "Fallido",
+      "evidencia": "CP-203-r2-sel-login-incorrecto-error.png"
+    },
+    {
+      "id": "S-01",
+      "caso": "Login exitoso (reintento r2)",
+      "esperado": "Redirige a Dashboard tras la autenticación",
+      "obtenido": "clic=True; url=http://127.0.0.1:8080/#/dashboard; contenido=Lichen Dreams\nLee el aire, entiende tu entornoMenúHola, SeleniumExplora el estado del aire mediante los líquenesNo hay artículos publicadosAnalizar li",
+      "estado": "Aprobado",
+      "evidencia": "CP-204-r2-sel-login-exitoso-dashboard.png"
+    },
+    {
+      "id": "S-05",
+      "caso": "Consulta/listado principal Dashboard (reintento r2)",
+      "esperado": "Se muestra dashboard con estadísticas cargadas",
+      "obtenido": "url=http://127.0.0.1:8080/#/dashboard; labels=Lichen Dreams\nLee el aire, entiende tu entornoMenúHola, SeleniumExplora el estado del aire mediante los líquenesNo hay artículos publicadosAnalizar liquen\nIdentifica especies con I",
+      "estado": "Aprobado",
+      "evidencia": "CP-205-r2-sel-dashboard.png"
+    },
+    {
+      "id": "S-06",
+      "caso": "Operación CRUD: actualización de perfil (reintento r2)",
+      "esperado": "Se guarda el nombre en el perfil (verificado vía API)",
+      "obtenido": "clic_perfil=True; clic_guardar=True; nombre_api=Selenium Usuario Actualizado",
+      "estado": "Aprobado",
+      "evidencia": "CP-208-r2-sel-perfil-resultado.png"
+    },
+    {
+      "id": "S-04",
+      "caso": "Registro de usuario (reintento r2)",
+      "esperado": "Se crea la cuenta y se muestra/muestra el flujo de recuperación",
+      "obtenido": "clic=True; api_login=True; url=http://127.0.0.1:8080/#/recovery-code; labels=¡Tu cuenta está lista!Este es tu código de recuperación. Es la única forma de recuperar tu cuenta si pierdes acceso a tu correo.LCHN-5YKK-9DF7-PXC9\nToca para copiarGuárda",
+      "estado": "Aprobado",
+      "evidencia": "CP-211-r2-sel-registro-resultado.png"
+    }
+  ]
+}
