@@ -550,12 +550,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ),
               const SizedBox(width: 6),
-              Text(
-                _getStatusLabel(last),
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: statusColor,
+              Flexible(
+                child: Text(
+                  _getStatusLabel(last),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: statusColor,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -687,6 +691,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
                       value: sortMode,
+                      isExpanded: true,
                       isDense: true,
                       icon: Icon(Icons.arrow_drop_down_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
                       style: GoogleFonts.poppins(
@@ -695,10 +700,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         color: Theme.of(context).colorScheme.onSurface,
                       ),
                       items: const [
-                        DropdownMenuItem(value: 'recent', child: Text('Más recientes')),
-                        DropdownMenuItem(value: 'oldest', child: Text('Más antiguos')),
-                        DropdownMenuItem(value: 'confidence', child: Text('Mayor confianza IA')),
-                        DropdownMenuItem(value: 'status', child: Text('Estado ambiental')),
+                        DropdownMenuItem(value: 'recent', child: Text('Más recientes', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'oldest', child: Text('Más antiguos', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'confidence', child: Text('Mayor confianza IA', overflow: TextOverflow.ellipsis)),
+                        DropdownMenuItem(value: 'status', child: Text('Estado ambiental', overflow: TextOverflow.ellipsis)),
                       ],
                       onChanged: (v) {
                         if (v != null) onSortChanged(v);
@@ -797,18 +802,24 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ),
                           ),
                           const SizedBox(width: 8),
-                          _StatusBadge(record: record, color: statusColor, compact: true),
+                          Flexible(
+                            child: _StatusBadge(record: record, color: statusColor, compact: true),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 5),
                       Row(
                         children: [
-                          Text(
-                            record.displayDate,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          Flexible(
+                            child: Text(
+                              record.displayDate,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                           if (ubicacion != null && ubicacion.isNotEmpty) ...[
@@ -1575,14 +1586,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
         children: [
           Icon(icon, size: compact ? 12 : 14, color: color),
           const SizedBox(width: 5),
-          Text(
-            label,
-            style: GoogleFonts.poppins(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w700,
-              color: color,
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                label,
+                maxLines: 1,
+                style: GoogleFonts.poppins(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w700,
+                  color: color,
+                ),
+              ),
             ),
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

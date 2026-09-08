@@ -82,12 +82,13 @@ Future<void> _pumpHistory(
   WidgetTester tester, {
   required List<Map<String, dynamic>> history,
   required List<Map<String, dynamic>> points,
+  double width = 1200,
 }) async {
   final api = _FakeApiService()..history = history..points = points;
   final mapState = MapState(apiService: api);
   await mapState.loadPoints();
 
-  tester.view.physicalSize = const Size(1200, 3200);
+  tester.view.physicalSize = Size(width, 3200);
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
@@ -110,6 +111,11 @@ Future<void> _pumpHistory(
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(const Duration(milliseconds: 300));
   await tester.pump(const Duration(milliseconds: 500));
+}
+
+Future<void> _unmountHistory(WidgetTester tester) async {
+  await tester.pumpWidget(const SizedBox.shrink());
+  await tester.pump();
 }
 
 Future<void> _tapFilter(WidgetTester tester, String label) async {
@@ -273,6 +279,28 @@ void main() {
       expect(find.text('liquen contaminado'), findsOneWidget);
       expect(find.text('liquen saludable'), findsNothing);
     });
+  });
+
+  group('Responsive HistoryScreen (sin overflow)', () {
+    final widths = [360, 375, 390, 412, 430];
+    for (final w in widths) {
+      testWidgets('HistoryScreen a $w px no produce overflow', (tester) async {
+        final history = [
+          _record(id: 1, analysisId: 1, resultado: 'liquen saludable'),
+          _record(id: 2, analysisId: 2, resultado: 'liquen contaminado'),
+        ];
+        final points = [
+          _healthyPoint(1, 4.650000, -74.100000),
+          _criticalPoint(2, 4.650020, -74.100000),
+        ];
+        await _pumpHistory(tester,
+            history: history, points: points, width: w.toDouble());
+
+        expect(tester.takeException(), isNull,
+            reason: 'Overflow detectado en HistoryScreen a $w px');
+        await _unmountHistory(tester);
+      });
+    }
   });
 
   group('Representación derivada de la transición (modelo + color)', () {

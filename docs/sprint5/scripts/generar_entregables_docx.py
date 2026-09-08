@@ -918,6 +918,24 @@ def gen_entregable4_nuevo():
          "Con la base de datos caída, el monitoreo podía presentar los últimos datos saludables "
          "antiguos como si fueran actuales (estado falso de la base de datos).",
          "Media", "Media", "Corregido / Validado"],
+        ["RE-001", "Historial (Módulo 3) — responsive",
+         "Responsive / UI",
+         "Overflow horizontal real en el historial con anchos de 360–430 px: desborde del selector "
+         "de orden, de la insignia de estado en las tarjetas y de la fila de resumen del último "
+         "análisis.",
+         "Media", "Media", "Corregido / Validado"],
+        ["RE-002", "Mapa y Monitor IA — responsive",
+         "Responsive / UI",
+         "Overflow transversal detectado previamente en los controles de capas del mapa y en varias "
+         "filas del Monitor IA a ~360 px; corregido en auditorías previas (controles flexibles y "
+         "grid responsive).",
+         "Baja", "Media", "Corregido / No reproducible hoy"],
+        ["RE-003", "Auditoría responsive 360 px (transversal)",
+         "Responsive",
+         "Verificación visual pendiente en pantallas no cubiertas por la auditoría automatizada "
+         "(análisis, resultado, perfil, configuración y paneles administrativos) con ancho cercano "
+         "a 360 px.",
+         "Baja", "Baja", "Pendiente de verificación"],
     ], widths=[0.7, 1.4, 0.7, 2.6, 0.7, 0.7, 1.0], font_size=7.0)
 
     heading(doc, "6. Detalle del hallazgo BUG-001", 1)
@@ -959,6 +977,37 @@ def gen_entregable4_nuevo():
         "estado real de la última consulta: cuando una comprobación falla, no muestra datos "
         "antiguos como actuales. Se verificó el comportamiento con la base de datos caída y se "
         "agregaron pruebas de coherencia del diagnóstico."
+    )
+
+    heading(doc, "6.6 Observación RE-001 (responsive del historial)", 2)
+    doc.add_paragraph(
+        "Se detectó overflow horizontal real en el historial con anchos de dispositivo de 360 a "
+        "430 píxeles: el selector de orden podía desbordar su fila, la insignia de estado de las "
+        "tarjetas no cabía junto al título en pantallas estrechas y la fila de resumen del último "
+        "análisis (fecha · estado · botón de perfil) salía del ancho disponible."
+    )
+    doc.add_paragraph(
+        "Causa raíz: componentes compartidos del historial con contenidos de ancho rígido dentro de "
+        "filas sin flexibilidad. Corrección aplicada: el selector de orden ahora se expande dentro "
+        "de su contenedor y sus valores permiten el recorte con puntos suspensivos; la insignia de "
+        "estado de las tarjetas escala su texto cuando el espacio es reducido y se define como "
+        "elemento flexible de la fila; las fechas y estados de la fila de resumen usan recorte con "
+        "puntos suspensivos. Validación: se agregaron pruebas de widget que dibujan el historial en "
+        "360, 375, 390, 412 y 430 píxeles y comprueban la ausencia de errores de desbordamiento; "
+        "las cinco pasan."
+    )
+
+    heading(doc, "6.7 Estado general de los hallazgos", 2)
+    table_(doc, ["Hallazgo", "Estado", "Evidencia"], [
+        ["BUG-001 — control de acceso de imágenes", "Corregido / Validado", "Pruebas de regresión y revalidación del control de acceso"],
+        ["OB-001 — datos obsoletos en el monitoreo", "Corregido / Validado", "Pruebas de coherencia del diagnóstico con la base de datos caída"],
+        ["RE-001 — responsive del historial", "Corregido / Validado", "Pruebas de widget responsive (360–430 px)"],
+        ["RE-002 — responsive previo de mapa y Monitor IA", "Corregido / No reproducible hoy", "Pruebas de widget de las capas del mapa y de la pantalla de monitoreo"],
+        ["RE-003 — verificación transversal pendiente (análisis, resultado, perfil, configuración y administración)", "Pendiente de verificación", "Requiere recorrido visual en dispositivo/emulador a 360 px"],
+    ], widths=[2.8, 1.4, 2.6], font_size=7.0)
+    doc.add_paragraph(
+        "No se documentan fallos inexistentes: los hallazgos listados corresponden a problemas "
+        "reproducidos y corregidos, o a verificaciones pendientes claramente indicadas."
     )
 
     heading(doc, "7. Evolución y mantenimiento futuro de la inteligencia artificial", 1)
