@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 
 import '../models/analysis_record.dart';
 import '../models/environmental_quality.dart';
+import '../models/environmental_zone.dart';
+import '../models/derived_transition_record.dart';
 import '../routes/route_names.dart';
 import '../screens/result_screen.dart';
 import '../services/api_service.dart';
@@ -61,6 +63,26 @@ class _ThumbnailFallback extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Icon(Icons.eco_rounded, size: 24, color: AppTheme.primaryGreen),
+    );
+  }
+}
+
+/// Miniatura de una representación de transición (overlay amarillo derivado).
+class _TransitionThumbnail extends StatelessWidget {
+  const _TransitionThumbnail();
+
+  @override
+  Widget build(BuildContext context) {
+    final color = EnvironmentalZoneType.transition.color;
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.45), width: 1.2),
+      ),
+      child: Icon(Icons.alt_route_rounded, size: 26, color: color),
     );
   }
 }
@@ -218,6 +240,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       showParticleBackground: false,
       body: Consumer<HistoryState>(
         builder: (context, historyState, _) {
+          final mapState = Provider.of<MapState>(context, listen: false);
           if (historyState.loading && historyState.history.isEmpty) {
             return Center(
               child: Column(
@@ -311,7 +334,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           List<AnalysisRecord> processed;
           _StatsSummary stats;
           if (needsRecalc || _cachedProcessedRecords == null) {
-            processed = _applyFilter(records);
+            processed = _applyFilter(records, mapState: mapState);
             if (_searchQuery.isNotEmpty) {
               final q = _searchQuery.toLowerCase();
               processed = processed.where((r) {
@@ -321,7 +344,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               }).toList();
             }
             processed = _sortRecords(processed);
-            stats = _computeStats(records);
+            stats = _computeStats(records, mapState: mapState);
             _cachedProcessedRecords = processed;
             _cachedStats = stats;
             _cachedHistoryLength = records.length;
@@ -390,14 +413,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   humedad: humedad,
                   calidadAire: calidadAire,
                   isDeleting: _deletingIds.contains(record.analysisId),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ResultScreen(analysis: record),
-                    ),
-                  ),
-                  onDelete: () => _deleteRecord(record.analysisId),
-                  onChartTap: () => _showEnvironmentalChartSheet([record], singleRecord: record),
+                  onTap: record.isDerivedTransition
+                      ? null
+                      : () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ResultScreen(analysis: record),
+                            ),
+                          ),
+                  onDelete: record.isDerivedTransition
+                      ? null
+                      : () => _deleteRecord(record.analysisId),
+                  onChartTap: () =>
+                      _showEnvironmentalChartSheet([record], singleRecord: record),
                 );
 
                 return card;
@@ -698,8 +726,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     double? humedad,
     String? calidadAire,
     bool isDeleting = false,
-    required VoidCallback onTap,
-    required VoidCallback onDelete,
+    VoidCallback? onTap,
+    VoidCallback? onDelete,
     VoidCallback? onChartTap,
   }) {
     final summary = record.summary.isNotEmpty ? record.summary : record.status;
@@ -746,7 +774,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _AnalysisThumbnail(record: record, apiService: Provider.of<ApiService>(context, listen: false)),
+                record.isDerivedTransition
+                    ? _TransitionThumbnail()
+                    : _AnalysisThumbnail(record: record, apiService: Provider.of<ApiService>(context, listen: false)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -873,9 +903,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.1),
                       ),
                     ),
-                  _DeleteButton(
-                    onPressed: isDeleting ? null : onDelete,
-                  ),
+                  if (onDelete != null)
+                    _DeleteButton(
+                      onPressed: !isDeleting ? onDelete : null,
+                    ),
               ],
             ),
           ),
@@ -1173,7 +1204,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   bool _isStatusModerate(AnalysisRecord record) {
-    return _getQuality(record).level == EnvironmentalQualityLevel.moderate;
+    return false; // Moderate is no longer an individual analysis result - it represents spatial intersections
   }
 
   bool _isStatusCritical(AnalysisRecord record) {
@@ -1182,21 +1213,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Color _getStatusColor(AnalysisRecord record) {
+    if (record.isDerivedTransition) {
+      return EnvironmentalZoneType.transition.color;
+    }
     return _getQuality(record).primaryColor;
   }
 
   String _getStatusLabel(AnalysisRecord record) {
+    if (record.isDerivedTransition) {
+      return EnvironmentalZoneType.transition.label;
+    }
     return _getQuality(record).label;
   }
 
-  List<AnalysisRecord> _applyFilter(List<AnalysisRecord> records) {
+  List<AnalysisRecord> _applyFilter(List<AnalysisRecord> records, {MapState? mapState}) {
     if (_filter == 'todos') return records;
+    if (_filter == 'moderados') {
+      if (mapState == null || mapState.points.isEmpty) return [];
+      final derived = buildTransitionRecords(
+        calculateEnvironmentalZones(mapState.points),
+      );
+      return derived;
+    }
     return records.where((r) {
       if (_filter == 'saludables') {
         return _isStatusHealthy(r);
-      }
-      if (_filter == 'moderados') {
-        return _isStatusModerate(r);
       }
       if (_filter == 'criticos') {
         return _isStatusCritical(r);
@@ -1205,7 +1246,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     }).toList();
   }
 
-  _StatsSummary _computeStats(List<AnalysisRecord> records) {
+  _StatsSummary _computeStats(List<AnalysisRecord> records, {MapState? mapState}) {
     int saludables = 0;
     int moderados = 0;
     int criticos = 0;
@@ -1215,11 +1256,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
       if (_isStatusHealthy(r)) {
         saludables++;
       } else if (_isStatusModerate(r)) {
-        moderados++;
+        // No longer counts as individual moderate - only spatial intersections
+        // This branch is now unreachable since _isStatusModerate always returns false
       } else if (_isStatusCritical(r)) {
         criticos++;
       }
     }
+
+    // Calculate moderate from spatial intersections using mapState
+    if (mapState != null && mapState.points.isNotEmpty) {
+      final zones = calculateEnvironmentalZones(mapState.points);
+      moderados = zones.where((z) => z.type == EnvironmentalZoneType.transition).length;
+    }
+
     return _StatsSummary(
       total: records.length,
       saludables: saludables,

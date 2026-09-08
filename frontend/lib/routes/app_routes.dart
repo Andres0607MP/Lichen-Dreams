@@ -34,6 +34,7 @@ import '../screens/settings/licenses_screen.dart';
 import '../screens/catalogs_screen.dart';
 import '../screens/admin_species_screen.dart';
 import '../screens/admin_zones_screen.dart';
+import '../screens/ia_monitoring_screen.dart';
 import '../screens/species_detail_screen.dart';
 import 'route_names.dart';
 
@@ -86,6 +87,7 @@ class AppRouter {
     AppRoutes.catalogsSettings: (_) => const CatalogsScreen(),
     AppRoutes.adminSpeciesSettings: (_) => const AdminSpeciesScreen(),
     AppRoutes.adminZonesSettings: (_) => const AdminZonesScreen(),
+    AppRoutes.iaMonitoring: (_) => const IaMonitoringScreen(),
     AppRoutes.speciesDetail: (context) {
       final args = ModalRoute.of(context)?.settings.arguments;
       final species = args is Map<String, dynamic> ? args : <String, dynamic>{};

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../models/dashboard_stats_detail.dart';
 import '../state/history_state.dart';
 import '../state/dashboard_state.dart';
+import '../state/map_state.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/modern_widgets.dart';
 
@@ -41,18 +42,19 @@ class _StatsDetailContent extends StatelessWidget {
   const _StatsDetailContent();
   @override
   Widget build(BuildContext context) {
-    return Consumer2<HistoryState, DashboardState>(
-      builder: (context, historyState, dashboardState, child) {
-        if (historyState.loading && historyState.history.isEmpty) {
-          return const _LoadingView();
-        }
-        if (historyState.error != null && historyState.history.isEmpty) {
-          return _ErrorView(error: historyState.error!);
-        }
-        final detail = DashboardStatsDetail.fromHistory(
-          history: historyState.history,
-          stats: dashboardState.stats,
-        );
+return Consumer3<HistoryState, DashboardState, MapState>(
+        builder: (context, historyState, dashboardState, mapState, child) {
+          if (historyState.loading && historyState.history.isEmpty) {
+            return const _LoadingView();
+          }
+          if (historyState.error != null && historyState.history.isEmpty) {
+            return _ErrorView(error: historyState.error!);
+          }
+          final detail = DashboardStatsDetail.fromHistory(
+            history: historyState.history,
+            stats: dashboardState.stats,
+            points: mapState.points,
+          );
         return Column(
           children: [
             _buildHeader(context),

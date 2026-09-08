@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, Optional, List
 import base64
 import logging
+import time
 from pathlib import Path
 
 from fastapi import HTTPException
@@ -125,6 +126,17 @@ class AnalysisService:
             f"el activo resuelto ({active}) no coincide con ninguna fila 'activa' en BD")
 
     def process_analysis(self, image_url: str, id_modelo: Optional[int] = None, id_dataset: Optional[int] = None, id_usuario: int = 1, id_ubicacion: Optional[int] = None, id_especie: Optional[int] = None, image_source: str = 'upload') -> Dict[str, Any]:
+        from services.monitoring_service import monitoring_service
+
+        # Generar un ID de seguimiento temporal para eventos SSE.
+        # El id_analisis real de la BD no está disponible hasta después
+        # de la inferencia, pero necesitamos un ID consistente para el
+        # Monitor IA.
+        tracking_id = int(time.time() * 1000) % 1000000
+
+        monitoring_service.record_analysis_started(analysis_id=tracking_id)
+        inference_start = time.perf_counter()
+        inference_error_type: Optional[str] = None
         ia_result = None
         try:
             from ia.modelos.lichen_classifier import predict
@@ -141,6 +153,7 @@ class AnalysisService:
             else:
                 raise FileNotFoundError(f"No se pudo resolver la ruta física para: {image_url}")
         except Exception as e:
+            inference_error_type = e.__class__.__name__
             logging.error(f"Error en predicción IA para {image_url}: {e}")
             resultado_ia = "error"
             porcentaje_confianza = 0.0
@@ -148,6 +161,22 @@ class AnalysisService:
             calidad_aire = "desconocida"
             estado_liquen = "error"
             estado_validacion = "error"
+
+        inference_time_ms = (time.perf_counter() - inference_start) * 1000.0
+
+        # Registrar métricas de inferencia (silencioso: nunca rompe el flujo)
+        try:
+            monitoring_service.record_inference(
+                success=inference_error_type is None,
+                inference_time_ms=inference_time_ms,
+                confidence=(ia_result["confianza"] if ia_result else None),
+                category=(ia_result["categoria"] if ia_result else None),
+                analysis_id=tracking_id,
+                error_type=inference_error_type,
+            )
+        except Exception as mon_exc:
+            logger_mon = logging.getLogger("lichdreams.monitoring")
+            logger_mon.warning("Monitoring record_inference failed (ignored): %s", mon_exc)
 
         print(f"[PROCESS] ia_result={ia_result}")
         print(f"[PROCESS] resultado_ia={resultado_ia}")
@@ -162,9 +191,40 @@ class AnalysisService:
         else:
             observaciones = f"Análisis completado: {resultado_ia}"
 
-        # "liquen desconocido" es una predicción VÁLIDA del modelo y se persiste
-        # como un análisis normal (con ubicación, historial y relaciones).
-        # Se eliminó el early-return que descartaba la transacción (id=0).
+        categoria_normalizada = resultado_ia.strip().lower()
+        if categoria_normalizada in ("liquen desconocido", "desconocido"):
+            return {
+                "id": 0,
+                "id_usuario": id_usuario,
+                "url_imagen": image_url,
+                "imagen_url": image_url,
+                "image_url": image_url,
+                "imagen_base64": None,
+                "image_base64": None,
+                "resultado": resultado_ia,
+                "categoria": resultado_ia,
+                "confianza": porcentaje_confianza,
+                "nombre_especie": None,
+                "id_especie": None,
+                "especie_nombre_cientifico": None,
+                "especie_nombre_comun": None,
+                "estado": estado_validacion,
+                "status": estado_validacion,
+                "humedad": 0.0,
+                "humidity": 0.0,
+                "calidad_del_aire": calidad_aire,
+                "air_quality": calidad_aire,
+                "nivel_contaminacion": nivel_contaminacion,
+                "contamination_level": nivel_contaminacion,
+                "recomendacion": observaciones,
+                "recommendation": observaciones,
+                "fecha_creacion": datetime.utcnow(),
+                "progreso": 100 if estado_validacion == "completed" else 50,
+                "estado_validacion": estado_validacion,
+                "visibilidad": "private",
+                "rechazado": True,
+                "mensaje_rechazo": "La imagen no corresponde a un liquen o no fue posible identificarla. Intenta con otra fotografía.",
+            }
 
         if image_source == 'gallery':
             # For gallery, do not persist anything, return temporary result

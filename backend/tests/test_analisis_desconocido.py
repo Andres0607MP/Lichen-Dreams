@@ -1,13 +1,11 @@
-"""Tests de persistencia de análisis 'desconocido' (corrección del early-return).
+"""Tests de rechazo de análisis 'desconocido' y persistencia de ramas válidas.
 
-Verifica que una predicción 'liquen desconocido' se persista como un análisis
-normal: Analisis con ID real > 0, id_ubicacion conservado, HistorialActividad
-con analysis_id correcto, aparición en /history y /api/maps/points, y que no
-rompe la rama saludable/contaminado existente.
+Verifica que:
+- 'liquen desconocido' / 'desconocido' NO se persistan en BD.
+- 'liquen saludable' y 'liquen contaminado' se persistan normalmente.
 """
-import csv
-import json
 import os
+import shutil
 import sys
 import uuid
 from pathlib import Path
@@ -73,26 +71,6 @@ def client_desc():
         _cleanup(uid)
 
 
-def _submit_unknown(client, headers):
-    """Envía una imagen que V3 clasifica como 'desconocido' (lc_0113.jpg)."""
-    import shutil
-    os.makedirs(BACKEND / "uploads", exist_ok=True)
-    src = BACKEND / "ia" / "datasets" / "liquenes_contaminados" / "lc_0113.jpg"
-    dest = BACKEND / "uploads" / "test_desc.jpg"
-    shutil.copy(src, dest)
-    try:
-        with open(dest, "rb") as f:
-            return client.post(
-                "/analysis/process",
-                headers=headers,
-                files={"file": ("t.jpg", f, "image/jpeg")},
-                data={"image_source": "camera", "id_ubicacion": str(_ubicacion_id(client, headers))},
-            )
-    finally:
-        if dest.exists():
-            dest.unlink()
-
-
 def _ubicacion_id(client, headers):
     r = client.post("/location/find-or-create", headers=headers, json={
         "latitude": 4.7110, "longitude": -74.0720, "radius_meters": 15.0,
@@ -100,126 +78,158 @@ def _ubicacion_id(client, headers):
     return r.json()["id_ubicacion"]
 
 
-def test_desconocido_crea_analisis(client_desc):
+def _submit_image(client, headers, filename, image_source="camera", id_ubicacion=None):
+    """Envía una imagen al endpoint /analysis/process."""
+    os.makedirs(BACKEND / "uploads", exist_ok=True)
+    src = BACKEND / "ia" / "datasets" / filename
+    dest = BACKEND / "uploads" / f"test_{uuid.uuid4().hex[:8]}.jpg"
+    shutil.copy(src, dest)
+    try:
+        with open(dest, "rb") as f:
+            data = {"image_source": image_source}
+            if id_ubicacion is not None:
+                data["id_ubicacion"] = str(id_ubicacion)
+            return client.post(
+                "/analysis/process",
+                headers=headers,
+                files={"file": ("t.jpg", f, "image/jpeg")},
+                data=data,
+            )
+    finally:
+        if dest.exists():
+            dest.unlink()
+
+
+def test_desconocido_no_crea_analisis(client_desc):
+    """Caso 1: desconocido -> rechazo, no se crea Analisis en BD."""
     c, headers, uid = client_desc
-    r = _submit_unknown(c, headers)
+    ubicacion = _ubicacion_id(c, headers)
+    r = _submit_image(c, headers, "liquenes_contaminados/lc_0113.jpg", id_ubicacion=ubicacion)
     assert r.status_code == 200
-    assert r.json()["resultado"] == "liquen desconocido"
-    aid = r.json()["id"]
-    assert isinstance(aid, int) and aid > 0, f"ID esperado >0, got {aid}"
-    # verificar en BD
+    payload = r.json()
+    assert payload["rechazado"] is True
+    assert payload["mensaje_rechazo"] is not None
+    assert "no corresponde a un liquen" in payload["mensaje_rechazo"].lower()
+    assert payload["id"] == 0
+
     from config.db import SessionLocal
     from models.core import Analisis
     with SessionLocal() as db:
-        a = db.query(Analisis).filter(Analisis.id_analisis == aid).first()
-        assert a is not None
-        assert a.resultado_ia == "liquen desconocido"
-        assert a.estado_validacion == "completed"
-        assert a.id_ubicacion is not None
+        analisis = db.query(Analisis).filter(Analisis.id_usuario == uid).first()
+        assert analisis is None, "no debe crearse Analisis para desconocido"
 
 
-def test_desconocido_conserva_ubicacion(client_desc):
+def test_desconocido_no_crea_historial(client_desc):
+    """Caso 1: desconocido -> no se crea HistorialActividad."""
     c, headers, uid = client_desc
-    r = _submit_unknown(c, headers)
-    aid = r.json()["id"]
-    from config.db import SessionLocal
-    from models.core import Analisis
-    with SessionLocal() as db:
-        a = db.query(Analisis).filter(Analisis.id_analisis == aid).first()
-        assert a.id_ubicacion is not None
-        ub = a.ubicacion
-        assert ub is not None
-        assert abs(float(ub.latitud) - 4.7110) < 1e-4
+    ubicacion = _ubicacion_id(c, headers)
+    _submit_image(c, headers, "liquenes_contaminados/lc_0113.jpg", id_ubicacion=ubicacion)
 
-
-def test_desconocido_crea_historial_con_analysis_id(client_desc):
-    c, headers, uid = client_desc
-    r = _submit_unknown(c, headers)
-    aid = r.json()["id"]
     from config.db import SessionLocal
     from models.core import HistorialActividad
     with SessionLocal() as db:
         h = db.query(HistorialActividad).filter(HistorialActividad.id_usuario == uid).first()
-        assert h is not None
-        assert f"analysis_id={aid}" in (h.descripcion_accion or "")
-        assert h.accion_realizada == "analisis_guardado"
+        assert h is None, "no debe crearse HistorialActividad para desconocido"
 
 
-def test_desconocido_id_no_es_cero(client_desc):
+def test_desconocido_no_aparece_en_history(client_desc):
+    """Caso 1: desconocido -> no aparece en el endpoint /history."""
     c, headers, uid = client_desc
-    r = _submit_unknown(c, headers)
-    assert r.json()["id"] > 0
+    ubicacion = _ubicacion_id(c, headers)
+    r = _submit_image(c, headers, "liquenes_contaminados/lc_0113.jpg", id_ubicacion=ubicacion)
+    assert r.json()["rechazado"] is True
 
-
-def test_desconocido_historial_ubicacion_desde_analisis(client_desc):
-    """El historial obtiene ubicación desde Analisis->Ubicacion (no parser texto)."""
-    c, headers, uid = client_desc
-    _submit_unknown(c, headers)
-    hs = c.get("/history", headers=headers)
-    assert hs.status_code == 200
-    items = hs.json()
-    assert items, "historial vacío"
-    top = items[0]
-    assert top["id_analisis"] > 0
-    assert top["ubicacion"], f"ubicacion vacia: {top}"
-
-
-def test_desconocido_aparece_en_history_endpoint(client_desc):
-    c, headers, uid = client_desc
-    r = _submit_unknown(c, headers)
-    aid = r.json()["id"]
     hs = c.get("/history", headers=headers)
     assert hs.status_code == 200
     ids = [it["id_analisis"] for it in hs.json()]
-    assert aid in ids
+    assert 0 not in ids
+    assert len(ids) == 0, "historial debe estar vacio tras rechazo"
 
 
-def test_desconocido_aparece_en_maps_points(client_desc):
+def test_desconocido_no_aparece_en_maps(client_desc):
+    """Caso 1: desconocido -> no aparece en /api/maps/points."""
     c, headers, uid = client_desc
-    r = _submit_unknown(c, headers)
-    aid = r.json()["id"]
+    ubicacion = _ubicacion_id(c, headers)
+    r = _submit_image(c, headers, "liquenes_contaminados/lc_0113.jpg", id_ubicacion=ubicacion)
+    assert r.json()["rechazado"] is True
+
     mp = c.get("/api/maps/points", headers=headers)
     assert mp.status_code == 200
-    ids = [pt["id"] for pt in mp.json()]
-    assert aid in ids
-    pt = next(p for p in mp.json() if p["id"] == aid)
-    assert pt["lat"] is not None and pt["lng"] is not None
+    assert len(mp.json()) == 0, "mapa debe estar vacio tras rechazo"
 
 
-def test_saludable_contaminado_siguen_funcionando(client_desc):
-    """Rama persistente existente no regresa."""
+def test_saludable_se_persiste(client_desc, monkeypatch):
+    """Caso 2: saludable -> se crea Analisis, id > 0, no rechazado."""
+    from ia.modelos.lichen_classifier import predict
+
+    def mock_predict(image_path):
+        return {
+            "categoria": "liquen saludable",
+            "confianza": 0.95,
+            "nombre_especie": None,
+            "nivel_contaminacion": "baja",
+            "calidad_aire": "buena",
+        }
+
+    monkeypatch.setattr("ia.modelos.lichen_classifier.predict", mock_predict)
+
     c, headers, uid = client_desc
-    # lcp_aug_0019 → V3 predice 'liquen contaminado'
-    import shutil
-    src = BACKEND / "ia" / "datasets" / "liquenes_contaminados" / "lcp_aug_0019.jpg"
-    dest = BACKEND / "uploads" / "test_cont.jpg"
-    shutil.copy(src, dest)
-    try:
-        with open(dest, "rb") as f:
-            r = c.post("/analysis/process", headers=headers,
-                       files={"file": ("t.jpg", f, "image/jpeg")},
-                       data={"image_source": "camera",
-                             "id_ubicacion": str(_ubicacion_id(c, headers))})
-    finally:
-        if dest.exists():
-            dest.unlink()
+    ubicacion = _ubicacion_id(c, headers)
+    r = _submit_image(c, headers, "liquenes_saludables/ls_0001.jpg", id_ubicacion=ubicacion)
     assert r.status_code == 200
-    assert r.json()["id"] > 0
-    assert r.json()["resultado"] in ("liquen saludable", "liquen contaminado")
+    payload = r.json()
+    assert payload["rechazado"] is False
+    assert payload["id"] > 0
+    assert payload["resultado"] == "liquen saludable"
+
+    from config.db import SessionLocal
+    from models.core import Analisis
+    with SessionLocal() as db:
+        a = db.query(Analisis).filter(Analisis.id_analisis == payload["id"]).first()
+        assert a is not None
+        assert a.resultado_ia == "liquen saludable"
+
+
+def test_contaminado_se_persiste(client_desc):
+    """Caso 3: contaminado -> se crea Analisis, id > 0, no rechazado."""
+    c, headers, uid = client_desc
+    ubicacion = _ubicacion_id(c, headers)
+    r = _submit_image(c, headers, "liquenes_contaminados/lcp_aug_0019.jpg", id_ubicacion=ubicacion)
+    assert r.status_code == 200
+    payload = r.json()
+    assert payload["rechazado"] is False
+    assert payload["id"] > 0
+    assert payload["resultado"] == "liquen contaminado"
+
+    from config.db import SessionLocal
+    from models.core import Analisis
+    with SessionLocal() as db:
+        a = db.query(Analisis).filter(Analisis.id_analisis == payload["id"]).first()
+        assert a is not None
+        assert a.resultado_ia == "liquen contaminado"
 
 
 def test_rollback_no_deja_analisis_parcial(monkeypatch):
-    """Si el commit falla, rollback no deja Analisis huérfano."""
+    """Si el commit falla en un flujo persistible, rollback no deja Analisis huérfano."""
+    from ia.modelos.lichen_classifier import predict
     from sqlalchemy.orm import Session as SaSession
     from services.analysis_service import AnalysisService
     from config.db import SessionLocal
     from models.core import Analisis
 
-    # El flujo falla al llegar a un Analisis persistible (desconocido) y el
-    # commit lanza -> process_analysis debe propagar y la BD quedar intacta.
-    import shutil
+    def mock_predict(image_path):
+        return {
+            "categoria": "liquen saludable",
+            "confianza": 0.95,
+            "nombre_especie": None,
+            "nivel_contaminacion": "baja",
+            "calidad_aire": "buena",
+        }
+
+    monkeypatch.setattr("ia.modelos.lichen_classifier.predict", mock_predict)
+
     dest = BACKEND / "uploads" / "test_rollback.jpg"
-    shutil.copy(BACKEND / "ia" / "datasets" / "liquenes_contaminados" / "lc_0113.jpg", dest)
+    shutil.copy(BACKEND / "ia" / "datasets" / "liquenes_saludables" / "ls_0001.jpg", dest)
 
     real_commit = SaSession.commit
 

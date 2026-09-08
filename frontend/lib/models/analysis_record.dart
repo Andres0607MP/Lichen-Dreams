@@ -105,7 +105,24 @@ class AnalysisRecord {
     return false;
   }
 
+  /// Indica si este registro es una transición DERIVADA (solo frontend).
+  ///
+  /// Las transiciones no existen en la base de datos: son representaciones
+  /// visuales generadas a partir de las zonas de transición espaciales
+  /// (`EnvironmentalZoneType.transition`) entre un análisis saludable y uno
+  /// crítico. No deben eliminarse, navegarse al detalle ni persistirse.
+  bool get isDerivedTransition => raw['_derived_transition'] == true;
+
   EnvironmentalQuality get environmentalQuality {
+    // Las transiciones derivadas (solo frontend) representan el nivel
+    // moderado: se resuelven por la calidad del aire 'moderada' para que su
+    // badge/color sea coherente con el resto del sistema.
+    if (isDerivedTransition) {
+      return EnvironmentalQuality.fromStrings(
+        airQuality: raw['calidad_del_aire']?.toString(),
+        result: null,
+      );
+    }
     final iaResult = raw['resultado_ia']?.toString() ?? raw['resultado']?.toString();
     if (iaResult != null && iaResult.isNotEmpty) {
       final quality = EnvironmentalQuality.fromIAResult(iaResult);

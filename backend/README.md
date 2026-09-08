@@ -4,7 +4,7 @@ Pequeñas instrucciones para inicializar el backend (FastAPI).
 
 ## Requisitos
 
-- Python 3.8+
+- Python 3.12
 - `pip`
 
 ## Instalación (Linux / macOS / Git Bash)

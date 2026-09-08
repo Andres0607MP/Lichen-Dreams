@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../models/dashboard_stats.dart';
+import '../models/map_analysis_point.dart';
+import '../models/environmental_zone.dart';
 
 class DashboardState extends ChangeNotifier {
   final ApiService _apiService;
@@ -18,6 +20,25 @@ class DashboardState extends ChangeNotifier {
 
   void invalidate() {
     _lastLoadedAt = null;
+  }
+
+  void calculateModerateCount(List<MapAnalysisPoint> points) {
+    final zones = calculateEnvironmentalZones(points);
+    final moderateCount = zones.where((z) => z.type == EnvironmentalZoneType.transition).length;
+    if (_stats != null) {
+      _stats = DashboardStats(
+        analysisCount: _stats!.analysisCount,
+        zoneCount: _stats!.zoneCount,
+        ubicacionesCount: _stats!.ubicacionesCount,
+        zonasAmbientalesCount: _stats!.zonasAmbientalesCount,
+        airQuality: _stats!.airQuality,
+        healthyCount: _stats!.healthyCount,
+        affectedCount: _stats!.affectedCount,
+        unknownCount: _stats!.unknownCount,
+        moderateCount: moderateCount,
+      );
+      notifyListeners();
+    }
   }
 
   Future<void> loadStats({bool force = false}) async {

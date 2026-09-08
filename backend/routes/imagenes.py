@@ -147,24 +147,76 @@ async def serve_private_image(
 
 
 @router.get("", response_model=List[ImageResponse], summary="Listar imágenes")
-def list_images(db: Session = Depends(get_db)):
+def list_images(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Lista imágenes visibles para el usuario autenticado.
+
+    Las imágenes privadas (profiles/analyses) solo se devuelven a su
+    propietario o a roles con permiso CAN_VIEW_PRIVATE_IMAGES.
+    """
     items = db.query(ImagenModel).all()
-    return items
+
+    def _visible(img: ImagenModel) -> bool:
+        rel = img.url or ""
+        if not is_private_image_path(rel):
+            return True  # públicas: articles/species
+        if has_permission(current_user, PERMISSION_CAN_VIEW_PRIVATE_IMAGES):
+            return True
+        owner = extract_user_id_from_path(rel)
+        return owner is not None and owner == current_user.id_usuario
+
+    return [i for i in items if _visible(i)]
 
 
 @router.get("/{image_id}", response_model=ImageResponse, summary="Obtener imagen por ID")
-def get_image(image_id: int, db: Session = Depends(get_db)):
+def get_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
     img = db.query(ImagenModel).filter(ImagenModel.id_imagen == image_id).first()
     if not img:
         raise HTTPException(status_code=404, detail="Imagen no encontrada")
+
+    rel = img.url or ""
+    if is_private_image_path(rel):
+        is_owner = extract_user_id_from_path(rel) == current_user.id_usuario
+        has_audit_perm = has_permission(current_user, PERMISSION_CAN_VIEW_PRIVATE_IMAGES)
+        if not is_owner and not has_audit_perm:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permiso para acceder a esta imagen",
+            )
     return img
 
 
 @router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar imagen")
-def delete_image(image_id: int, db: Session = Depends(get_db)):
+def delete_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user),
+):
+    """Elimina una imagen.
+
+    Solo el propietario o un rol con permiso CAN_VIEW_PRIVATE_IMAGES puede
+    eliminar imágenes privadas. Las públicas (articles/species) requieren
+    autenticación.
+    """
     img = db.query(ImagenModel).filter(ImagenModel.id_imagen == image_id).first()
     if not img:
         raise HTTPException(status_code=404, detail="Imagen no encontrada")
+
+    rel = img.url or ""
+    if is_private_image_path(rel):
+        is_owner = extract_user_id_from_path(rel) == current_user.id_usuario
+        has_audit_perm = has_permission(current_user, PERMISSION_CAN_VIEW_PRIVATE_IMAGES)
+        if not is_owner and not has_audit_perm:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="No tienes permiso para eliminar esta imagen",
+            )
 
     file_path = resolve_file_path(img.url or "")
     if file_path is not None:

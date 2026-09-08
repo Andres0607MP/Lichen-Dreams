@@ -64,9 +64,22 @@ def test_image_upload_and_delete():
     data = r.json()
     img_id = data.get("id_imagen")
     assert img_id
+
+    # Control de acceso corregido (BUG-001 Sprint 5): get/delete requieren auth
     get_r = client.get(f"/imagenes/{img_id}")
+    assert get_r.status_code == 401
+
+    login = client.post("/auth/login", data={"username": "admin@gmail.com", "password": "admin123"})
+    assert login.status_code == 200
+    headers = {"Authorization": f"Bearer {login.json()['access_token']}"}
+
+    get_r = client.get(f"/imagenes/{img_id}", headers=headers)
     assert get_r.status_code == 200
+
     del_r = client.delete(f"/imagenes/{img_id}")
+    assert del_r.status_code == 401
+
+    del_r = client.delete(f"/imagenes/{img_id}", headers=headers)
     assert del_r.status_code == 204
 
 

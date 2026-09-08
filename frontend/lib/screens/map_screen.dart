@@ -215,6 +215,29 @@ class _MapScreenState extends State<MapScreen> {
   /// Solo participan las observaciones individuales `good` (saludable) y
   /// `poor` (contaminada/crítica); `moderate` NO se convierte en un resultado
   /// individual y no alimenta las zonas de transición.
+  /// Conjunto completo de puntos visibles (propias + comunidad) del que se
+  /// derivan las zonas de transición.
+  ///
+  /// Las transiciones son un overlay espacial y NO dependen de los filtros
+  /// rápidos de la lista ('good'/'moderate'/'poor' o 'own'/'community'): si se
+  /// derivaran de `filteredPoints`, bastaría activar un chip de calidad para
+  /// que las intersecciones desaparecieran antes de llegar al renderizador.
+  List<MapAnalysisPoint> _zoneSourcePoints(MapState mapState) {
+    final result = <MapAnalysisPoint>[];
+    final seenIds = <int>{};
+    void addPoints(List<MapAnalysisPoint> source) {
+      for (final point in source) {
+        if (seenIds.add(point.id)) {
+          result.add(point);
+        }
+      }
+    }
+
+    if (_showMyAnalyses) addPoints(mapState.ownPoints);
+    if (_showCommunity) addPoints(mapState.communityPoints);
+    return result;
+  }
+
   List<DeveloperMapPoint> _buildDeveloperPoints(List<MapAnalysisPoint> points) {
     final result = <DeveloperMapPoint>[];
     for (final point in points) {
@@ -1210,7 +1233,7 @@ class _MapScreenState extends State<MapScreen> {
     final markers = _buildMarkers(filteredPoints);
     final circles = mapState.filteredCircles(showZones: _showZones, showOwn: _showMyAnalyses, showCommunity: _showCommunity);
     final transitionCircles = _showZones
-        ? _buildTransitionCircles(filteredPoints)
+        ? _buildTransitionCircles(_zoneSourcePoints(mapState))
         : const <Circle>{};
     final allCircles = {...circles, ...transitionCircles};
     final initialPosition = _selectedPoint != null

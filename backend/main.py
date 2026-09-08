@@ -153,6 +153,12 @@ try:
 except ImportError as e:
     print(f"Warning: test router not found - {e}")
 
+try:
+    from routes.ia import router as ia_router
+    app.include_router(ia_router, prefix="/ia", tags=["IA Monitoring"])
+except ImportError as e:
+    print(f"Warning: IA monitoring router not found - {e}")
+
 DB_HOST = os.getenv("DB_HOST")
 JWT_SECRET = os.getenv("JWT_SECRET")
 

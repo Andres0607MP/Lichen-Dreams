@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -19,6 +19,7 @@ import '../state/auth_state.dart';
 import '../models/map_analysis_point.dart';
 import '../models/environmental_zone.dart';
 import '../models/environmental_zone_model.dart';
+import '../models/map_quality_filter.dart';
 
 class MapExplorerScreen extends StatefulWidget {
   final int pointId;
@@ -46,6 +47,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   bool _showZones = true;
   bool _showCircles = true;
   bool _showCatalogZones = true;
+  AirQualityLevel? _qualityFilter;
   EnvironmentalZoneModel? _selectedCatalogZone;
 
   static const Color moderateYellow = Color(0xFFFFC107);
@@ -564,7 +566,14 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
 
   Widget _buildMapContent(MapState mapState) {
     final points = _visiblePoints(mapState);
+    // Las zonas (incluidas las transiciones) se calculan SIEMPRE sobre el
+    // conjunto completo de puntos visibles, ANTES de aplicar el filtro de
+    // calidad, para que una intersección saludable↔crítica nunca desaparezca
+    // por el orden en que se filtran los puntos.
     final zones = _showZones ? calculateEnvironmentalZones(points) : <EnvironmentalZone>[];
+    final filterResult = applyQualityFilter(points, zones, _qualityFilter);
+    final shownPoints = filterResult.points;
+    final shownZones = filterResult.zones;
     final catalogZones = _showCatalogZones ? mapState.catalogZones : <EnvironmentalZoneModel>[];
     final selected = _selectedPoint;
     final selectedZone = _selectedZone;
@@ -590,11 +599,11 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               bearing: 0,
             ),
             mapType: _mapType,
-            markers: _buildMarkers(points, zones, mapState),
+            markers: _buildMarkers(shownPoints, shownZones, mapState),
             circles: {
-              ..._buildZoneCircles(zones),
+              ..._buildZoneCircles(shownZones),
               ..._buildCatalogZoneCircles(catalogZones),
-              if (_showCircles) ..._buildIndividualCircles(points),
+              if (_showCircles) ..._buildIndividualCircles(shownPoints),
             },
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
@@ -1016,79 +1025,22 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   }
 
   Widget _buildLayerControls() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _layerToggle('Mis análisis', _showOwn, AppTheme.primaryGreen, (value) {
-            setState(() => _showOwn = value);
-          }),
-          const SizedBox(width: 8),
-          _layerToggle('Comunidad', _showCommunity, AppTheme.errorColor, (value) {
-            setState(() => _showCommunity = value);
-          }),
-          const SizedBox(width: 8),
-          _layerToggle('Zonas', _showZones, moderateYellow, (value) {
-            setState(() => _showZones = value);
-          }),
-          const SizedBox(width: 8),
-          _layerToggle('Catálogo', _showCatalogZones, AppTheme.mapaPrimary, (value) {
-            setState(() => _showCatalogZones = value);
-            if (!value) {
-              setState(() => _selectedCatalogZone = null);
-            }
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _layerToggle(String label, bool active, Color color, ValueChanged<bool> onChanged, {IconData? icon}) {
-    return GestureDetector(
-      onTap: () => onChanged(!active),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? color.withValues(alpha: 0.15) : Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: active ? color.withValues(alpha: 0.6) : AppTheme.borderColor.withValues(alpha: 0.4),
-            width: 1.2,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon ?? (active ? Icons.visibility_rounded : Icons.visibility_off_rounded),
-              size: 14,
-              color: active ? color : Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: active ? color : Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return MapLayerControls(
+      showOwn: _showOwn,
+      showCommunity: _showCommunity,
+      showZones: _showZones,
+      showCatalogZones: _showCatalogZones,
+      onOwnChanged: (value) => setState(() => _showOwn = value),
+      onCommunityChanged: (value) => setState(() => _showCommunity = value),
+      onZonesChanged: (value) => setState(() => _showZones = value),
+      onCatalogChanged: (value) {
+        setState(() {
+          _showCatalogZones = value;
+          if (!value) {
+            _selectedCatalogZone = null;
+          }
+        });
+      },
     );
   }
 
@@ -1116,16 +1068,23 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
               ),
             ],
           ),
-          child: Row(
+child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _legendItem(AppTheme.successColor, 'Saludable'),
-              const SizedBox(width: 10),
-              _legendItem(moderateYellow, 'Moderado'),
-              const SizedBox(width: 10),
-              _legendItem(AppTheme.errorColor, 'Contaminado'),
-             ],
-           ),
+              MapQualityFilterBar(
+                selected: _qualityFilter,
+                onChanged: (level) {
+                  setState(() {
+                    _qualityFilter = level;
+                    if (level != null) {
+                      _selectedPoint = null;
+                      _selectedZone = null;
+                    }
+                  });
+                },
+              ),
+            ],
+          ),
             ),
           ],
         ),
@@ -1133,39 +1092,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
     );
   }
 
-  Widget _legendItem(Color color, String label) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.4),
-                blurRadius: 4,
-                spreadRadius: 0.5,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: GoogleFonts.poppins(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMapControls() {
+Widget _buildMapControls() {
     return Positioned(
       right: 16,
       top: 16,
@@ -1700,7 +1627,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
                     style: GoogleFonts.poppins(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: moderateYellow,
+                      color: _MapExplorerScreenState.moderateYellow,
                     ),
                   ),
                 ),
@@ -2158,5 +2085,277 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+}
+
+/// Barra de filtro de calidad (Saludable / Moderado / Contaminado) para
+/// "Explorar mapa".
+///
+/// Funciona como un filtro de UNA selección: `selected` puede tomar un único
+/// nivel (Saludable → good, Moderado → moderate, Contaminado → poor) o `null`
+/// (sin filtro = se muestran todos los análisis). Al tocar nuevamente el nivel
+/// activo se desactiva (vuelve a `null`). En estado inactivo los botones se
+/// muestran en gris/neutro; al activarse usan su color ambiental.
+class MapQualityFilterBar extends StatelessWidget {
+  final AirQualityLevel? selected;
+  final ValueChanged<AirQualityLevel?> onChanged;
+
+  const MapQualityFilterBar({
+    super.key,
+    required this.selected,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _QualityFilterOption(
+          label: 'Saludable',
+          color: AppTheme.successColor,
+          isActive: selected == AirQualityLevel.good,
+          onTap: () => onChanged(
+            selected == AirQualityLevel.good ? null : AirQualityLevel.good,
+          ),
+        ),
+        const SizedBox(width: 6),
+        _QualityFilterOption(
+          label: 'Moderado',
+          color: _MapExplorerScreenState.moderateYellow,
+          isActive: selected == AirQualityLevel.moderate,
+          onTap: () => onChanged(
+            selected == AirQualityLevel.moderate
+                ? null
+                : AirQualityLevel.moderate,
+          ),
+        ),
+        const SizedBox(width: 6),
+        _QualityFilterOption(
+          label: 'Contaminado',
+          color: AppTheme.errorColor,
+          isActive: selected == AirQualityLevel.poor,
+          onTap: () => onChanged(
+            selected == AirQualityLevel.poor ? null : AirQualityLevel.poor,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QualityFilterOption extends StatelessWidget {
+  final String label;
+  final Color color;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _QualityFilterOption({
+    required this.label,
+    required this.color,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const greyText = Color(0xFF9E9E9E);
+    final fg = isActive ? color : greyText;
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: isActive
+              ? color.withValues(alpha: 0.16)
+              : Theme.of(context)
+                  .scaffoldBackgroundColor
+                  .withValues(alpha: 0.35),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive
+                ? color.withValues(alpha: 0.65)
+                : Theme.of(context)
+                    .colorScheme
+                    .outline
+                    .withValues(alpha: 0.35),
+            width: isActive ? 1.4 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: fg,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: fg,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Controles de capa de "Explorar mapa" (Mis análisis / Comunidad / Zonas /
+/// Catálogo).
+///
+/// Responsive: en pantallas estrechas el contenido se acota al ancho
+/// disponible (MediaQuery - márgenes) y permite desplazamiento horizontal,
+/// evitando que "Catálogo" (u otro chip) quede fuera del borde derecho. En
+/// pantallas grandes la fila entra completa sin scroll.
+class MapLayerControls extends StatelessWidget {
+  final bool showOwn;
+  final bool showCommunity;
+  final bool showZones;
+  final bool showCatalogZones;
+  final ValueChanged<bool> onOwnChanged;
+  final ValueChanged<bool> onCommunityChanged;
+  final ValueChanged<bool> onZonesChanged;
+  final ValueChanged<bool> onCatalogChanged;
+
+  const MapLayerControls({
+    super.key,
+    required this.showOwn,
+    required this.showCommunity,
+    required this.showZones,
+    required this.showCatalogZones,
+    required this.onOwnChanged,
+    required this.onCommunityChanged,
+    required this.onZonesChanged,
+    required this.onCatalogChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final availableWidth = MediaQuery.sizeOf(context).width - 32;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: availableWidth),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _LayerToggleButton(
+                label: 'Mis an\u00e1lisis',
+                active: showOwn,
+                color: AppTheme.primaryGreen,
+                onChanged: onOwnChanged,
+              ),
+              const SizedBox(width: 8),
+              _LayerToggleButton(
+                label: 'Comunidad',
+                active: showCommunity,
+                color: AppTheme.errorColor,
+                onChanged: onCommunityChanged,
+              ),
+              const SizedBox(width: 8),
+              _LayerToggleButton(
+                label: 'Zonas',
+                active: showZones,
+                color: _MapExplorerScreenState.moderateYellow,
+                onChanged: onZonesChanged,
+              ),
+              const SizedBox(width: 8),
+              _LayerToggleButton(
+                label: 'Cat\u00e1logo',
+                active: showCatalogZones,
+                color: AppTheme.mapaPrimary,
+                onChanged: onCatalogChanged,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LayerToggleButton extends StatelessWidget {
+  final String label;
+  final bool active;
+  final Color color;
+  final ValueChanged<bool> onChanged;
+
+  const _LayerToggleButton({
+    required this.label,
+    required this.active,
+    required this.color,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!active),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: active
+              ? color.withValues(alpha: 0.15)
+              : Theme.of(context)
+                  .scaffoldBackgroundColor
+                  .withValues(alpha: 0.4),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: active
+                ? color.withValues(alpha: 0.6)
+                : AppTheme.borderColor.withValues(alpha: 0.4),
+            width: 1.2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              active ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+              size: 14,
+              color: active
+                  ? color
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: active
+                    ? color
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

@@ -114,7 +114,7 @@ List<DeveloperMapZone> calculateZones(List<DeveloperMapPoint> points) {
       if (distance < pointRadius * 2) {
         final midLat = (healthy.latitude + contaminated.latitude) / 2;
         final midLng = (healthy.longitude + contaminated.longitude) / 2;
-        final transitionRadius = (distance / 2).clamp(10.0, pointRadius);
+        final transitionRadius = pointRadius;
 
         zones.add(DeveloperMapZone(
           id: 'transition_${transitionIndex++}_${midLat}_${midLng}',

@@ -8,6 +8,8 @@ import 'services/notification_sound_service.dart';
 import 'widgets/app_theme.dart';
 import 'state/auth_state.dart';
 import 'state/dashboard_state.dart';
+import 'state/ia_monitoring_state.dart';
+import 'services/ia_monitoring_service.dart';
 import 'state/articles_state.dart';
 import 'state/history_state.dart';
 import 'state/profile_state.dart';
@@ -25,18 +27,34 @@ void main() async {
   await NotificationSoundService.instance.initialize();
   final apiService = ApiService();
   final authState = AuthState(apiService: apiService);
+  final iaMonitoringService = IaMonitoringService(apiService);
+  final iaMonitoringState = IaMonitoringState(iaMonitoringService);
   debugPrint('CHECKING STORED SESSION');
   await authState.initialize();
   debugPrint('TOKEN FOUND: ${authState.token != null && authState.token!.isNotEmpty}');
   debugPrint('USER RESTORED: ${authState.isAuthenticated}');
   debugPrint('AUTH READY');
-  runApp(LichenDreamsApp(authState: authState, apiService: apiService));
+  runApp(LichenDreamsApp(
+    authState: authState,
+    apiService: apiService,
+    iaMonitoringService: iaMonitoringService,
+    iaMonitoringState: iaMonitoringState,
+  ));
 }
 
 class LichenDreamsApp extends StatelessWidget {
   final AuthState authState;
   final ApiService apiService;
-  const LichenDreamsApp({super.key, required this.authState, required this.apiService});
+  final IaMonitoringService iaMonitoringService;
+  final IaMonitoringState iaMonitoringState;
+
+  const LichenDreamsApp({
+    super.key,
+    required this.authState,
+    required this.apiService,
+    required this.iaMonitoringService,
+    required this.iaMonitoringState,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +63,8 @@ class LichenDreamsApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider.value(value: authState),
         Provider.value(value: apiService),
+        Provider.value(value: iaMonitoringService),
+        ChangeNotifierProvider.value(value: iaMonitoringState),
         ChangeNotifierProvider(create: (_) => DashboardState(apiService: apiService)),
         ChangeNotifierProvider(create: (_) => ArticlesState(apiService: apiService)),
         ChangeNotifierProvider(create: (_) => HistoryState(apiService: apiService)),

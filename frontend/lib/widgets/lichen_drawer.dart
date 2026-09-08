@@ -483,6 +483,18 @@ class _LichenDrawerState extends State<LichenDrawer> {
                 Navigator.pushNamed(context, AppRoutes.adminNotifications);
               },
             ),
+          if (isAdmin)
+            ListTile(
+              leading: Icon(
+                Icons.monitor_heart_rounded,
+                color: AppTheme.primaryGreen,
+              ),
+              title: Text('Monitor IA', style: GoogleFonts.poppins()),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, AppRoutes.iaMonitoring);
+              },
+            ),
           if (isAdmin && devUnlocked)
             ListTile(
               leading: Icon(

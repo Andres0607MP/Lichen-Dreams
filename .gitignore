@@ -10,6 +10,9 @@ build/
 
 # Variables de entorno
 .env
+.env.local
+.env.*
+!.env.example
 
 # VSCode
 .vscode/
@@ -20,6 +23,7 @@ build/
 # Test databases
 test.db
 *.db
+.pytest_cache/
 
 # Kilo
 .kilo/

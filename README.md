@@ -75,3 +75,10 @@ proyecto/
 Desarrollar una aplicación móvil multiplataforma que permita identificar líquenes mediante Inteligencia Artificial y visión artificial, con el fin de analizar y estimar la calidad del aire en diferentes zonas geográficas.
 
 El sistema busca facilitar el monitoreo ambiental ciudadano a través de la captura y análisis de imágenes, integrando funciones de geolocalización, mapas interactivos y contenido educativo para promover la conciencia ecológica y el cuidado del medio ambiente.
+### Estado actual de la inteligencia artificial:
+
+El modelo activo de produccion es la version **V8** (clasificador ambiental de tres clases: liquen saludable, liquen contaminado y liquen desconocido). Cuando la IA clasifica una imagen como desconocida, el sistema informa al usuario y evita registrar el analisis. Las versiones futuras del modelo (por ejemplo V9) son parte de la evolucion posterior al despliegue y no son el modelo activo.
+
+### Instalacion y configuracion:
+
+Para clonar, configurar y ejecutar el proyecto desde cero sigue la guia **SETUP.md** (ver raiz del repositorio). Alli se detallan requisitos, backend/.env, base de datos MySQL, migraciones, backend, frontend Flutter, conexion app-backend, configuracion de Google (Sign-In y Maps) y una checklist de instalacion.

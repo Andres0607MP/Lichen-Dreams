@@ -171,3 +171,39 @@ def test_path_traversal_blocked():
 def user_data_a_id(user_data: dict) -> int:
     """Helper: extract user ID from /auth/me response."""
     return user_data.get("id_usuario") or user_data.get("id") or 0
+
+
+def test_list_get_delete_images_require_auth_and_check_ownership():
+    """Regresión BUG-001 (Sprint 5): GET /imagenes, GET/DELETE /imagenes/{id}
+    requieren autenticación y no exponen imágenes privadas ajenas."""
+    token_a, headers_a, user_a = _register_and_login("bug001_userA")
+    login_b = client.post("/auth/login", data={"username": "admin@gmail.com", "password": "admin123"})
+    assert login_b.status_code == 200
+    headers_b = {"Authorization": f"Bearer {login_b.json()['access_token']}"}
+
+    # 1) Sin autenticación no se puede listar ni consultar ni eliminar
+    assert client.get("/imagenes").status_code == 401
+    assert client.get("/imagenes/1").status_code == 401
+    assert client.delete("/imagenes/1").status_code == 401
+
+    # 2) El propietario de una imagen privada la ve en el listado
+    image_url = _upload_private_image(headers_a, "analysis")
+    list_r = client.get("/imagenes", headers=headers_a)
+    assert list_r.status_code == 200
+    items = [i for i in list_r.json() if i.get("url") == image_url]
+    assert len(items) == 1, "El propietario debe ver su imagen privada en el listado"
+    img_id = items[0]["id_imagen"]
+
+    # 3) GET por id: propietario 200
+    assert client.get(f"/imagenes/{img_id}", headers=headers_a).status_code == 200
+
+    # 4) Admin (sin permiso CAN_VIEW_PRIVATE_IMAGES) no ve ni accede a la imagen ajena
+    list_b = client.get("/imagenes", headers=headers_b)
+    assert list_b.status_code == 200
+    assert all(i.get("url") != image_url for i in list_b.json()), \
+        "El admin no debe ver imágenes privadas ajenas en el listado"
+    assert client.get(f"/imagenes/{img_id}", headers=headers_b).status_code == 403
+    assert client.delete(f"/imagenes/{img_id}", headers=headers_b).status_code == 403
+
+    # 5) El propietario puede eliminarla
+    assert client.delete(f"/imagenes/{img_id}", headers=headers_a).status_code == 204

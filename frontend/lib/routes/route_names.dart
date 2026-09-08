@@ -37,4 +37,5 @@ class AppRoutes {
   static const catalogsSettings = '/settings/catalogs';
   static const adminSpeciesSettings = '/settings/admin-species';
   static const adminZonesSettings = '/settings/admin-zones';
+  static const iaMonitoring = '/admin/ia-monitoring';
 }

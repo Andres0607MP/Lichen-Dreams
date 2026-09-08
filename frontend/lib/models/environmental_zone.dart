@@ -243,7 +243,7 @@ List<EnvironmentalZone> calculateEnvironmentalZones(
       if (distance < individualRadius * 2) {
         final midLat = (healthy.lat + contaminated.lat) / 2;
         final midLng = (healthy.lng + contaminated.lng) / 2;
-        final transitionRadius = (distance / 2).clamp(10.0, individualRadius);
+        final transitionRadius = individualRadius;
         final midLatStr = midLat.toString();
         final midLngStr = midLng.toString();
 

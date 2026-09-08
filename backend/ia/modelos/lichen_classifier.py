@@ -57,6 +57,9 @@ def _load_model():
 
     La ruta se re-resuelve por BD; si cambió (p. ej. otra version activada), se
     recarga. Si no se puede resolver, ActiveModelError (fallo explicito).
+
+    Instrumenta el momento de carga/recarga en MonitoringService (nunca debe
+    romper la inferencia: el monitoreo es silencioso).
     """
     global _model, _model_path
     current = _resolve_model_path()
@@ -70,7 +73,19 @@ def _load_model():
     import tensorflow as tf
 
     _model = tf.keras.models.load_model(str(current), compile=False)
+    was_loaded = _model_path is not None
     _model_path = current
+
+    # Instrumentar carga/recarga del modelo (silencioso, no rompe inferencia)
+    try:
+        from services.monitoring_service import monitoring_service
+        if was_loaded:
+            monitoring_service.record_model_reloaded(str(current))
+        else:
+            monitoring_service.record_model_loaded(str(current))
+    except Exception:
+        pass
+
     return _model
 
 

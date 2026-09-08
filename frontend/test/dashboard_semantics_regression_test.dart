@@ -11,26 +11,28 @@ import 'package:frontend/state/catalog_state.dart';
 import 'package:frontend/state/notifications_state.dart';
 import 'package:frontend/state/analysis_state.dart';
 import 'package:frontend/state/app_settings_state.dart';
+import 'package:frontend/state/map_state.dart';
 
 Widget _dashboardApp() {
-  final apiService = ApiService();
-  return MultiProvider(
-    providers: [
-      ChangeNotifierProvider.value(value: AuthState(apiService: apiService)),
-      Provider.value(value: apiService),
-      ChangeNotifierProvider(create: (_) => DashboardState(apiService: apiService)),
-      ChangeNotifierProvider(create: (_) => ArticlesState(apiService: apiService)),
-      ChangeNotifierProvider(create: (_) => CatalogState(apiService: apiService)),
-      ChangeNotifierProvider.value(value: NotificationsState.instance),
-      ChangeNotifierProvider(create: (_) => AnalysisState(apiService: apiService)),
-      ChangeNotifierProvider(create: (_) => AppSettingsState()),
-    ],
-    child: MaterialApp(
-      theme: ThemeData(useMaterial3: true),
-      home: const DashboardScreen(),
-    ),
-  );
-}
+    final apiService = ApiService();
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider.value(value: AuthState(apiService: apiService)),
+        Provider.value(value: apiService),
+        ChangeNotifierProvider(create: (_) => DashboardState(apiService: apiService)),
+        ChangeNotifierProvider(create: (_) => ArticlesState(apiService: apiService)),
+        ChangeNotifierProvider(create: (_) => CatalogState(apiService: apiService)),
+        ChangeNotifierProvider.value(value: NotificationsState.instance),
+        ChangeNotifierProvider(create: (_) => AnalysisState(apiService: apiService)),
+        ChangeNotifierProvider(create: (_) => AppSettingsState()),
+        ChangeNotifierProvider(create: (_) => MapState(apiService: apiService)),
+      ],
+      child: MaterialApp(
+        theme: ThemeData(useMaterial3: true),
+        home: const DashboardScreen(),
+      ),
+    );
+  }
 
 void main() {
   testWidgets('dashboard layouts cleanly with semantics enabled and bottom nav animating', (

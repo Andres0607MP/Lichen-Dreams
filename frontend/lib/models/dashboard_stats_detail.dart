@@ -1,6 +1,8 @@
 import '../models/analysis_record.dart';
 import '../models/dashboard_stats.dart';
 import '../models/environmental_quality.dart';
+import '../models/map_analysis_point.dart';
+import 'environmental_zone.dart';
 
 class DailyAnalysisStat {
   final DateTime date;
@@ -52,6 +54,7 @@ class DashboardStatsDetail {
   factory DashboardStatsDetail.fromHistory({
     required List<AnalysisRecord> history,
     required DashboardStats? stats,
+    List<MapAnalysisPoint>? points,
   }) {
     final now = DateTime.now();
     final sevenDaysAgo = now.subtract(const Duration(days: 7));
@@ -61,7 +64,7 @@ class DashboardStatsDetail {
         .toList();
 
     final dailyActivity = _calculateDailyActivity(recentHistory);
-    final environmentalDistribution = _calculateEnvironmentalDistribution(history);
+    final environmentalDistribution = _calculateEnvironmentalDistribution(history, points: points);
     final averageHumidity = _calculateAverageHumidity(history);
     final averageConfidence = _calculateAverageConfidence(history);
     final lastAnalysisDate = _getLastAnalysisDate(history);
@@ -100,7 +103,10 @@ class DashboardStatsDetail {
     }).toList();
   }
 
-  static EnvironmentalDistribution _calculateEnvironmentalDistribution(List<AnalysisRecord> history) {
+  static EnvironmentalDistribution _calculateEnvironmentalDistribution(
+    List<AnalysisRecord> history, {
+    List<MapAnalysisPoint>? points,
+  }) {
     int healthy = 0;
     int moderate = 0;
     int critical = 0;
@@ -114,7 +120,6 @@ class DashboardStatsDetail {
           healthy++;
           break;
         case EnvironmentalQualityLevel.moderate:
-          moderate++;
           break;
         case EnvironmentalQualityLevel.poor:
         case EnvironmentalQualityLevel.critical:
@@ -124,6 +129,11 @@ class DashboardStatsDetail {
           unknown++;
           break;
       }
+    }
+
+    if (points != null && points.isNotEmpty) {
+      final zones = calculateEnvironmentalZones(points);
+      moderate = zones.where((z) => z.type == EnvironmentalZoneType.transition).length;
     }
 
     return EnvironmentalDistribution(

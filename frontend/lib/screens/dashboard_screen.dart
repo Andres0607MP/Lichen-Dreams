@@ -14,9 +14,10 @@ import '../widgets/modern_widgets.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
 import '../services/navigation_service.dart';
+import '../state/auth_state.dart';
 import '../state/app_settings_state.dart';
 import '../state/dashboard_state.dart';
-import '../state/auth_state.dart';
+import '../state/map_state.dart';
 import '../state/articles_state.dart';
 import '../state/analysis_state.dart';
 import '../state/notifications_state.dart';
@@ -48,6 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (mounted) {
         final dashboardState = context.read<DashboardState>();
         final analysisState = context.read<AnalysisState>();
+        final mapState = context.read<MapState>();
         final currentDataVersion = analysisState.dataVersion;
         final hasNewData = currentDataVersion != _lastProcessedDataVersion;
         _lastProcessedDataVersion = currentDataVersion;
@@ -56,7 +58,23 @@ class _DashboardScreenState extends State<DashboardScreen>
           if (hasNewData) {
             dashboardState.invalidate();
           }
-          dashboardState.loadStats();
+          dashboardState.loadStats().then((_) {
+            if (mapState.points.isEmpty && !mapState.loading) {
+              mapState.loadPoints().then((_) {
+                dashboardState.calculateModerateCount(mapState.points);
+              });
+            } else {
+              dashboardState.calculateModerateCount(mapState.points);
+            }
+          });
+        } else {
+          if (mapState.points.isEmpty && !mapState.loading) {
+            mapState.loadPoints().then((_) {
+              dashboardState.calculateModerateCount(mapState.points);
+            });
+          } else if (mapState.points.isNotEmpty) {
+            dashboardState.calculateModerateCount(mapState.points);
+          }
         }
         final appSettings = context.read<AppSettingsState>();
         final notificationsState = context.read<NotificationsState>();
@@ -90,9 +108,18 @@ class _DashboardScreenState extends State<DashboardScreen>
   void _onAnalysisCompleted() {
     if (!mounted) return;
     final dashboardState = context.read<DashboardState>();
+    final mapState = context.read<MapState>();
     if (!dashboardState.loading) {
       dashboardState.invalidate();
-      dashboardState.loadStats();
+      dashboardState.loadStats().then((_) {
+        if (mapState.points.isEmpty && !mapState.loading) {
+          mapState.loadPoints().then((_) {
+            dashboardState.calculateModerateCount(mapState.points);
+          });
+        } else {
+          dashboardState.calculateModerateCount(mapState.points);
+        }
+      });
     }
   }
 

@@ -9,6 +9,7 @@ class DashboardStats {
   final int healthyCount;
   final int affectedCount;
   final int unknownCount;
+  final int moderateCount;
 
   DashboardStats({
     required this.analysisCount,
@@ -19,6 +20,7 @@ class DashboardStats {
     this.healthyCount = 0,
     this.affectedCount = 0,
     this.unknownCount = 0,
+    this.moderateCount = 0,
   });
 
   EnvironmentalQuality get environmentalQuality {
