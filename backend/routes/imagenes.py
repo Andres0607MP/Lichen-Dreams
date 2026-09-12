@@ -1,10 +1,7 @@
 from fastapi import APIRouter, UploadFile, File, Form, status, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import RedirectResponse
+from typing import Optional, List
 from pydantic import BaseModel
-from typing import List, Optional
-from sqlalchemy.orm import Session
-
-from config.db import get_db
 from config.settings import (
     normalize_image_path,
     logger,
@@ -16,7 +13,9 @@ from auth.auth_service import get_current_user, get_current_user_optional, has_p
 from services.upload_service import (
     validate_image,
     save_file,
-    resolve_file_path,
+    file_exists_in_r2,
+    delete_file_r2,
+    get_presigned_url_r2,
     extract_user_id_from_path,
     is_private_image_path,
     IMAGE_TYPE_ARTICLE,
@@ -24,8 +23,8 @@ from services.upload_service import (
     IMAGE_TYPE_ANALYSIS,
     IMAGE_TYPE_SPECIES,
 )
-
-router = APIRouter()
+from sqlalchemy.orm import Session
+from config.db import get_db
 
 
 class ImageResponse(BaseModel):
@@ -37,8 +36,11 @@ class ImageResponse(BaseModel):
     class Config:
         from_attributes = True
 
+private_router = APIRouter()
+public_router = APIRouter()
 
-@router.post("/upload", response_model=ImageResponse, summary="Subir imagen")
+
+@private_router.post("/upload", response_model=ImageResponse, summary="Subir imagen")
 async def upload_image(
     file: UploadFile = File(...),
     imagen_tipo: str = Form(IMAGE_TYPE_ARTICLE),
@@ -83,7 +85,7 @@ async def upload_image(
     return imagen
 
 
-@router.get("/file/{path:path}", summary="Servir imagen privada (propietario o auditor)")
+@private_router.get("/file/{path:path}", summary="Servir imagen privada (propietario o auditor)")
 async def serve_private_image(
     path: str,
     current_user: Usuario = Depends(get_current_user),
@@ -132,28 +134,29 @@ async def serve_private_image(
             detail="No tienes permiso para acceder a esta imagen",
         )
 
-    file_path = resolve_file_path(relative_path)
-    if file_path is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Imagen no encontrada",
-        )
+    # Generate a presigned URL for private image (short expiration)
+    try:
+        signed_url = get_presigned_url_r2(relative_path, expires_in=300)  # 5 minutes
+    except HTTPException as e:
+        if e.status_code == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Imagen no encontrada",
+            )
+        else:
+            raise
 
-    media_type = "image/jpeg"
-    if file_path.suffix.lower() == ".png":
-        media_type = "image/png"
-
-    return FileResponse(str(file_path), media_type=media_type)
+    return RedirectResponse(signed_url)
 
 
-@router.get("", response_model=List[ImageResponse], summary="Listar imágenes")
+@private_router.get("", response_model=List[ImageResponse], summary="Listar imÃ¡genes")
 def list_images(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user),
 ):
-    """Lista imágenes visibles para el usuario autenticado.
+    """Lista imÃ¡genes visibles para el usuario autenticado.
 
-    Las imágenes privadas (profiles/analyses) solo se devuelven a su
+    Las imÃ¡genes privadas (profiles/analyses) solo se devuelven a su
     propietario o a roles con permiso CAN_VIEW_PRIVATE_IMAGES.
     """
     items = db.query(ImagenModel).all()
@@ -161,7 +164,7 @@ def list_images(
     def _visible(img: ImagenModel) -> bool:
         rel = img.url or ""
         if not is_private_image_path(rel):
-            return True  # públicas: articles/species
+            return True  # pÃºblicas: articles/species
         if has_permission(current_user, PERMISSION_CAN_VIEW_PRIVATE_IMAGES):
             return True
         owner = extract_user_id_from_path(rel)
@@ -170,7 +173,7 @@ def list_images(
     return [i for i in items if _visible(i)]
 
 
-@router.get("/{image_id}", response_model=ImageResponse, summary="Obtener imagen por ID")
+@private_router.get("/{image_id}", response_model=ImageResponse, summary="Obtener imagen por ID")
 def get_image(
     image_id: int,
     db: Session = Depends(get_db),
@@ -192,7 +195,7 @@ def get_image(
     return img
 
 
-@router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar imagen")
+@private_router.delete("/{image_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar imagen")
 def delete_image(
     image_id: int,
     db: Session = Depends(get_db),
@@ -201,8 +204,8 @@ def delete_image(
     """Elimina una imagen.
 
     Solo el propietario o un rol con permiso CAN_VIEW_PRIVATE_IMAGES puede
-    eliminar imágenes privadas. Las públicas (articles/species) requieren
-    autenticación.
+    eliminar imÃ¡genes privadas. Las pÃºblicas (articles/species) requieren
+    autenticaciÃ³n.
     """
     img = db.query(ImagenModel).filter(ImagenModel.id_imagen == image_id).first()
     if not img:
@@ -218,13 +221,49 @@ def delete_image(
                 detail="No tienes permiso para eliminar esta imagen",
             )
 
-    file_path = resolve_file_path(img.url or "")
-    if file_path is not None:
-        try:
-            file_path.unlink()
-        except Exception:
-            pass
+    # Delete from R2
+    try:
+        delete_file_r2(rel)
+    except HTTPException as e:
+        if e.status_code != 404:
+            # Re-raise if it's not a 404 (object not found)
+            raise
+        # If 404, we continue to delete the DB record
 
     db.delete(img)
     db.commit()
     return None
+
+
+@public_router.get("/articles/{path:path}")
+async def serve_public_article(path: str):
+    """Serve a public article image by redirecting to a presigned URL."""
+    relative_path = f"/uploads/articles/{path}"
+    try:
+        signed_url = get_presigned_url_r2(relative_path, expires_in=3600)  # 1 hour
+    except HTTPException as e:
+        if e.status_code == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Imagen no encontrada",
+            )
+        else:
+            raise
+    return RedirectResponse(signed_url)
+
+
+@public_router.get("/species/{path:path}")
+async def serve_public_species(path: str):
+    """Serve a public species image by redirecting to a presigned URL."""
+    relative_path = f"/uploads/species/{path}"
+    try:
+        signed_url = get_presigned_url_r2(relative_path, expires_in=3600)  # 1 hour
+    except HTTPException as e:
+        if e.status_code == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Imagen no encontrada",
+            )
+        else:
+            raise
+    return RedirectResponse(signed_url)

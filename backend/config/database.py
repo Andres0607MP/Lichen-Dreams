@@ -9,11 +9,14 @@ DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = os.getenv("DB_PORT", "3306")
 DB_NAME = os.getenv("DB_NAME", "lichen_dreams")
-# Allow overriding full DATABASE_URL (useful for sqlite in tests or env)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# SSL configuration (required by Aiven/MySQL over TLS)
+DB_SSL = os.getenv("DB_SSL", "").lower() in ("true", "1", "yes")
+DB_SSL_CA = os.getenv("DB_SSL_CA")
+
 if not DATABASE_URL:
-    # Convertir puerto a entero, con valor por defecto si está vacío o "None"
+    # Convert port to integer, default if empty or "None"
     try:
         db_port = int(DB_PORT) if DB_PORT and DB_PORT != "None" else 3306
     except (ValueError, TypeError):
@@ -21,11 +24,22 @@ if not DATABASE_URL:
 
     DATABASE_URL = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{db_port}/{DB_NAME}"
 
-# Create engine with sqlite compatibility when detected
-if DATABASE_URL.startswith("sqlite"):
-    engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-else:
-    engine = create_engine(DATABASE_URL)
+
+def _make_connect_args(url: str) -> dict:
+    """Build SQLAlchemy connect_args, adding SSL for MySQL when DB_SSL is set."""
+    if url.startswith("sqlite"):
+        return {"check_same_thread": False}
+    args: dict = {}
+    if DB_SSL:
+        if DB_SSL_CA:
+            args["ssl"] = {"ca": DB_SSL_CA}
+        else:
+            args["ssl"] = {"check_hostname": False}
+    return args
+
+
+# Create engine with sqlite compatibility or SSL for MySQL
+engine = create_engine(DATABASE_URL, connect_args=_make_connect_args(DATABASE_URL))
 
 try:
     connection = engine.connect()

@@ -19,29 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Crear nuevo índice primero (MySQL requiere un índice para FK)
-    op.create_index('idx_id_usuario_token', 'password_reset_tokens', ['id_usuario'])
-    # Eliminar FK, luego índice antiguo, luego restaurar FK
-    op.drop_constraint('password_reset_tokens_ibfk_1', 'password_reset_tokens', type_='foreignkey')
-    op.drop_index('idx_id_usuario', table_name='password_reset_tokens')
-    op.create_foreign_key(
-        'password_reset_tokens_ibfk_1',
-        'password_reset_tokens',
-        'usuarios',
-        ['id_usuario'],
-        ['id_usuario'],
-    )
+    # No-op: d4e5f6a7b8c9 ya crea directamente
+    # idx_id_usuario_token con el nombre correcto.
+    pass
 
 
 def downgrade() -> None:
-    # Eliminar FK, crear índice antiguo, restaurar FK
-    op.drop_constraint('password_reset_tokens_ibfk_1', 'password_reset_tokens', type_='foreignkey')
-    op.create_index('idx_id_usuario', 'password_reset_tokens', ['id_usuario'])
-    op.create_foreign_key(
-        'password_reset_tokens_ibfk_1',
-        'password_reset_tokens',
-        'usuarios',
-        ['id_usuario'],
-        ['id_usuario'],
-    )
-    op.drop_index('idx_id_usuario_token', table_name='password_reset_tokens')
+    # No-op: esta migración no realiza cambios en el estado actual.
+    pass

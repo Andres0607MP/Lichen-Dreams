@@ -59,7 +59,7 @@ def client():
     Base.metadata.drop_all(bind=ENGINE)
     Base.metadata.create_all(bind=ENGINE)
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    with TestClient(app, follow_redirects=True) as c:
         yield c
     app.dependency_overrides.clear()
 

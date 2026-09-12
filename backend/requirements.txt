@@ -42,3 +42,4 @@ tensorflow
 opencv-python
 numpy
 Pillow
+boto3==1.26.0

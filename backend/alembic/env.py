@@ -27,10 +27,11 @@ target_metadata = Base.metadata
 
 # Read the SQLALCHEMY URL from the project's config
 try:
-    from config.database import DATABASE_URL
+    from config.database import DATABASE_URL, DB_SSL, DB_SSL_CA
     config.set_main_option('sqlalchemy.url', DATABASE_URL)
 except Exception:
-    pass
+    DB_SSL = False
+    DB_SSL_CA = None
 
 
 def run_migrations_offline():
@@ -42,10 +43,18 @@ def run_migrations_offline():
 
 
 def run_migrations_online():
+    url = config.get_main_option("sqlalchemy.url")
+    connect_args = {}
+    if url and not url.startswith("sqlite") and DB_SSL:
+        if DB_SSL_CA:
+            connect_args["ssl"] = {"ca": DB_SSL_CA}
+        else:
+            connect_args["ssl"] = {"check_hostname": False}
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix='sqlalchemy.',
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
 
     with connectable.connect() as connection:

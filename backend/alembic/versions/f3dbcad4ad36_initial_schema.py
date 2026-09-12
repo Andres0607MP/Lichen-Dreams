@@ -54,7 +54,7 @@ def upgrade() -> None:
     op.create_table(
         'sesiones',
         sa.Column('id_sesion', sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column('token_sesion', sa.Text),
+        sa.Column('token_sesion', sa.String(64), nullable=False),
         sa.Column('dispositivo', sa.String(100)),
         sa.Column('sistema_operativo', sa.String(100)),
         sa.Column('ip_usuario', sa.String(50)),

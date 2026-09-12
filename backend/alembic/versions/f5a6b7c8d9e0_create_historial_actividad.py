@@ -19,24 +19,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Tabla gestionada por el modelo HistorialActividad.
-    # No estaba incluida en ninguna migración previa: la creaba
-    # Base.metadata.create_all() en cada arranque. Al migrar el esquema
-    # exclusivamente con Alembic, debe quedar cubierta aquí.
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS historial_actividad (
-            id_historial INTEGER NOT NULL AUTO_INCREMENT,
-            id_usuario INTEGER NULL,
-            accion_realizada VARCHAR(255) NULL,
-            descripcion_accion TEXT NULL,
-            dispositivo VARCHAR(100) NULL,
-            ip_usuario VARCHAR(50) NULL,
-            fecha TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id_historial),
-            FOREIGN KEY(id_usuario) REFERENCES usuarios (id_usuario)
-        )
-    """)
+    op.create_table(
+        'historial_actividad',
+        sa.Column('id_historial', sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column('id_usuario', sa.Integer, sa.ForeignKey('usuarios.id_usuario'), nullable=True),
+        sa.Column('accion_realizada', sa.String(255), nullable=True),
+        sa.Column('descripcion_accion', sa.Text, nullable=True),
+        sa.Column('dispositivo', sa.String(100), nullable=True),
+        sa.Column('ip_usuario', sa.String(50), nullable=True),
+        sa.Column('fecha', sa.TIMESTAMP, nullable=True, server_default=sa.func.now()),
+    )
 
 
 def downgrade() -> None:
-    op.execute("DROP TABLE IF EXISTS historial_actividad")
+    op.drop_table('historial_actividad')

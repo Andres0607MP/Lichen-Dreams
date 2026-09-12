@@ -19,7 +19,7 @@ Base.metadata.create_all(bind=engine)
 
 from main import app
 
-client = TestClient(app)
+client = TestClient(app, follow_redirects=True)
 SessionLocal = sessionmaker(bind=engine)
 
 

@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 from main import app
 import uuid
 
-client = TestClient(app)
+client = TestClient(app, follow_redirects=True)
 
 
 def test_refresh_and_logout_flow():

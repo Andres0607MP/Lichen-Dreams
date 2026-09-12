@@ -62,7 +62,7 @@ def db():
 @pytest.fixture(scope="function")
 def client(db):
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
+    with TestClient(app, follow_redirects=True) as test_client:
         yield test_client
     app.dependency_overrides.clear()
 
@@ -374,12 +374,15 @@ def test_crear_articulo_con_foto_perfil_autor_publica(client, db, test_admin_use
     found = [a for a in articles if a["foto_perfil_articulo"] == foto_articulo]
     assert len(found) == 1, "foto_perfil_articulo no encontrado en GET /liquenpedia"
 
-    # 5. Acceder a la imagen públicamente (SIN autenticación)
-    public_resp = client.get(foto_articulo)
-    assert public_resp.status_code == 200, \
-        f"Imagen pública no accesible sin auth: {public_resp.status_code}"
-    assert public_resp.content == _valid_jpeg_bytes(), \
-        "El contenido de la imagen pública no coincide con la original"
+    # 5. Acceder a la imagen públicamente (SIN autenticación) — redirect a R2
+    public_resp = client.get(foto_articulo, follow_redirects=False)
+    assert public_resp.status_code == 307, \
+        f"Expected 307 redirect to R2, got: {public_resp.status_code}"
+    location = public_resp.headers["location"]
+    assert "r2.cloudflarestorage.com" in location, \
+        f"Expected R2 domain in redirect, got: {location}"
+    assert "lichen-dreams-images/articles/author_" in location, \
+        f"Expected articles/author_ key in redirect, got: {location}"
 
 
 def test_listar_articulos_publicos(client, db):
@@ -489,8 +492,11 @@ def test_propietario_puede_acceder_a_imagen_privada(client, test_regular_user):
     )
     assert upload.status_code == 200
     image_path = upload.json()["url"].replace("/uploads/", "")
-    response = client.get(f"/imagenes/file/{image_path}", headers=headers)
-    assert response.status_code == 200
+    response = client.get(f"/imagenes/file/{image_path}", headers=headers, follow_redirects=False)
+    assert response.status_code == 307
+    location = response.headers["location"]
+    assert "r2.cloudflarestorage.com" in location
+    assert "lichen-dreams-images/analyses/user_" in location
 
 
 def test_otro_usuario_no_puede_acceder_a_imagen_privada(client, db, test_regular_user):
@@ -528,5 +534,8 @@ def test_imagen_publica_sin_autenticacion(client):
         files={"file": ("article.jpg", _valid_jpeg_bytes(), "image/jpeg")},
     )
     assert upload.status_code == 200
-    response = client.get(upload.json()["url"])
-    assert response.status_code == 200
+    response = client.get(upload.json()["url"], follow_redirects=False)
+    assert response.status_code == 307
+    location = response.headers["location"]
+    assert "r2.cloudflarestorage.com" in location
+    assert "lichen-dreams-images/articles/" in location

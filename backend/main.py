@@ -17,32 +17,43 @@ from pydantic import BaseModel, Field
 
 load_dotenv()
 
-app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para análisis de líquenes")
+app = FastAPI(title="Lichen Dreams API", version="1.0.0", description="API para anÃ¡lisis de lÃ­quenes")
 
 # El esquema de la base de datos se gestiona exclusivamente con Alembic
 # (`python -m alembic upgrade head`). No se ejecuta Base.metadata.create_all()
 # en el arranque para evitar compilar/recrear tablas gestionadas por Alembic.
 
-# CORS: permitir peticiones desde el frontend en desarrollo (ajustar en producción)
+# CORS: permitir peticiones desde el frontend en desarrollo y producción.
+# - localhost/127.0.0.1/10.0.2.2: siempre permitidos via regex (desarrollo local).
+# - CORS_ALLOWED_ORIGINS (variable de entorno, separada por comas): dominios de
+#   produccion como https://lichdreams-frontend.onrender.com.
+_cors_allowed_origins = [
+    o.strip()
+    for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+]
+_cors_origin_regex = os.getenv(
+    "CORS_ORIGIN_REGEX",
+    r"https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?",
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"https?://(localhost|127\.0\.0\.1|10\.0\.2\.2)(:\d+)?",
+    allow_origins=_cors_allowed_origins,
+    allow_origin_regex=_cors_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 # Ensure uploads directory structure exists.
-# Public: uploads/articles/ served via StaticFiles.
+# Public: uploads/articles/ served via our new public image routes.
 # Private: uploads/profiles/ and uploads/analyses/ served via auth-guarded endpoints.
 for subdir in ("articles", "profiles", "analyses", "species"):
     (UPLOADS_BASE_DIR / subdir).mkdir(parents=True, exist_ok=True)
 
-# Only expose /uploads/articles as public static files.
-# Private image directories (profiles/, analyses/) are served
-# via auth-guarded endpoints in routes/imagenes.py.
-app.mount("/uploads/articles", StaticFiles(directory=str(UPLOADS_BASE_DIR / "articles")), name="uploads-articles")
-app.mount("/uploads/species", StaticFiles(directory=str(UPLOADS_BASE_DIR / "species")), name="uploads-species")
+# NOTE: We no longer mount StaticFiles for /uploads/articles and /uploads/species
+# because we now serve them via redirect to R2 in the public image routes.
 
 # Importar y registrar routers
 try:
@@ -100,10 +111,16 @@ except ImportError as e:
     print(f"Warning: datasets router not found - {e}")
 
 try:
-    from routes.imagenes import router as imagenes_router
-    app.include_router(imagenes_router, prefix="/imagenes", tags=["Imagenes"])
+    from routes.imagenes import private_router, public_router
 except ImportError as e:
-    print(f"Warning: imagenes router not found - {e}")
+    print(f"Warning: imagenes routers not found - {e}")
+    private_router = None
+    public_router = None
+
+if private_router is not None:
+    app.include_router(private_router, prefix="/imagenes", tags=["Imagenes"])
+if public_router is not None:
+    app.include_router(public_router, prefix="/uploads", tags=["PublicImages"])
 
 try:
     from routes.liquenpedia import router as liquenpedia_router
@@ -164,8 +181,8 @@ JWT_SECRET = os.getenv("JWT_SECRET")
 
 @app.on_event("startup")
 def startup():
-    # Seed de roles, usuario admin y modelo/dataset de demostración.
-    # El esquema (tablas) lo gestiona Alembic; aquí solo se insertan
+    # Seed de roles, usuario admin y modelo/dataset de demostraciÃ³n.
+    # El esquema (tablas) lo gestiona Alembic; aquÃ­ solo se insertan
     # registros iniciales si no existen.
     db = None
     try:
@@ -221,7 +238,7 @@ def root():
 
 @app.get("/api/config")
 def get_config():
-    """Devuelve variables de configuración para el frontend (ej: Google Maps API Key)"""
+    """Devuelve variables de configuraciÃ³n para el frontend (ej: Google Maps API Key)"""
     return {
         "google_maps_api_key": os.getenv("GOOGLE_MAPS_API_KEY", ""),
         "backend_url": BACKEND_URL,
@@ -235,7 +252,7 @@ def generate():
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 class PasswordRequest(BaseModel):
-    password: str = Field(..., min_length=1, max_length=72, description="Contraseña (máximo 72 caracteres)")
+    password: str = Field(..., min_length=1, max_length=72, description="ContraseÃ±a (mÃ¡ximo 72 caracteres)")
 
 @app.post("/registro")
 def registro(request: PasswordRequest):

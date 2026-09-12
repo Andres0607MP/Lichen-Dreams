@@ -19,23 +19,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Use CREATE TABLE IF NOT EXISTS to avoid error if table already created by Base.metadata.create_all
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS password_reset_tokens (
-            id INTEGER NOT NULL AUTO_INCREMENT,
-            id_usuario INTEGER NOT NULL,
-            token_hash VARCHAR(255) NOT NULL,
-            expires_at TIMESTAMP NOT NULL,
-            used_at TIMESTAMP NULL,
-            created_at TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (id),
-            FOREIGN KEY(id_usuario) REFERENCES usuarios (id_usuario),
-            UNIQUE (token_hash)
-        )
-    """)
-    # Create indexes if they don't exist
-    op.execute("CREATE INDEX IF NOT EXISTS idx_token_hash ON password_reset_tokens (token_hash)")
-    op.execute("CREATE INDEX IF NOT EXISTS idx_id_usuario ON password_reset_tokens (id_usuario)")
+    op.create_table(
+        'password_reset_tokens',
+        sa.Column('id', sa.Integer, primary_key=True, autoincrement=True),
+        sa.Column('id_usuario', sa.Integer, sa.ForeignKey('usuarios.id_usuario'), nullable=False),
+        sa.Column('token_hash', sa.String(255), nullable=False, unique=True),
+        sa.Column('expires_at', sa.TIMESTAMP, nullable=False),
+        sa.Column('used_at', sa.TIMESTAMP, nullable=True),
+        sa.Column('created_at', sa.TIMESTAMP, nullable=True, server_default=sa.func.now()),
+    )
+    op.create_index('idx_token_hash', 'password_reset_tokens', ['token_hash'])
+    op.create_index('idx_id_usuario_token', 'password_reset_tokens', ['id_usuario'])
 
 
 def downgrade() -> None:

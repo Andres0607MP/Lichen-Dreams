@@ -15,7 +15,7 @@ os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 from fastapi.testclient import TestClient
 from main import app
 
-client = TestClient(app)
+client = TestClient(app, follow_redirects=True)
 
 
 def obtener_token():

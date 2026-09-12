@@ -70,8 +70,8 @@ MODULOS = [
 ]
 
 RESULTADOS_GENERALES = [
-    ["Backend (pytest)", "176/176 pruebas aprobadas"],
-    ["Flutter (flutter test)", "37/37 pruebas aprobadas"],
+    ["Backend (pytest)", "211/211 pruebas aprobadas"],
+    ["Flutter (flutter test)", "117/117 pruebas aprobadas"],
     ["Flutter analyze", "0 errores (15 advertencias y 99 informativos, sin impacto en pruebas)"],
     ["E2E vía API", "38/38 escenarios aprobados"],
     ["CRUD administrativo", "21/21 escenarios aprobados"],
@@ -805,6 +805,7 @@ def gen_entregable2_nuevo():
     add_header_footer(doc)
     portada(doc, "ENTREGABLE 2 — DISEÑO DE CASOS DE PRUEBA",
             "Casos de prueba por módulo · flujo real de la IA con V8 · evolución futura")
+    doc.add_paragraph("El sistema en prueba es una " + TIPO_SISTEMA + " " + ACLARACION)
     heading(doc, "1. Cómo funciona actualmente la inteligencia artificial", 1)
     doc.add_paragraph(
         "Cuando el usuario realiza un análisis, la imagen seleccionada o capturada llega al sistema "
@@ -845,6 +846,7 @@ def gen_entregable3_nuevo():
     add_header_footer(doc)
     portada(doc, "ENTREGABLE 3 — MATRIZ DE EJECUCIÓN DE PRUEBAS MANUALES",
             "Matriz actualizada · flujo real de análisis con la IA V8")
+    doc.add_paragraph("El sistema en prueba es una " + TIPO_SISTEMA + " " + ACLARACION)
     heading(doc, "1. Introducción", 1)
     doc.add_paragraph(
         "Esta matriz registra la ejecución real de las pruebas del Sprint 5. Estados: Aprobado "
@@ -878,6 +880,7 @@ def gen_entregable4_nuevo():
     add_header_footer(doc)
     portada(doc, "ENTREGABLE 4 — REPORTE DE HALLAZGOS Y EVOLUCIÓN DEL SISTEMA",
             "Hallazgo real (BUG-001) y evolución futura de la IA (mejora continua)")
+    doc.add_paragraph("El sistema en prueba es una " + TIPO_SISTEMA + " " + ACLARACION)
     heading(doc, "1. Introducción", 1)
     doc.add_paragraph(
         "Este documento registra el hallazgo real identificado durante el Sprint 5 (BUG-001), su "

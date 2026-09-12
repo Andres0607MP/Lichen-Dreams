@@ -15,7 +15,7 @@ from services.analysis_service import AnalysisService
 from services.upload_service import (
     validate_image,
     save_file,
-    resolve_file_path,
+    delete_file_r2,
     IMAGE_TYPE_ANALYSIS,
 )
 
@@ -347,18 +347,19 @@ def delete_analysis(
             ProcesamientoIA.id_analisis == analysis_id
         ).delete(synchronize_session=False)
 
-        # Eliminar imágenes físicas y registros de imagen
+        # Eliminar imágenes de R2 y registros de imagen
         imagenes = db.query(Imagen).filter(Imagen.id_analisis == analysis_id).all()
         for imagen in imagenes:
             for path_attr in ['ruta_imagen', 'url']:
                 path = getattr(imagen, path_attr, None)
                 if path:
-                    physical_path = resolve_file_path(path)
-                    if physical_path and physical_path.exists():
-                        try:
-                            physical_path.unlink()
-                        except OSError as e:
-                            logging.warning(f"No se pudo eliminar archivo {physical_path}: {e}")
+                    try:
+                        delete_file_r2(path)
+                    except HTTPException as e:
+                        # If the error is 404 (not found), we can ignore and continue to delete the DB record.
+                        if e.status_code != 404:
+                            logging.warning(f"Error al eliminar objeto en R2 {path}: {e}")
+                        # If it's 404, we just continue (the object is already gone)
             db.delete(imagen)
 
         # Eliminar análisis

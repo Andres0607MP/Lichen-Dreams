@@ -11,7 +11,7 @@ from sqlalchemy import or_
 
 from config.db import SessionLocal
 from config.settings import normalize_image_path
-from services.upload_service import resolve_file_path
+from services.upload_service import download_image_from_r2
 from services.weather_service import WeatherService
 from models.core import Analisis, Imagen, Usuario, ModeloIA, Dataset, HistorialActividad, Ubicacion, EspecieLiquen, Notificacion, ProcesamientoIA
 from services.zone_membership import sync_analysis_to_zones
@@ -53,9 +53,9 @@ class AnalysisService:
         try:
             if image and (image.ruta_imagen or image.url):
                 ruta = image.ruta_imagen or image.url
-                file_path = resolve_file_path(ruta)
-                if file_path is not None:
-                    image_base64 = base64.b64encode(file_path.read_bytes()).decode('ascii')
+                # Download image from R2 and encode to base64
+                image_bytes = download_image_from_r2(ruta)
+                image_base64 = base64.b64encode(image_bytes).decode('ascii')
         except Exception:
             image_base64 = None
         return {
@@ -140,18 +140,27 @@ class AnalysisService:
         ia_result = None
         try:
             from ia.modelos.lichen_classifier import predict
+            import tempfile
+            import os
 
-            physical_path = resolve_file_path(normalize_image_path(image_url))
-            if physical_path is not None:
-                ia_result = predict(str(physical_path))
+            # Download image from R2 to a temporary file
+            image_bytes = download_image_from_r2(image_url)
+            with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
+                temp_file.write(image_bytes)
+                temp_file_path = temp_file.name
+
+            try:
+                ia_result = predict(temp_file_path)
                 resultado_ia = ia_result["categoria"]
                 porcentaje_confianza = ia_result["confianza"]
                 nivel_contaminacion = ia_result["nivel_contaminacion"]
                 calidad_aire = ia_result["calidad_aire"]
                 estado_liquen = "completado"
                 estado_validacion = "completed"
-            else:
-                raise FileNotFoundError(f"No se pudo resolver la ruta física para: {image_url}")
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_file_path):
+                    os.unlink(temp_file_path)
         except Exception as e:
             inference_error_type = e.__class__.__name__
             logging.error(f"Error en predicción IA para {image_url}: {e}")

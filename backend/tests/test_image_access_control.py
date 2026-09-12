@@ -24,7 +24,7 @@ Base.metadata.create_all(bind=engine)
 
 from main import app
 
-client = TestClient(app)
+client = TestClient(app, follow_redirects=True)
 
 
 def _register_and_login(email_prefix: str) -> tuple[str, dict]:
@@ -139,9 +139,12 @@ def test_owner_can_access_own_private_image():
     image_url = _upload_private_image(headers, "profile")
     file_subpath = image_url.replace("/uploads/", "")
 
-    # El propietario accede a su imagen
-    r = client.get(f"/imagenes/file/{file_subpath}", headers=headers)
-    assert r.status_code == 200, f"Expected 200 for owner, got {r.status_code}: {r.text}"
+    # El propietario accede a su imagen -- redirect a R2
+    r = client.get(f"/imagenes/file/{file_subpath}", headers=headers, follow_redirects=False)
+    assert r.status_code == 307, f"Expected 307 redirect to R2, got {r.status_code}: {r.text}"
+    location = r.headers["location"]
+    assert "r2.cloudflarestorage.com" in location
+    assert "lichen-dreams-images/profiles/user_" in location
 
 
 def test_public_article_image_without_auth():
@@ -154,9 +157,12 @@ def test_public_article_image_without_auth():
     image_url = r.json().get("url", "")
     assert "/uploads/articles/" in image_url
 
-    # Acceder sin autenticacion
-    r = client.get(image_url)
-    assert r.status_code == 200, f"Expected 200 for public image without auth, got {r.status_code}: {r.text}"
+    # Acceder sin autenticacion -- image served via redirect to R2
+    r = client.get(image_url, follow_redirects=False)
+    assert r.status_code == 307, f"Expected 307 redirect to R2, got {r.status_code}: {r.text}"
+    location = r.headers["location"]
+    assert "r2.cloudflarestorage.com" in location
+    assert "lichen-dreams-images/articles/" in location
 
 
 def test_path_traversal_blocked():

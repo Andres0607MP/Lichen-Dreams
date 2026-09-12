@@ -66,7 +66,7 @@ class Usuario(Base):
 class Sesion(Base):
     __tablename__ = 'sesiones'
     id_sesion = Column(Integer, primary_key=True, autoincrement=True)
-    token_sesion = Column(Text)
+    token_sesion = Column(String(64), nullable=False)
     dispositivo = Column(String(100))
     sistema_operativo = Column(String(100))
     ip_usuario = Column(String(50))

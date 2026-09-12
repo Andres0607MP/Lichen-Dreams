@@ -94,7 +94,7 @@ def client():
     Base.metadata.drop_all(bind=ENGINE)
     Base.metadata.create_all(bind=ENGINE)
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    with TestClient(app, follow_redirects=True) as c:
         yield c
     app.dependency_overrides.clear()
 
@@ -285,9 +285,12 @@ def test_google_articulo_con_foto_autor(client, fake_google):
     assert foto_articulo.startswith("/uploads/articles/author_"), \
         f"Expected /uploads/articles/author_* path, got: {foto_articulo}"
 
-    # 7. Acceder a la imagen públicamente (SIN autenticación)
-    public = client.get(foto_articulo)
-    assert public.status_code == 200, f"Image not publicly accessible: {public.status_code}"
+    # 7. Acceder a la imagen públicamente (SIN autenticación) -- redirect a R2
+    public = client.get(foto_articulo, follow_redirects=False)
+    assert public.status_code == 307, f"Expected 307 redirect to R2, got: {public.status_code}"
+    location = public.headers["location"]
+    assert "r2.cloudflarestorage.com" in location
+    assert "lichen-dreams-images/articles/author_" in location
 
     # 8. serve_private_image debe rechazar rutas públicas de artículos (403)
     file_subpath = foto_articulo.replace("/uploads/", "")

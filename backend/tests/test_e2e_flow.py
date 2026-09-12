@@ -35,7 +35,7 @@ def test_flujo_completo_end_to_end():
     db.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as client:
+    with TestClient(app, follow_redirects=True) as client:
         register = client.post(
             "/auth/register",
             json={"email": "e2e@example.com", "password": "Password123!", "name": "E2E"},

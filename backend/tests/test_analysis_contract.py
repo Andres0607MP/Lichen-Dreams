@@ -58,7 +58,7 @@ def _seed_admin():
 
 _seed_admin()
 
-client = TestClient(app)
+client = TestClient(app, follow_redirects=True)
 
 
 def get_admin_headers():

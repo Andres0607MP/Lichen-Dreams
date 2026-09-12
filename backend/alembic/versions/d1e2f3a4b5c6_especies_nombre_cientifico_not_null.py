@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
+from sqlalchemy import text
 
 # revision identifiers, used by Alembic.
 revision: str = 'd1e2f3a4b5c6'
@@ -21,13 +21,29 @@ depends_on: Union[str, Sequence[str], None] = None
 def upgrade() -> None:
     # Backfill por seguridad: ninguna especie queda sin nombre (el código
     # asume nombre_cientifico obligatorio).
-    op.execute(
-        """
-        UPDATE especies_liquenes
-        SET nombre_cientifico = CONCAT('especie_', id_especie)
-        WHERE nombre_cientifico IS NULL OR TRIM(nombre_cientifico) = ''
-        """
-    )
+    bind = op.get_bind()
+    dialect_name = bind.dialect.name
+    
+    if dialect_name == 'mysql':
+        op.execute(text("""
+            UPDATE especies_liquenes
+            SET nombre_cientifico = CONCAT('especie_', id_especie)
+            WHERE nombre_cientifico IS NULL OR TRIM(nombre_cientifico) = ''
+        """))
+    elif dialect_name == 'sqlite':
+        op.execute(text("""
+            UPDATE especies_liquenes
+            SET nombre_cientifico = 'especie_' || id_especie
+            WHERE nombre_cientifico IS NULL OR TRIM(nombre_cientifico) = ''
+        """))
+    else:
+        # Standard SQL (PostgreSQL, etc.)
+        op.execute(text("""
+            UPDATE especies_liquenes
+            SET nombre_cientifico = 'especie_' || id_especie
+            WHERE nombre_cientifico IS NULL OR TRIM(nombre_cientifico) = ''
+        """))
+    
     op.alter_column(
         'especies_liquenes', 'nombre_cientifico',
         existing_type=sa.String(100),

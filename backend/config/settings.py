@@ -43,6 +43,13 @@ GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 UPLOADS_BASE_DIR = Path(__file__).resolve().parent.parent / "uploads"
 UPLOADS_BASE_DIR.mkdir(parents=True, exist_ok=True)
 
+# Cloudflare R2 configuration
+R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID")
+R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
+R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
+R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME")
+R2_ENDPOINT_URL = f"https://{R2_ACCOUNT_ID}.r2.cloudflarestorage.com" if R2_ACCOUNT_ID else None
+
 # Tipos de imagen permitidos para subida
 ALLOWED_IMAGE_EXTENSIONS = {
     ".jpg",
@@ -62,7 +69,7 @@ ALLOWED_MIME_TYPES = {
     "image/heif",
 }
 
-# Tipos de imágenes dentro del sistema
+# Tipos de imÃ¡genes dentro del sistema
 IMAGE_TYPE_ARTICLE = "article"
 IMAGE_TYPE_PROFILE = "profile"
 IMAGE_TYPE_ANALYSIS = "analysis"

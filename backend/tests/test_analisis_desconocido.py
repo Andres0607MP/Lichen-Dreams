@@ -60,7 +60,7 @@ def _cleanup(uid: int):
 @pytest.fixture(scope="function")
 def client_desc():
     from main import app
-    c = TestClient(app)
+    c = TestClient(app, follow_redirects=True)
     uid, email = _crear_user()
     login = c.post("/auth/login", data={"username": email, "password": "pass1234"})
     token = login.json()["access_token"]

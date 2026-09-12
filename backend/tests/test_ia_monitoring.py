@@ -81,7 +81,7 @@ def _client(_engine):
             db.close()
 
     app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as c:
+    with TestClient(app, follow_redirects=True) as c:
         yield c
     app.dependency_overrides.clear()
 

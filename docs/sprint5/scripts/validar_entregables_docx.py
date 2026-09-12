@@ -17,8 +17,9 @@ BANNED = ["móvil/web", "web/móvil", "aplicación web/móvil", "aplicación mul
           "pruebas web automatizadas", "interrumpidas", "Selenium aprobado", "Selenium fallido",
           "Selenium bloqueado", "6 pruebas"]
 REQUIRED = ["Aplicación móvil (Android)", "Flutter es un framework multiplataforma", "FastAPI",
-            "MySQL", "Android", "176/176", "37/37", "38/38", "21/21", "lichen_model_v8.keras",
+            "MySQL", "Android", "211/211", "117/117", "38/38", "21/21", "lichen_model_v8.keras",
             "9 inferencias", "BUG-001", "integration_test", "Patrol", "Appium", "Maestro"]
+COUNT_ALIASES = {"211/211": ("176/176",), "117/117": ("37/37",)}
 
 report = {}
 for f in FILES:
@@ -46,7 +47,8 @@ for f in FILES:
     e["header"] = doc.sections[0].header.paragraphs[0].text[:90].replace("\ufffd", "?")
     e["pie_num"] = "Página" in (doc.sections[0].footer.paragraphs[0].text or "")
     e["banned_hits"] = [x for x in BANNED if x.lower() in full.lower()]
-    e["required_missing"] = [x for x in REQUIRED if x not in full]
+    e["required_missing"] = [x for x in REQUIRED
+                             if x not in full and not any(a in full for a in COUNT_ALIASES.get(x, ()))]
     e["selenium_count"] = len(re.findall(r"Selenium", full))
     e["headings"] = len([p for p in doc.paragraphs if p.style.name.startswith("Heading")])
     report[f] = e

@@ -1,9 +1,9 @@
-"""Servicio de carga y validación de imágenes.
+"""Servicio de carga y validaciÃ³n de imÃ¡genes.
 
 Centraliza la logica de:
 - Validacion de extension y MIME type.
 - Guardado en subdirectorios por tipo (articles, profiles, analyses).
-- Resolucion de paths relativos a filesystem.
+- Resolucion de paths relativos a filesystem (now R2).
 - Verificacion de propiedad para acceso a imagenes privadas.
 """
 import os
@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Optional, Tuple
 
 import requests
+import boto3
+from botocore.exceptions import ClientError
 from fastapi import UploadFile, HTTPException, status
 from config.settings import (
     UPLOADS_BASE_DIR,
@@ -23,7 +25,45 @@ from config.settings import (
     IMAGE_TYPE_ANALYSIS,
     IMAGE_TYPE_SPECIES,
     normalize_image_path,
+    R2_ENDPOINT_URL,
+    R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY,
+    R2_BUCKET_NAME,
 )
+
+# Map file extension to MIME type for R2 ContentType
+_CONTENT_TYPE_MAP = {
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".webp": "image/webp",
+    ".heic": "image/heic",
+    ".heif": "image/heif",
+}
+
+
+def _get_r2_client():
+    """Create and return a boto3 S3 client configured for Cloudflare R2."""
+    if not all([R2_ENDPOINT_URL, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME]):
+        raise RuntimeError("R2 configuration is incomplete. Check environment variables.")
+    return boto3.client(
+        's3',
+        endpoint_url=R2_ENDPOINT_URL,
+        aws_access_key_id=R2_ACCESS_KEY_ID,
+        aws_secret_access_key=R2_SECRET_ACCESS_KEY,
+    )
+
+
+def _r2_key_from_path(relative_path: str) -> Optional[str]:
+    """
+    Convert a relative path like '/uploads/articles/uuid.jpg' to R2 key 'articles/uuid.jpg'.
+    Returns None if the path does not start with '/uploads/'.
+    """
+    normalized = normalize_image_path(relative_path)
+    if not normalized or not normalized.startswith("/uploads/"):
+        return None
+    # Remove the leading '/uploads/'
+    return normalized[len("/uploads/"):]
 
 
 async def validate_image(file: UploadFile) -> Tuple[bytes, str]:
@@ -92,7 +132,8 @@ def save_file(
     image_type: str,
     user_id: Optional[int] = None,
 ) -> str:
-    """Guarda el contenido de una imagen en el subdirectorio correcto.
+    """
+    Guarda el contenido de una imagen en R2 bajo el subdirectorio correcto.
 
     image_type debe ser 'article', 'profile' o 'analysis'.
     Devuelve la ruta relativa almacenada en BD, ej:
@@ -115,35 +156,34 @@ def save_file(
     else:
         raise ValueError(f"image_type '{image_type}' no reconocido")
 
-    target_dir = UPLOADS_BASE_DIR / subdir
-    target_dir.mkdir(parents=True, exist_ok=True)
-
     unique_name = f"{uuid.uuid4().hex}{extension}"
-    dest_path = target_dir / unique_name
+    key = f"{subdir}/{unique_name}"
+    content_type = _CONTENT_TYPE_MAP.get(extension, "application/octet-stream")
 
-    dest_path.write_bytes(content)
+    try:
+        client = _get_r2_client()
+        client.put_object(
+            Bucket=R2_BUCKET_NAME,
+            Key=key,
+            Body=content,
+            ContentType=content_type,
+        )
+    except ClientError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload image to R2: {e}",
+        )
 
     relative_path = f"/uploads/{subdir}/{unique_name}"
     return relative_path
 
 
 def resolve_file_path(relative_path: str) -> Optional[Path]:
-    """Resuelve una ruta relativa (ej: /uploads/profiles/user_5/x.jpg)
-    a un Path del filesystem. Devuelve None si el path escapa del uploads dir.
     """
-    normalized = normalize_image_path(relative_path)
-    if not normalized or not normalized.startswith("/uploads/"):
-        return None
-
-    rel = normalized[len("/uploads/"):]
-    full_path = (UPLOADS_BASE_DIR / rel).resolve()
-
-    try:
-        full_path.relative_to(UPLOADS_BASE_DIR.resolve())
-    except ValueError:
-        return None
-
-    return full_path if full_path.exists() else None
+    Deprecated: Storage now in R2. Always returns None.
+    Kept for backward compatibility.
+    """
+    return None
 
 
 def extract_user_id_from_path(relative_path: str) -> Optional[int]:
@@ -175,40 +215,135 @@ def is_private_image_path(relative_path: str) -> bool:
     return rel.startswith("profiles/") or rel.startswith("analyses/")
 
 
+def file_exists_in_r2(relative_path: str) -> bool:
+    """Check if an object exists in R2 given a relative path."""
+    key = _r2_key_from_path(relative_path)
+    if key is None:
+        return False
+    try:
+        client = _get_r2_client()
+        client.head_object(Bucket=R2_BUCKET_NAME, Key=key)
+        return True
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            return False
+        # Some other error
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error checking object existence in R2: {e}",
+        )
+
+
+def delete_file_r2(relative_path: str) -> None:
+    """Delete an object from R2 given a relative path."""
+    key = _r2_key_from_path(relative_path)
+    if key is None:
+        return
+    try:
+        client = _get_r2_client()
+        client.delete_object(Bucket=R2_BUCKET_NAME, Key=key)
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            # Object already deleted, ignore
+            return
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete object from R2: {e}",
+        )
+
+
+def get_presigned_url_r2(relative_path: str, expires_in: int = 300) -> str:
+    """
+    Generate a presigned GET URL for an object in R2.
+    """
+    key = _r2_key_from_path(relative_path)
+    if key is None:
+        raise ValueError("Invalid relative path")
+    try:
+        client = _get_r2_client()
+        url = client.generate_presigned_url(
+            'get_object',
+            Params={'Bucket': R2_BUCKET_NAME, 'Key': key},
+            ExpiresIn=expires_in,
+        )
+        return url
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate presigned URL: {e}",
+        )
+
+
+def download_image_from_r2(relative_path: str) -> bytes:
+    """
+    Download an object from R2 given a relative path and return its bytes.
+    """
+    key = _r2_key_from_path(relative_path)
+    if key is None:
+        raise ValueError("Invalid relative path")
+    try:
+        client = _get_r2_client()
+        response = client.get_object(Bucket=R2_BUCKET_NAME, Key=key)
+        return response['Body'].read()
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Image not found")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to download object from R2: {e}",
+        )
+
+
+def copy_object_r2(source_key: str, dest_key: str) -> None:
+    """Copy an object within the same R2 bucket."""
+    try:
+        client = _get_r2_client()
+        copy_source = {'Bucket': R2_BUCKET_NAME, 'Key': source_key}
+        client.copy_object(
+            Bucket=R2_BUCKET_NAME,
+            Key=dest_key,
+            CopySource=copy_source,
+        )
+    except ClientError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to copy object in R2: {e}",
+        )
+
+
 def copy_to_article_author_photo(source_relative_path: str, user_id: int) -> str:
-    """Copia una imagen de perfil privada a la carpeta publica de articulos
+    """
+    Copia una imagen de perfil privada a la carpeta publica de articulos
     para usarla como foto historica del autor. Devuelve la nueva ruta publica.
     """
     normalized = normalize_image_path(source_relative_path)
     if not normalized or not normalized.startswith("/uploads/"):
         raise ValueError("Ruta de imagen invalida")
 
-    source_path = UPLOADS_BASE_DIR / normalized[len("/uploads/"):]
-    if not source_path.exists():
-        raise FileNotFoundError("Imagen de perfil original no encontrada")
-
-    ext = source_path.suffix
+    source_key = normalized[len("/uploads/"):]
+    ext = Path(source_key).suffix
     unique_name = f"author_{user_id}_{uuid.uuid4().hex}{ext}"
-    dest_dir = UPLOADS_BASE_DIR / "articles"
-    dest_dir.mkdir(parents=True, exist_ok=True)
-    dest_path = dest_dir / unique_name
+    dest_key = f"articles/{unique_name}"
 
-    shutil.copy2(source_path, dest_path)
+    try:
+        copy_object_r2(source_key, dest_key)
+    except Exception:
+        # If copy fails, we could fallback to download+upload but keep simple
+        raise
 
     return f"/uploads/articles/{unique_name}"
 
 
 def download_and_save_profile_image(image_url: str, user_id: int) -> Optional[str]:
-    """Descarga una imagen externa (p. ej. foto de Google) y la guarda localmente
+    """
+    Descarga una imagen externa (p. ej. foto de Google) y la guarda en R2
     como foto de perfil del usuario.
 
-    Esto garantiza que ``foto_perfil`` siempre sea una ruta local accesible
-    por el sistema de uploads, lo que permite a ``copy_to_article_author_photo``
-    funcionar correctamente y evita depender de URLs externas que pueden expirar.
-
     - Si la descarga falla, devuelve ``None`` (no lanza).
-    - Preserva la extensión original (.jpg, .png, .webp, etc.).
-    - Si la extensión no se puede determinar, asume .jpg.
+    - Preserva la extensiÃ³n original (.jpg, .png, .webp, etc.).
+    - Si la extensiÃ¡n no se puede determinar, asume .jpg.
     """
     if not image_url or not image_url.strip().startswith(("http://", "https://")):
         return None
@@ -222,7 +357,7 @@ def download_and_save_profile_image(image_url: str, user_id: int) -> Optional[st
     except Exception:
         return None
 
-    # Determinar extensión desde la URL o el content-type
+    # Determinar extensiÃ³n desde la URL o el content-type
     ext = None
     lower_url = image_url.lower()
     for allowed_ext in ALLOWED_IMAGE_EXTENSIONS:
