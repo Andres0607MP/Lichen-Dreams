@@ -13,6 +13,7 @@ from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion, 
 from auth.auth_service import get_current_user
 from auth.password_handler import hash_password
 from services.zone_membership import sync_zone_to_analyses
+from services.upload_service import delete_user_r2_objects
 from models.validations import (
     EspecieLiquenCreate, EspecieLiquenUpdate, EspecieLiquenResponse,
     ZonaAmbientalCreate, ZonaAmbientalUpdate, ZonaAmbientalResponse,
@@ -297,6 +298,17 @@ def delete_user(
 
     user.estado_cuenta = "eliminado"
     db.commit()
+    
+    # Eliminar objetos R2 asociados al usuario
+    try:
+        delete_user_r2_objects(user_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        # Log the error but don't fail the user deletion
+        import logging
+        logging.warning(f"Error limpiando objetos R2 para usuario {user_id}: {e}")
+    
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from config.db import get_db
 from models.core import Usuario, Sesion
 from auth.auth_service import require_admin
+from services.upload_service import delete_user_r2_objects
 
 router = APIRouter()
 
@@ -81,4 +82,14 @@ def delete_user(user_id: int, current_user: Usuario = Depends(require_admin), db
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
     db.delete(user)
     db.commit()
+    
+    # Eliminar objetos R2 asociados al usuario
+    try:
+        delete_user_r2_objects(user_id)
+    except HTTPException:
+        raise
+    except Exception as e:
+        import logging
+        logging.warning(f"Error limpiando objetos R2 para usuario {user_id}: {e}")
+    
     return None

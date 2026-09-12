@@ -254,6 +254,26 @@ def delete_file_r2(relative_path: str) -> None:
         )
 
 
+def delete_user_r2_objects(user_id: int) -> None:
+    """Delete all R2 objects for a specific user (profiles/ and analyses/)."""
+    client = _get_r2_client()
+    prefixes = [f"profiles/user_{user_id}/", f"analyses/user_{user_id}/"]
+    
+    for prefix in prefixes:
+        try:
+            paginator = client.get_paginator('list_objects_v2')
+            for page in paginator.paginate(Bucket=R2_BUCKET_NAME, Prefix=prefix):
+                if 'Contents' in page:
+                    objects = [{'Key': obj['Key']} for obj in page['Contents']]
+                    if objects:
+                        client.delete_objects(Bucket=R2_BUCKET_NAME, Delete={'Objects': objects})
+        except ClientError as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete R2 objects for user {user_id}: {e}",
+            )
+
+
 def get_presigned_url_r2(relative_path: str, expires_in: int = 300) -> str:
     """
     Generate a presigned GET URL for an object in R2.
