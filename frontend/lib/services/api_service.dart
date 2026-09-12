@@ -203,10 +203,13 @@ class ApiService {
     final request = http.MultipartRequest('POST', uri);
     request.headers.addAll(await _headers(authorized: true));
     request.fields['imagen_tipo'] = imageType;
+
+    // Usar fromBytes en lugar de fromPath para soportar content:// URIs en Android
+    final bytes = await imageFile.readAsBytes();
     request.files.add(
-      await http.MultipartFile.fromPath(
+      http.MultipartFile.fromBytes(
         'file',
-        imageFile.path,
+        bytes,
         filename: imageFile.path.split(Platform.pathSeparator).last,
       ),
     );
@@ -276,6 +279,19 @@ class ApiService {
     return downloadPrivateImageBytes(normalized);
   }
 
+  /// Helper para redactar query parameters sensibles de URLs de R2
+  static String _redactLocationHeader(String? location) {
+    if (location == null) return 'null';
+    return location.replaceAllMapped(
+      RegExp(r'[?&](X-Amz-|Signature|AWSAccessKeyId|Expires)=[^&]+'),
+      (match) {
+        final group = match.group(0);
+        if (group == null) return match.group(0) ?? '';
+        return '${group.split("=")[0]}=[REDACTED]';
+      },
+    );
+  }
+
   /// Descargar imagen privada (profiles/ o analyses/) con token de auth
   Future<Uint8List> downloadPrivateImageBytes(String imagePath) async {
     final normalized = imagePath.trim();
@@ -285,21 +301,36 @@ class ApiService {
     final fileSubpath = normalized.substring('/uploads/'.length);
     final uri = AppConfig.buildUri('/imagenes/file/$fileSubpath');
 
-    final response = await _client.get(
-      uri,
-      headers: await _headers(authorized: true),
-    );
+    debugPrint('[IMG-DEBUG] Iniciando descarga: $uri');
+    final stopwatch = Stopwatch()..start();
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al descargar imagen',
-        ),
+    try {
+      final response = await _client.get(
+        uri,
+        headers: await _headers(authorized: true),
       );
-    }
 
-    return Uint8List.fromList(response.bodyBytes);
+      debugPrint('[IMG-DEBUG] Respuesta inicial: status=${response.statusCode}, '
+          'headers={location: ${_redactLocationHeader(response.headers["location"])}}');
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _parseResponseMessage(
+            response,
+            'Error ${response.statusCode} al descargar imagen',
+          ),
+        );
+      }
+
+      debugPrint('[IMG-DEBUG] Descarga exitosa: bytes=${response.bodyBytes.length}, '
+          'content-type=${response.headers["content-type"]}, '
+          'tiempo=${stopwatch.elapsedMilliseconds}ms');
+
+      return Uint8List.fromList(response.bodyBytes);
+    } catch (e, stackTrace) {
+      debugPrint('[IMG-ERROR] ${e.runtimeType}: $e\n$stackTrace');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> updateUser(

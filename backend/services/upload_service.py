@@ -14,6 +14,7 @@ from typing import Optional, Tuple
 
 import requests
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from fastapi import UploadFile, HTTPException, status
 from config.settings import (
@@ -51,6 +52,7 @@ def _get_r2_client():
         endpoint_url=R2_ENDPOINT_URL,
         aws_access_key_id=R2_ACCESS_KEY_ID,
         aws_secret_access_key=R2_SECRET_ACCESS_KEY,
+        config=Config(signature_version="s3v4"),
     )
 
 

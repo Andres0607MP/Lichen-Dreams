@@ -720,11 +720,13 @@ class _CachedProfileImageState extends State<_CachedProfileImage> {
   }
 
   Future<void> _loadImage() async {
-    if (_cache.containsKey(widget.imagePath)) {
-      _bytes = _cache[widget.imagePath];
+    final cached = _cache[widget.imagePath];
+    if (cached != null) {
+      _bytes = cached;
       if (mounted) setState(() => _loading = false);
       return;
     }
+    // Si el caché tiene null (fallo previo), NO retorna - permite reintento
 
     final apiService = Provider.of<ApiService>(context, listen: false);
 
@@ -738,12 +740,13 @@ class _CachedProfileImageState extends State<_CachedProfileImage> {
       _bytes = await apiService.downloadImageBytes(widget.imagePath);
       if (_bytes != null) {
         _cache[widget.imagePath] = _bytes;
-        debugPrint('[GOOGLE-DEBUG] Profile image cargada: '
+        debugPrint('[IMG-DEBUG] Profile image cargada: '
             '${_bytes!.length} bytes');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _bytes = null;
-      debugPrint('[GOOGLE-DEBUG] Profile image error: $e');
+      debugPrint('[IMG-ERROR] Profile image error: ${e.runtimeType}: $e\n$stackTrace');
+      // NO cachear null - permitir reintento en futuras cargas
     }
 
     if (mounted) setState(() => _loading = false);

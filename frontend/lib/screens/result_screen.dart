@@ -970,38 +970,176 @@ class _ImagePreviewDialog extends StatelessWidget {
   }
 }
 
-class _SpeciesThumb extends StatelessWidget {
+class _SpeciesThumb extends StatefulWidget {
   final String? imageRef;
   final double size;
 
-  const _SpeciesThumb({this.imageRef, this.size = 48});
+  const _SpeciesThumb({super.key, this.imageRef, this.size = 48});
+
+  @override
+  State<_SpeciesThumb> createState() => _SpeciesThumbState();
+}
+
+class _SpeciesThumbState extends State<_SpeciesThumb> {
+  Uint8List? _cachedBytes;
+  bool _isLoading = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.imageRef != null && widget.imageRef!.trim().isNotEmpty) {
+      _loadImage();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _SpeciesThumb oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.imageRef != widget.imageRef) {
+      _cachedBytes = null;
+      _hasError = false;
+      if (widget.imageRef != null && widget.imageRef!.trim().isNotEmpty) {
+        _loadImage();
+      }
+    }
+  }
+
+  Future<void> _loadImage() async {
+    if (widget.imageRef == null || widget.imageRef!.trim().isEmpty) return;
+
+    final isPrivate = AppConfig.isPrivateImagePath(widget.imageRef!);
+
+    if (!isPrivate) {
+      // Public image: use Image.network directly, no bytes caching needed
+      return;
+    }
+
+    // Private image: download via authenticated endpoint
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final bytes = await apiService.downloadPrivateImageBytes(widget.imageRef!);
+      if (!mounted) return;
+      setState(() {
+        _cachedBytes = bytes;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _hasError = true;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final hasImage = imageRef != null && imageRef!.trim().isNotEmpty;
+    final hasImage = widget.imageRef != null && widget.imageRef!.trim().isNotEmpty;
+    final isPrivate = hasImage && AppConfig.isPrivateImagePath(widget.imageRef!);
+
+    if (!hasImage) {
+      return Container(
+        width: widget.size,
+        height: widget.size,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(widget.size * 0.25),
+        ),
+        child: const Icon(
+          Icons.eco_rounded,
+          color: AppTheme.primaryGreen,
+          size: 22,
+        ),
+      );
+    }
+
+    // Public image: use Image.network directly
+    if (!isPrivate) {
+      return Container(
+        width: widget.size,
+        height: widget.size,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(widget.size * 0.25),
+        ),
+        child: Image.network(
+          AppConfig.getImageUrl(widget.imageRef!),
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => const Icon(
+            Icons.eco_rounded,
+            color: AppTheme.primaryGreen,
+            size: 22,
+          ),
+        ),
+      );
+    }
+
+    // Private image: use cached bytes from downloadPrivateImageBytes
+    if (_hasError) {
+      return Container(
+        width: widget.size,
+        height: widget.size,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(widget.size * 0.25),
+        ),
+        child: const Icon(
+          Icons.eco_rounded,
+          color: AppTheme.primaryGreen,
+          size: 22,
+        ),
+      );
+    }
+
+    if (_isLoading || _cachedBytes == null) {
+      return Container(
+        width: widget.size,
+        height: widget.size,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          color: AppTheme.primaryGreen.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(widget.size * 0.25),
+        ),
+        child: const Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: AppTheme.primaryGreen,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
-      width: size,
-      height: size,
+      width: widget.size,
+      height: widget.size,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: AppTheme.primaryGreen.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(size * 0.25),
+        borderRadius: BorderRadius.circular(widget.size * 0.25),
       ),
-      child: hasImage
-          ? Image.network(
-              AppConfig.getImageUrl(imageRef!),
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) => const Icon(
-                Icons.eco_rounded,
-                color: AppTheme.primaryGreen,
-                size: 22,
-              ),
-            )
-          : const Icon(
-              Icons.eco_rounded,
-              color: AppTheme.primaryGreen,
-              size: 22,
-            ),
+      child: Image.memory(
+        _cachedBytes!,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const Icon(
+          Icons.eco_rounded,
+          color: AppTheme.primaryGreen,
+          size: 22,
+        ),
+      ),
     );
   }
 }
