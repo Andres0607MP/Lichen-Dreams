@@ -6,6 +6,8 @@ Politica (requisito #21 del pipeline V7):
   en disco.
 - Si no se puede resolver de forma SEGURA, se FALLA explicitamente (excepcion),
   en lugar de seleccionar silenciosamente el ultimo .keras del directorio.
+- Soporta modelos almacenados en R2: si observaciones.archivo empieza con
+  'models/' se descarga desde R2 al directorio local de modelos.
 
 Uso en el pipeline/registro de V7:
     from ia.resolver_modelo_activo import resolver_modelo_activo
@@ -17,8 +19,11 @@ resolucion dinamica existente). Este modulo es la referencia estricta para el
 registro/activacion de V7 y para decidir si V7 puede reemplazar a V3.
 """
 from pathlib import Path
-
 import json as _json
+import threading
+
+# Lock para evitar descargas concurrentes del mismo modelo
+_download_lock = threading.Lock()
 
 
 class ActiveModelError(RuntimeError):
@@ -26,7 +31,8 @@ class ActiveModelError(RuntimeError):
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
-MODEL_DIR = PROJECT_ROOT / "ia" / "modelos"
+MODEL_DIR = PROJECT_ROOT / "modelos"
+MODEL_PREFIX = "models/"  # Prefijo en R2 para modelos
 
 
 def _info(ruta):
@@ -40,6 +46,55 @@ def _info(ruta):
     return info.get("archivo")
 
 
+def _download_model_from_r2(key: str, local_path: Path) -> None:
+    """Descarga un modelo desde R2 al filesystem local."""
+    # Import local para evitar dependencias circulares
+    from services.upload_service import _get_r2_client, R2_BUCKET_NAME
+    from botocore.exceptions import ClientError
+
+    try:
+        client = _get_r2_client()
+        # Asegurar directorio padre
+        local_path.parent.mkdir(parents=True, exist_ok=True)
+        # Descargar
+        client.download_file(R2_BUCKET_NAME, key, str(local_path))
+    except ClientError as e:
+        if e.response['Error']['Code'] == '404':
+            raise ActiveModelError(f"Modelo no encontrado en R2: {key}")
+        raise ActiveModelError(f"Error descargando modelo desde R2: {e}")
+
+
+def _resolve_model_path_local(archivo: str) -> Path:
+    """
+    Resuelve la ruta local del modelo.
+    Si archivo empieza con 'models/', se trata como clave R2 y se descarga si no existe.
+    """
+    p = Path(archivo)
+    if not p.is_absolute():
+        # Ruta relativa: buscar en MODEL_DIR
+        p = MODEL_DIR / archivo
+
+    # Si ya existe localmente, devolverlo
+    if p.exists():
+        return p
+
+    # Si la clave empieza con MODEL_PREFIX, intentar descargar de R2
+    if archivo.startswith(MODEL_PREFIX):
+        with _download_lock:
+            # Doble comprobación tras adquirir lock
+            if p.exists():
+                return p
+            _download_model_from_r2(archivo, p)
+            if not p.exists():
+                raise ActiveModelError(f"Falló la descarga del modelo: {archivo}")
+            return p
+
+    # No es una clave R2 conocida y no existe localmente
+    raise ActiveModelError(
+        f"El modelo registrado apunta a un archivo inexistente: {archivo}"
+    )
+
+
 def resolver_modelo_activo(version=None):
     """Devuelve el Path del modelo activo registrado (o el de la version pedida).
 
@@ -47,7 +102,7 @@ def resolver_modelo_activo(version=None):
     - Consulta BD (ModeloIA). Si version se omite, elige el activo mas
       reciente (estado='activo'); si version se pasa, busca esa version
       concreta (debe estar registrada).
-    - Requiere que el archivo referenciado exista en disco.
+    - Si observaciones.archivo empieza con 'models/', se descarga de R2.
     - Si la BD no puede consultarse o no hay registro valido -> ActiveModelError
       (NO fallback silencioso al ultimo .keras del directorio).
     """
@@ -77,11 +132,10 @@ def resolver_modelo_activo(version=None):
         archivo = _info(fila.observaciones)
         if not archivo:
             continue
-        p = Path(archivo)
-        if p.exists():
-            return p
-        raise ActiveModelError(
-            f"el modelo registrado {fila.version!r} apunta a un archivo inexistente: {archivo}")
+        try:
+            return _resolve_model_path_local(archivo)
+        except ActiveModelError:
+            raise
 
     raise ActiveModelError("ningún registro válido con archivo existente en disco")
 
