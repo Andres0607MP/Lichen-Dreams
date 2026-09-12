@@ -4,6 +4,9 @@ from sqlalchemy import func
 from typing import Optional, List
 from datetime import datetime
 from sqlalchemy.orm import Session, joinedload
+import os
+import boto3
+from botocore.exceptions import ClientError
 
 from config.db import get_db
 from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion, EspecieLiquen, ZonaAmbiental
@@ -657,3 +660,128 @@ def delete_zone(
     db.delete(zona)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.get("/r2-diagnostic", summary="Diagnóstico temporal de conectividad Cloudflare R2 (Admin)")
+def r2_diagnostic(
+    current_user: Usuario = Depends(verify_admin),
+):
+    """
+    Diagnóstico temporal de conectividad Cloudflare R2.
+    Solo accesible por administradores autenticados.
+    No expone secretos.
+    """
+    # Configuración (sin secretos)
+    bucket = os.getenv("R2_BUCKET_NAME")
+    endpoint = os.getenv("R2_ENDPOINT_URL")
+    account = os.getenv("R2_ACCOUNT_ID")
+    access_key = os.getenv("R2_ACCESS_KEY_ID")
+    secret_key = os.getenv("R2_SECRET_ACCESS_KEY")
+
+    # Ocultar Access Key
+    ak_display = f"{access_key[:8]}..." if access_key else "None"
+
+    result = {
+        "config": {
+            "bucket": bucket,
+            "endpoint": endpoint,
+            "account_id": account,
+            "access_key_id": ak_display,
+            "has_access_key": bool(access_key),
+            "has_secret": bool(secret_key),
+        },
+        "tests": {}
+    }
+
+    if not all([bucket, endpoint, account, access_key, secret_key]):
+        result["tests"]["config"] = {
+            "status": "FAIL",
+            "detail": "Variables R2 incompletas. Faltan: " +
+            ", ".join(k for k, v in {
+                "R2_BUCKET_NAME": bucket,
+                "R2_ENDPOINT_URL": endpoint,
+                "R2_ACCOUNT_ID": account,
+                "R2_ACCESS_KEY_ID": access_key,
+                "R2_SECRET_ACCESS_KEY": secret_key,
+            }.items() if not v)
+        }
+        return result
+
+    try:
+        client = boto3.client(
+            "s3",
+            endpoint_url=endpoint,
+            aws_access_key_id=access_key,
+            aws_secret_access_key=secret_key,
+        )
+
+        # Test 1: head_bucket
+        try:
+            client.head_bucket(Bucket=bucket)
+            result["tests"]["head_bucket"] = {
+                "status": "OK",
+                "detail": f"Bucket '{bucket}' accesible"
+            }
+        except ClientError as e:
+            result["tests"]["head_bucket"] = {
+                "status": "FAIL",
+                "code": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+
+        # Test 2: head_object (modelo)
+        try:
+            obj = client.head_object(Bucket=bucket, Key="models/lichen_model_v8.keras")
+            result["tests"]["head_object_model"] = {
+                "status": "OK",
+                "size": obj["ContentLength"],
+                "content_type": obj.get("ContentType")
+            }
+        except ClientError as e:
+            result["tests"]["head_object_model"] = {
+                "status": "FAIL",
+                "code": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+
+        # Test 3: head_object (class_mapping)
+        try:
+            obj = client.head_object(Bucket=bucket, Key="models/class_mapping_v8.json")
+            result["tests"]["head_object_mapping"] = {
+                "status": "OK",
+                "size": obj["ContentLength"],
+                "content_type": obj.get("ContentType")
+            }
+        except ClientError as e:
+            result["tests"]["head_object_mapping"] = {
+                "status": "FAIL",
+                "code": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+
+        # Test 4: list_objects_v2
+        try:
+            resp = client.list_objects_v2(Bucket=bucket, Prefix="models/")
+            objects = [
+                {"key": o["Key"], "size": o["Size"]}
+                for o in resp.get("Contents", [])
+            ]
+            result["tests"]["list_objects"] = {
+                "status": "OK",
+                "count": len(objects),
+                "objects": objects
+            }
+        except ClientError as e:
+            result["tests"]["list_objects"] = {
+                "status": "FAIL",
+                "code": e.response["Error"]["Code"],
+                "message": e.response["Error"]["Message"]
+            }
+
+    except Exception as e:
+        result["tests"]["client"] = {
+            "status": "ERROR",
+            "detail": str(e)
+        }
+
+    return result
