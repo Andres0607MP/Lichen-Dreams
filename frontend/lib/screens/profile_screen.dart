@@ -711,7 +711,6 @@ class _CachedProfileImage extends StatefulWidget {
 class _CachedProfileImageState extends State<_CachedProfileImage> {
   Uint8List? _bytes;
   bool _loading = true;
-  static final Map<String, Uint8List?> _cache = {};
 
   @override
   void initState() {
@@ -720,17 +719,8 @@ class _CachedProfileImageState extends State<_CachedProfileImage> {
   }
 
   Future<void> _loadImage() async {
-    final cached = _cache[widget.imagePath];
-    if (cached != null) {
-      _bytes = cached;
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
-    // Si el caché tiene null (fallo previo), NO retorna - permite reintento
-
     final apiService = Provider.of<ApiService>(context, listen: false);
 
-    // Diagnóstico temporal [GOOGLE-DEBUG]: confirmar qué URL intenta cargarse.
     final isRemote = widget.imagePath.startsWith('http://') ||
         widget.imagePath.startsWith('https://');
     debugPrint('[GOOGLE-DEBUG] Profile image path: ${widget.imagePath} '
@@ -738,15 +728,11 @@ class _CachedProfileImageState extends State<_CachedProfileImage> {
 
     try {
       _bytes = await apiService.downloadImageBytes(widget.imagePath);
-      if (_bytes != null) {
-        _cache[widget.imagePath] = _bytes;
-        debugPrint('[IMG-DEBUG] Profile image cargada: '
-            '${_bytes!.length} bytes');
-      }
+      debugPrint('[IMG-DEBUG] Profile image cargada: '
+          '${_bytes?.length ?? 0} bytes');
     } catch (e, stackTrace) {
       _bytes = null;
       debugPrint('[IMG-ERROR] Profile image error: ${e.runtimeType}: $e\n$stackTrace');
-      // NO cachear null - permitir reintento en futuras cargas
     }
 
     if (mounted) setState(() => _loading = false);
