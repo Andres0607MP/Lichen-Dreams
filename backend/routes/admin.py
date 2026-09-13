@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Response
 from pydantic import BaseModel, EmailStr, field_validator
 from sqlalchemy import func
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session, joinedload
 import os
 import boto3
