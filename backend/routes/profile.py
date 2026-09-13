@@ -114,17 +114,7 @@ def update_profile(
         if profile_update.fecha_nacimiento is not None:
             current_user.fecha_nacimiento = profile_update.fecha_nacimiento
         if profile_update.foto_perfil is not None:
-            old_foto = current_user.foto_perfil
-            new_foto = normalize_image_path(profile_update.foto_perfil)
-            if old_foto and old_foto != new_foto and old_foto.startswith("/uploads/"):
-                try:
-                    from services.upload_service import resolve_file_path
-                    old_file_path = resolve_file_path(old_foto)
-                    if old_file_path is not None:
-                        old_file_path.unlink(missing_ok=True)
-                except Exception:
-                    pass
-            current_user.foto_perfil = new_foto
+            current_user.foto_perfil = normalize_image_path(profile_update.foto_perfil)
 
         db.commit()
         db.refresh(current_user)

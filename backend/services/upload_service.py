@@ -180,6 +180,44 @@ def save_file(
     return relative_path
 
 
+def save_profile_image(
+    content: bytes,
+    extension: str,
+    user_id: int,
+) -> str:
+    """
+    Guarda o sobrescribe la imagen de perfil de un usuario en R2.
+
+    Usa una key determinista: profiles/user_{user_id}/profile.jpg
+    Sobrescribe el objeto existente si ya existe.
+    Devuelve la ruta relativa almacenada en BD: /uploads/profiles/user_{id}/profile.jpg
+    """
+    if user_id is None:
+        raise ValueError("user_id es requerido para imagenes de perfil")
+    
+    subdir = f"profiles/user_{user_id}"
+    filename = "profile.jpg"
+    key = f"{subdir}/{filename}"
+    content_type = _CONTENT_TYPE_MAP.get(extension, "image/jpeg")
+
+    try:
+        client = _get_r2_client()
+        client.put_object(
+            Bucket=R2_BUCKET_NAME,
+            Key=key,
+            Body=content,
+            ContentType=content_type,
+        )
+    except ClientError as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload profile image to R2: {e}",
+        )
+
+    relative_path = f"/uploads/{subdir}/{filename}"
+    return relative_path
+
+
 def resolve_file_path(relative_path: str) -> Optional[Path]:
     """
     Deprecated: Storage now in R2. Always returns None.
@@ -400,10 +438,9 @@ def download_and_save_profile_image(image_url: str, user_id: int) -> Optional[st
         ext = ".jpg"
 
     try:
-        return save_file(
+        return save_profile_image(
             content=content,
             extension=ext,
-            image_type=IMAGE_TYPE_PROFILE,
             user_id=user_id,
         )
     except Exception:

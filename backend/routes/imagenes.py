@@ -13,6 +13,7 @@ from auth.auth_service import get_current_user, get_current_user_optional, has_p
 from services.upload_service import (
     validate_image,
     save_file,
+    save_profile_image,
     file_exists_in_r2,
     delete_file_r2,
     get_presigned_url_r2,
@@ -65,12 +66,20 @@ async def upload_image(
             )
 
     user_id = current_user.id_usuario if current_user else None
-    url_path = save_file(
-        content=content,
-        extension=ext,
-        image_type=imagen_tipo,
-        user_id=user_id,
-    )
+    
+    if imagen_tipo == IMAGE_TYPE_PROFILE:
+        url_path = save_profile_image(
+            content=content,
+            extension=ext,
+            user_id=user_id,
+        )
+    else:
+        url_path = save_file(
+            content=content,
+            extension=ext,
+            image_type=imagen_tipo,
+            user_id=user_id,
+        )
 
     imagen = ImagenModel(
         id_analisis=id_analisis,
