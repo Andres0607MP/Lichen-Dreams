@@ -9,7 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 
 from config.db import get_db
-from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion, EspecieLiquen, ZonaAmbiental
+from models.core import Usuario, Role, Reporte, Sesion, Analisis, Notificacion, EspecieLiquen, ZonaAmbiental, HistorialActividad, RecoveryCode, EmailVerificationToken, PasswordResetToken
 from auth.auth_service import get_current_user
 from auth.password_handler import hash_password
 from services.zone_membership import sync_zone_to_analyses
@@ -282,13 +282,13 @@ def update_user(
     )
 
 
-@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar usuario (Admin, soft delete)")
+@router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Eliminar usuario (Admin, hard delete)")
 def delete_user(
     user_id: int,
     current_user: Usuario = Depends(verify_admin),
     db: Session = Depends(get_db),
 ):
-    """Elimina (soft delete) un usuario (solo administradores)."""
+    """Elimina definitivamente un usuario y todos sus datos asociados (solo administradores)."""
     user = db.query(Usuario).filter(Usuario.id_usuario == user_id).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
@@ -296,19 +296,31 @@ def delete_user(
     if current_user.id_usuario == user_id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="El administrador no puede eliminarse a sí mismo")
 
-    user.estado_cuenta = "eliminado"
-    db.commit()
-    
     # Eliminar objetos R2 asociados al usuario
     try:
         delete_user_r2_objects(user_id)
     except HTTPException:
         raise
     except Exception as e:
-        # Log the error but don't fail the user deletion
         import logging
         logging.warning(f"Error limpiando objetos R2 para usuario {user_id}: {e}")
-    
+
+    # Hard delete: borrar explícitamente todas las dependencias antes del usuario
+    # (funciona en MySQL con ON DELETE CASCADE y en SQLite sin cascade nativo)
+    db.query(RecoveryCode).filter(RecoveryCode.id_usuario == user_id).delete(synchronize_session=False)
+    db.query(EmailVerificationToken).filter(EmailVerificationToken.id_usuario == user_id).delete(synchronize_session=False)
+    db.query(PasswordResetToken).filter(PasswordResetToken.id_usuario == user_id).delete(synchronize_session=False)
+    db.query(Notificacion).filter(Notificacion.id_usuario == user_id).delete(synchronize_session=False)
+    db.query(Reporte).filter(Reporte.id_usuario == user_id).delete(synchronize_session=False)
+    db.query(HistorialActividad).filter(HistorialActividad.id_usuario == user_id).delete(synchronize_session=False)
+    # Analisis cascada borra imagenes, procesamiento_ia, analisis_zonas_ambientales
+    db.query(Analisis).filter(Analisis.id_usuario == user_id).delete(synchronize_session=False)
+    db.query(Sesion).filter(Sesion.id_usuario == user_id).delete(synchronize_session=False)
+
+    # Finalmente borrar el usuario
+    db.delete(user)
+    db.commit()
+
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

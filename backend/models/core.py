@@ -73,7 +73,7 @@ class Sesion(Base):
     fecha_inicio = Column(TIMESTAMP, server_default=func.now())
     fecha_expiracion = Column(TIMESTAMP, nullable=True)
     estado_sesion = Column(String(50))
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'))
 
     __table_args__ = (
         Index('idx_token_sesion', 'token_sesion'),
@@ -125,7 +125,7 @@ class Dataset(Base):
 class Analisis(Base):
     __tablename__ = 'analisis'
     id_analisis = Column(Integer, primary_key=True, autoincrement=True)
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     id_modelo = Column(Integer, ForeignKey('modelos_ia.id_modelo'), nullable=False)
     id_dataset = Column(Integer, ForeignKey('datasets.id_dataset'))
     id_especie = Column(Integer, ForeignKey('especies_liquenes.id_especie'))
@@ -184,7 +184,7 @@ class Analisis(Base):
 class Imagen(Base):
     __tablename__ = 'imagenes'
     id_imagen = Column(Integer, primary_key=True, index=True)
-    id_analisis = Column(Integer, ForeignKey('analisis.id_analisis'))
+    id_analisis = Column(Integer, ForeignKey('analisis.id_analisis', ondelete='CASCADE'))
     nombre_imagen = Column(String(255))
     ruta_imagen = Column(Text)
     url = Column(Text)
@@ -249,7 +249,7 @@ class Ubicacion(Base):
 class ProcesamientoIA(Base):
     __tablename__ = 'procesamiento_ia'
     id_procesamiento = Column(Integer, primary_key=True, autoincrement=True)
-    id_analisis = Column(Integer, ForeignKey('analisis.id_analisis'))
+    id_analisis = Column(Integer, ForeignKey('analisis.id_analisis', ondelete='CASCADE'))
     tiempo_ejecucion = Column(Float)
     porcentaje_precision = Column(Float)
     precision_modelo = Column(Float)
@@ -270,7 +270,7 @@ class ZonaAmbiental(Base):
     calidad_promedio_aire = Column(String(50))
     descripcion = Column(Text)
     fecha_actualizacion = Column(TIMESTAMP, nullable=True)
-    id_usuario_creador = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=True)
+    id_usuario_creador = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='SET NULL'), nullable=True)
 
     analisis_asociados = relationship(
         'Analisis',
@@ -300,7 +300,7 @@ class AnalisisZonaAmbiental(Base):
 class Notificacion(Base):
     __tablename__ = 'notificaciones'
     id_notificacion = Column(Integer, primary_key=True, autoincrement=True)
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'))
     titulo = Column(String(100))
     mensaje = Column(Text)
     tipo_notificacion = Column(String(50))
@@ -360,7 +360,7 @@ class Reporte(Base):
     formato_reporte = Column(String(50))
     estado_reporte = Column(String(50))
     fecha_generacion = Column(TIMESTAMP, server_default=func.now())
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'))
     datos_reporte = Column(JSON, nullable=True)
     usuario = relationship('Usuario', back_populates='reportes')
 
@@ -368,7 +368,7 @@ class Reporte(Base):
 class HistorialActividad(Base):
     __tablename__ = 'historial_actividad'
     id_historial = Column(Integer, primary_key=True, autoincrement=True)
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'))
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'))
     accion_realizada = Column(String(255))
     descripcion_accion = Column(Text)
     dispositivo = Column(String(100))
@@ -388,7 +388,7 @@ class ModeloDataset(Base):
 class PasswordResetToken(Base):
     __tablename__ = 'password_reset_tokens'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     token_hash = Column(String(255), nullable=False, unique=True)
     expires_at = Column(TIMESTAMP, nullable=False)
     used_at = Column(TIMESTAMP, nullable=True)
@@ -405,7 +405,7 @@ class PasswordResetToken(Base):
 class EmailVerificationToken(Base):
     __tablename__ = 'email_verification_tokens'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     token_hash = Column(String(255), nullable=False, unique=True)
     expires_at = Column(TIMESTAMP, nullable=False)
     used_at = Column(TIMESTAMP, nullable=True)
@@ -422,7 +422,7 @@ class EmailVerificationToken(Base):
 class RecoveryCode(Base):
     __tablename__ = 'recovery_codes'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario'), nullable=False)
+    id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'), nullable=False)
     code_hash = Column(String(255), nullable=False, unique=True)
     expires_at = Column(TIMESTAMP, nullable=False)
     used_at = Column(TIMESTAMP, nullable=True)
