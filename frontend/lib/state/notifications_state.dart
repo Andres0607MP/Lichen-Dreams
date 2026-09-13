@@ -102,6 +102,22 @@ class NotificationsState extends ChangeNotifier {
     }
   }
 
+  /// Parses a notification date from the backend.
+  /// Handles ISO8601 strings with or without timezone info.
+  /// Returns a UTC DateTime. If parsing fails, returns current UTC time.
+  static DateTime parseNotificationDate(String? isoDate) {
+    if (isoDate == null || isoDate.isEmpty) {
+      return DateTime.now().toUtc();
+    }
+    try {
+      final parsed = DateTime.parse(isoDate);
+      // If the parsed date is naive (no timezone info), treat as UTC
+      return parsed.isUtc ? parsed : parsed.toUtc();
+    } catch (_) {
+      return DateTime.now().toUtc();
+    }
+  }
+
   Map<String, dynamic> _mapBackendNotification(Map<String, dynamic> item) {
     final tipo = (item['tipo_notificacion']?.toString() ?? 'general').toLowerCase();
     final estado = (item['estado_notificacion']?.toString() ?? 'pendiente').toLowerCase();
@@ -130,6 +146,8 @@ class NotificationsState extends ChangeNotifier {
       }
     }
 
+    final fecha = parseNotificationDate(item['fecha']?.toString());
+
     return {
       'id': item['id']?.toString() ?? '',
       'id_notificacion': item['id'],
@@ -140,7 +158,7 @@ class NotificationsState extends ChangeNotifier {
       'estado': mappedEstado,
       'tipo_notificacion': item['tipo_notificacion'],
       'estado_notificacion': item['estado_notificacion'],
-      'fecha': item['fecha']?.toString() ?? DateTime.now().toIso8601String(),
+      'fecha': fecha, // Store as DateTime object
       'leida': mappedEstado == 'leida',
       'analysis_id': analysisId,
     };
@@ -271,7 +289,7 @@ class NotificationsState extends ChangeNotifier {
       'tipo': 'analysis',
       'estado': 'processing',
       'leida': false,
-      'fecha': DateTime.now().toIso8601String(),
+      'fecha': DateTime.now().toUtc(),
     });
     _playSoundForEvent('track_$analysisId', NotificationSoundService.instance.playNotificationSound);
     notifyListeners();
@@ -316,7 +334,7 @@ class NotificationsState extends ChangeNotifier {
         'tipo': 'analysis',
         'estado': 'completed',
         'leida': false,
-        'fecha': DateTime.now().toIso8601String(),
+        'fecha': DateTime.now().toUtc(),
       });
       _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
       notifyListeners();

@@ -266,6 +266,7 @@ def update_user(
                 mensaje=mensaje,
                 tipo_notificacion="system",
                 estado_notificacion="pendiente",
+                fecha=datetime.now(timezone.utc),
             )
             db.add(notificacion)
 
@@ -402,6 +403,7 @@ def create_notification(
             mensaje=request.mensaje,
             tipo_notificacion=request.tipo_notificacion,
             estado_notificacion="pendiente",
+            fecha=datetime.now(timezone.utc),
         )
         db.add(notif)
         db.commit()
@@ -420,6 +422,7 @@ def create_notification(
                 mensaje=request.mensaje,
                 tipo_notificacion=request.tipo_notificacion,
                 estado_notificacion="pendiente",
+                fecha=datetime.now(timezone.utc),
             )
             db.add(notif)
         db.commit()

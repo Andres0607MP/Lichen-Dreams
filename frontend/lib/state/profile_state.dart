@@ -10,12 +10,14 @@ class ProfileState extends ChangeNotifier {
   String? _error;
   File? _pendingImage;
   DateTime? _lastLoadedAt;
+  int _profileVersion = 0;
   static const Duration _cacheDuration = Duration(seconds: 60);
 
   Map<String, dynamic>? get profile => _profile;
   bool get loading => _loading;
   String? get error => _error;
   File? get pendingImage => _pendingImage;
+  int get profileVersion => _profileVersion;
   bool get hasFreshData => _lastLoadedAt != null && DateTime.now().difference(_lastLoadedAt!) < _cacheDuration;
 
   Future<void> loadProfile({bool force = false}) async {
@@ -26,6 +28,7 @@ class ProfileState extends ChangeNotifier {
     notifyListeners();
     try {
       _profile = await _apiService.getProfile();
+      _profileVersion++;
       _lastLoadedAt = DateTime.now();
     } catch (e) {
       _error = e.toString();
@@ -56,6 +59,8 @@ class ProfileState extends ChangeNotifier {
 
       final updated = await _apiService.updateProfile(payload);
       _profile = updated;
+      _profileVersion++;
+      debugPrint('[PROFILE-STATE] updateProfile done: version=$_profileVersion, fotoPerfil=${_profile?['foto_perfil']}');
       _pendingImage = null;
     } catch (e) {
       _error = e.toString();
@@ -82,6 +87,7 @@ class ProfileState extends ChangeNotifier {
     _loading = false;
     _pendingImage = null;
     _lastLoadedAt = null;
+    _profileVersion = 0;
     notifyListeners();
     return Future.value();
   }

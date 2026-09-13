@@ -4,7 +4,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from .base import Base
 
 
@@ -305,7 +305,7 @@ class Notificacion(Base):
     mensaje = Column(Text)
     tipo_notificacion = Column(String(50))
     estado_notificacion = Column(String(50))
-    fecha = Column(TIMESTAMP, server_default=func.now())
+    fecha = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)
     usuario = relationship('Usuario', back_populates='notificaciones')
 
 

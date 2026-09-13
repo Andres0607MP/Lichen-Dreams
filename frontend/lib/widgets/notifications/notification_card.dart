@@ -1,21 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:async';
 
 import '../app_theme.dart';
 
-String formatRelativeTime(String? isoDate) {
-  if (isoDate == null || isoDate.isEmpty) return '';
-  DateTime? date;
-  try {
-    final parsed = DateTime.parse(isoDate);
-    date = parsed.toUtc().subtract(const Duration(hours: 5));
-  } catch (_) {
-    return '';
-  }
-
-  final now = DateTime.now().toUtc().subtract(const Duration(hours: 5));
-  final diff = now.difference(date);
+String formatRelativeTime(DateTime date) {
+  final now = DateTime.now().toUtc();
+  final diff = now.difference(date.toUtc());
 
   if (diff.isNegative) {
     final abs = diff.inSeconds.abs();
@@ -33,7 +25,7 @@ String formatRelativeTime(String? isoDate) {
     return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]}, $hour12:$minute $period';
   }
 
-  if (diff.inSeconds < 30) return 'ahora mismo';
+  if (diff.inSeconds < 30) return 'Ahora';
   if (diff.inMinutes < 60) {
     final m = diff.inMinutes;
     return 'hace $m ${m == 1 ? 'min' : 'min'}';
@@ -84,7 +76,7 @@ IconData notificationStatusIcon(String estado, String tipo) {
   }
 }
 
-class NotificationCard extends StatelessWidget {
+class NotificationCard extends StatefulWidget {
   final Map<String, dynamic> notification;
   final int index;
   final VoidCallback? onTap;
@@ -99,24 +91,71 @@ class NotificationCard extends StatelessWidget {
   });
 
   @override
+  State<NotificationCard> createState() => _NotificationCardState();
+}
+
+class _NotificationCardState extends State<NotificationCard> {
+  Timer? _timer;
+  late DateTime _notificationDate;
+  String _relativeTime = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _parseDate();
+    _updateRelativeTime();
+    _timer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (mounted) {
+        _updateRelativeTime();
+      }
+    });
+  }
+
+  void _parseDate() {
+    final fechaStr = widget.notification['fecha']?.toString();
+    if (fechaStr != null && fechaStr.isNotEmpty) {
+      try {
+        final parsed = DateTime.parse(fechaStr);
+        // If the parsed date is naive (no timezone info), treat as UTC
+        _notificationDate = parsed.isUtc ? parsed : parsed.toUtc();
+      } catch (_) {
+        _notificationDate = DateTime.now().toUtc();
+      }
+    } else {
+      _notificationDate = DateTime.now().toUtc();
+    }
+  }
+
+  void _updateRelativeTime() {
+    if (!mounted) return;
+    setState(() {
+      _relativeTime = formatRelativeTime(_notificationDate);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final estado = notification['estado']?.toString() ?? 'general';
-    final tipo = notification['tipo']?.toString() ?? 'general';
-    final titulo = notification['titulo']?.toString() ?? 'Notificación';
-    final mensaje = notification['mensaje']?.toString() ?? '';
-    final leida = (notification['leida'] ?? true) as bool;
-    final fecha = notification['fecha']?.toString();
+    final estado = widget.notification['estado']?.toString() ?? 'general';
+    final tipo = widget.notification['tipo']?.toString() ?? 'general';
+    final titulo = widget.notification['titulo']?.toString() ?? 'Notificación';
+    final mensaje = widget.notification['mensaje']?.toString() ?? '';
+    final leida = (widget.notification['leida'] ?? true) as bool;
 
     final statusColor = notificationStatusColor(estado, tipo);
     final statusIcon = notificationStatusIcon(estado, tipo);
-    final relativeTime = fecha != null ? formatRelativeTime(fecha) : '';
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: widget.onTap,
       child: Container(
         margin: EdgeInsets.only(
-          top: index == 0 ? 4 : 0,
-          bottom: isLast ? 0 : 10,
+          top: widget.index == 0 ? 4 : 0,
+          bottom: widget.isLast ? 0 : 10,
         ),
         decoration: BoxDecoration(
           color: leida
@@ -145,7 +184,7 @@ class NotificationCard extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: onTap,
+            onTap: widget.onTap,
             borderRadius: BorderRadius.circular(18),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -169,64 +208,64 @@ class NotificationCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 14),
-                   Expanded(
-                     child: Column(
-                       crossAxisAlignment: CrossAxisAlignment.start,
-                       children: [
-                         Row(
-                           children: [
-                             if (!leida)
-                               Container(
-                                 width: 8,
-                                 height: 8,
-                                 margin: const EdgeInsets.only(right: 8, top: 2),
-                                 decoration: BoxDecoration(
-                                   color: statusColor,
-                                   shape: BoxShape.circle,
-                                 ),
-                               ),
-                             Expanded(
-                               child: Text(
-                                 titulo,
-                                 style: GoogleFonts.poppins(
-                                   fontSize: 15,
-                                   fontWeight:
-                                       leida ? FontWeight.w500 : FontWeight.w700,
-                                   color: Theme.of(context).colorScheme.onSurface,
-                                 ),
-                                 maxLines: 1,
-                                 overflow: TextOverflow.ellipsis,
-                               ),
-                             ),
-                           ],
-                         ),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            if (!leida)
+                              Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.only(right: 8, top: 2),
+                                decoration: BoxDecoration(
+                                  color: statusColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            Expanded(
+                              child: Text(
+                                titulo,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 15,
+                                  fontWeight:
+                                      leida ? FontWeight.w500 : FontWeight.w700,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                         if (mensaje.isNotEmpty) ...[
                           const SizedBox(height: 2),
-                           Text(
-                             mensaje,
-                             style: GoogleFonts.poppins(
-                               fontSize: 12,
-                               fontWeight: FontWeight.w400,
-                               color: leida
-                                   ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
-                                   : Theme.of(context).colorScheme.onSurfaceVariant,
-                             ),
-                             maxLines: 2,
-                             overflow: TextOverflow.ellipsis,
-                           ),
+                          Text(
+                            mensaje,
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: leida
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)
+                                  : Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
-                        if (relativeTime.isNotEmpty) ...[
+                        if (_relativeTime.isNotEmpty) ...[
                           const SizedBox(height: 4),
-                           Text(
-                             relativeTime,
-                             style: GoogleFonts.poppins(
-                               fontSize: 11,
-                               fontWeight: FontWeight.w500,
-                               color: leida
-                                   ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.55)
-                                   : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                             ),
-                           ),
+                          Text(
+                            _relativeTime,
+                            style: GoogleFonts.poppins(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: leida
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.55)
+                                  : Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                            ),
+                          ),
                         ],
                       ],
                     ),
@@ -245,7 +284,7 @@ class NotificationCard extends StatelessWidget {
       ),
     )
         .animate()
-        .fadeIn(duration: 420.ms, delay: Duration(milliseconds: index * 70))
+        .fadeIn(duration: 420.ms, delay: Duration(milliseconds: widget.index * 70))
         .slideY(begin: 0.08, end: 0, duration: 420.ms, curve: Curves.easeOut);
   }
 }

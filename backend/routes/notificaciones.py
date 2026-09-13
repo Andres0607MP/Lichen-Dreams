@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 
 from config.db import get_db
@@ -28,6 +28,13 @@ class NotificacionClearResponse(BaseModel):
     message: str
 
 
+def _ensure_utc(dt: datetime) -> datetime:
+    """Ensure datetime is timezone-aware UTC. If naive, assume UTC."""
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def _notificacion_to_response(notif: Notificacion) -> NotificacionResponse:
     return NotificacionResponse(
         id=notif.id_notificacion,
@@ -36,7 +43,7 @@ def _notificacion_to_response(notif: Notificacion) -> NotificacionResponse:
         mensaje=notif.mensaje or "",
         tipo_notificacion=notif.tipo_notificacion or "general",
         estado_notificacion=notif.estado_notificacion or "pendiente",
-        fecha=notif.fecha or datetime.now(),
+        fecha=_ensure_utc(notif.fecha) if notif.fecha else datetime.now(timezone.utc),
     )
 
 

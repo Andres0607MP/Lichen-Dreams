@@ -139,7 +139,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     final fotoPerfil = profile['foto_perfil']?.toString();
     if (fotoPerfil != null && fotoPerfil.isNotEmpty) {
-      return _CachedProfileImage(imagePath: fotoPerfil);
+      final profileVersion = context.read<ProfileState>().profileVersion;
+      debugPrint('[PROFILE-DEBUG] _buildImage: fotoPerfil=$fotoPerfil, profileVersion=$profileVersion, key=profile_${fotoPerfil}_v$profileVersion, selectedImage=$_selectedImage');
+      return _CachedProfileImage(
+        key: ValueKey('profile_${fotoPerfil}_v$profileVersion'),
+        imagePath: fotoPerfil,
+      );
     }
     return Center(
       child: Text(
@@ -702,7 +707,7 @@ Container(
 class _CachedProfileImage extends StatefulWidget {
   final String imagePath;
 
-  const _CachedProfileImage({required this.imagePath});
+  const _CachedProfileImage({super.key, required this.imagePath});
 
   @override
   State<_CachedProfileImage> createState() => _CachedProfileImageState();
@@ -715,6 +720,7 @@ class _CachedProfileImageState extends State<_CachedProfileImage> {
   @override
   void initState() {
     super.initState();
+    debugPrint('[CACHED-IMG] initState: imagePath=${widget.imagePath}, key=${widget.key}');
     _loadImage();
   }
 
@@ -728,6 +734,7 @@ class _CachedProfileImageState extends State<_CachedProfileImage> {
 
     try {
       _bytes = await apiService.downloadImageBytes(widget.imagePath);
+      debugPrint('[CACHED-IMG] download done: bytes=${_bytes?.length}, imagePath=${widget.imagePath}');
       debugPrint('[IMG-DEBUG] Profile image cargada: '
           '${_bytes?.length ?? 0} bytes');
     } catch (e, stackTrace) {

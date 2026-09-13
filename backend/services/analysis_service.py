@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional, List
 import base64
 import logging
@@ -83,7 +83,7 @@ class AnalysisService:
             "contamination_level": analysis.nivel_contaminacion or "",
             "recomendacion": recommendation,
             "recommendation": recommendation,
-            "fecha_creacion": analysis.fecha or datetime.utcnow(),
+            "fecha_creacion": analysis.fecha or datetime.now(timezone.utc),
             "progreso": 100 if status_value == "completed" else 50,
             "estado_validacion": analysis.estado_validacion or "",
             "visibilidad": analysis.visibilidad or "private",
@@ -227,7 +227,7 @@ class AnalysisService:
                 "contamination_level": nivel_contaminacion,
                 "recomendacion": observaciones,
                 "recommendation": observaciones,
-                "fecha_creacion": datetime.utcnow(),
+                "fecha_creacion": datetime.now(timezone.utc),
                 "progreso": 100 if estado_validacion == "completed" else 50,
                 "estado_validacion": estado_validacion,
                 "visibilidad": "private",
@@ -259,7 +259,7 @@ class AnalysisService:
                 "contamination_level": nivel_contaminacion,
                 "recomendacion": observaciones,
                 "recommendation": observaciones,
-                "fecha_creacion": datetime.utcnow(),
+                "fecha_creacion": datetime.now(timezone.utc),
                 "progreso": 100 if estado_validacion == "completed" else 50,
                 "estado_validacion": estado_validacion,
                 "visibilidad": "private",
@@ -272,7 +272,7 @@ class AnalysisService:
             # (nunca se hardcodea: corresponde al modelo que hizo la inferencia).
             resolved_model_id = self._resolve_id_modelo(db)
             print(f"[PROCESS] modelo activo id_modelo={resolved_model_id}")
-            analysis_date = datetime.utcnow()
+            analysis_date = datetime.now(timezone.utc)
             humidity_value = None
             if id_ubicacion is not None:
                 ubicacion = db.query(Ubicacion).filter(Ubicacion.id_ubicacion == id_ubicacion).first()
@@ -311,7 +311,7 @@ class AnalysisService:
                 mensaje=f"analysis_id={analysis.id_analisis}|Análisis en proceso",
                 tipo_notificacion="analysis",
                 estado_notificacion="processing",
-                fecha=datetime.utcnow(),
+                fecha=datetime.now(timezone.utc),
             )
             db.add(notificacion)
             db.flush()
@@ -371,6 +371,7 @@ class AnalysisService:
                     Notificacion.titulo: "Tu análisis está listo",
                     Notificacion.estado_notificacion: "completed",
                     Notificacion.mensaje: f"analysis_id={analysis.id_analisis}|Resultado disponible",
+                    Notificacion.fecha: datetime.now(timezone.utc),
                 }, synchronize_session=False)
                 print(f"[NOTIFICACION] completada analysis_id={analysis.id_analisis}")
             else:
@@ -382,6 +383,7 @@ class AnalysisService:
                     Notificacion.titulo: "Análisis fallido",
                     Notificacion.estado_notificacion: "failed",
                     Notificacion.mensaje: f"analysis_id={analysis.id_analisis}|No se pudo completar",
+                    Notificacion.fecha: datetime.now(timezone.utc),
                 }, synchronize_session=False)
                 print(f"[NOTIFICACION] fallida analysis_id={analysis.id_analisis}")
 
@@ -444,7 +446,7 @@ class AnalysisService:
                 "recommendation": analysis.observaciones or "",
                 "imagen_base64": None,
                 "image_base64": None,
-                "fecha_creacion": analysis.fecha or datetime.utcnow(),
+                "fecha_creacion": analysis.fecha or datetime.now(timezone.utc),
                 "rechazado": False,
                 "mensaje_rechazo": None,
                 "progreso": 100 if status_value == "completed" else 50,
@@ -481,7 +483,7 @@ class AnalysisService:
             "recommendation": analysis.observaciones or "",
             "imagen_base64": None,
             "image_base64": None,
-            "fecha_creacion": analysis.fecha or datetime.utcnow(),
+            "fecha_creacion": analysis.fecha or datetime.now(timezone.utc),
             "ubicacion": "",
         }
 
@@ -516,7 +518,7 @@ class AnalysisService:
             "recommendation": analysis.observaciones or "",
             "imagen_base64": None,
             "image_base64": None,
-            "fecha_creacion": analysis.fecha or datetime.utcnow(),
+            "fecha_creacion": analysis.fecha or datetime.now(timezone.utc),
             "indice_calidad": 45.2,
             "contaminantes": {"PM2.5": 12.3, "PM10": 25.5, "NO2": 15.0},
         }
@@ -553,7 +555,7 @@ class AnalysisService:
             "recommendation": recommendation,
             "imagen_base64": None,
             "image_base64": None,
-            "fecha_creacion": analysis.fecha or datetime.utcnow(),
+            "fecha_creacion": analysis.fecha or datetime.now(timezone.utc),
             "prioridad": "alta",
             "acciones": ["Plantar árboles nativos", "Reducir contaminación", "Proteger ecosistema"],
         }
@@ -628,7 +630,7 @@ class AnalysisService:
                     "air_quality": analysis.calidad_aire or "",
                     "recomendacion": analysis.observaciones or analysis.resultado_ia or "",
                     "recommendation": analysis.observaciones or analysis.resultado_ia or "",
-                    "fecha_creacion": analysis.fecha or datetime.utcnow(),
+                    "fecha_creacion": analysis.fecha or datetime.now(timezone.utc),
                     "visibilidad": analysis.visibilidad or "private",
                 }
 
@@ -642,7 +644,7 @@ class AnalysisService:
                     "contamination_level": analysis.nivel_contaminacion,
                     "species": species,
                     "confidence": float(analysis.porcentaje_confianza or 0.0),
-                    "date": analysis.fecha or datetime.utcnow(),
+                    "date": analysis.fecha or datetime.now(timezone.utc),
                     "status": status_value,
                     "visibilidad": analysis.visibilidad or "private",
                     "usuario": usuario_payload,
