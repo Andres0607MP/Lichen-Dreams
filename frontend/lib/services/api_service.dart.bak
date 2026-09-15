@@ -8,9 +8,6 @@ import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
-import 'authenticated_http_client.dart';
-
-typedef UnauthorizedHandler = Future<void> Function();
 
 class ApiException implements Exception {
   final String message;
@@ -21,22 +18,13 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  ApiService({http.Client? client, UnauthorizedHandler? onUnauthorized}) {
-    _onUnauthorized = onUnauthorized;
-    _client = AuthenticatedHttpClient(client ?? http.Client(), this);
-  }
+  ApiService({http.Client? client}) : _client = client ?? http.Client();
 
-  late final http.Client _client;
+  final http.Client _client;
   bool _refreshingToken = false;
-  UnauthorizedHandler? _onUnauthorized;
-  bool _isHandlingUnauthorized = false;
   static const String _tokenKey = 'auth_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userRoleKey = 'user_role';
-
-  void setUnauthorizedHandler(UnauthorizedHandler handler) {
-    _onUnauthorized = handler;
-  }
 
   String _parseResponseMessage(Response response, String fallback) {
     try {
@@ -66,19 +54,6 @@ class ApiService {
       return fallback;
     }
     return fallback;
-  }
-
-  Future<void> handleUnauthorized() async {
-    if (_isHandlingUnauthorized) return;
-    _isHandlingUnauthorized = true;
-    try {
-      final handler = _onUnauthorized;
-      if (handler != null) {
-        await handler();
-      }
-    } finally {
-      _isHandlingUnauthorized = false;
-    }
   }
 
   Future<String> testConnection() async {
@@ -710,7 +685,7 @@ class ApiService {
     return token != null && token.isNotEmpty;
   }
 
-  /// Obtener perfil del usuario autenticado
+/// Obtener perfil del usuario autenticado
   Future<Map<String, dynamic>> getProfile() async {
     final response = await _client.get(
       AppConfig.buildUri('/profile'),
@@ -910,6 +885,7 @@ class ApiService {
         ),
       );
     }
+
     final decoded = jsonDecode(response.body);
     if (decoded is List) {
       final list = List<Map<String, dynamic>>.from(
@@ -957,6 +933,7 @@ class ApiService {
         ),
       );
     }
+
     final decoded = jsonDecode(response.body);
     if (decoded is List) {
       final list = List<Map<String, dynamic>>.from(
@@ -1193,7 +1170,7 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
+Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$analysisId/location'),
       headers: await _headers(authorized: true),
@@ -1379,6 +1356,15 @@ class ApiService {
     final response = await _client.post(
       AppConfig.buildUri('/location/find-or-create'),
       headers: await _headers(authorized: true),
+      body: jsonEncode({
+        'latitude': latitude,
+        'longitude': longitude,
+        'radius_meters': radiusMeters,
+        'direccion': direccion,
+        'municipio': municipio,
+        'departamento': departamento,
+        'pais': pais,
+      }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
@@ -1449,7 +1435,7 @@ class ApiService {
       payload['estado_publicacion'] = estadoPublicacion;
     if (imagenArticulo != null) payload['imagen_articulo'] = imagenArticulo;
     if (fotoPerfilAutor != null) payload['foto_perfil_articulo'] = fotoPerfilAutor;
- 
+
     final response = await _client.put(
       AppConfig.buildUri('/liquenpedia/$id'),
       headers: await _headers(authorized: true),
@@ -1524,6 +1510,7 @@ class ApiService {
     final response = await _client.post(
       AppConfig.buildUri('/admin/species'),
       headers: await _headers(authorized: true),
+      body: jsonEncode(data),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
@@ -1537,6 +1524,7 @@ class ApiService {
     final response = await _client.put(
       AppConfig.buildUri('/admin/species/$id'),
       headers: await _headers(authorized: true),
+      body: jsonEncode(data),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
@@ -1553,15 +1541,12 @@ class ApiService {
     );
     if (response.statusCode != 204 && response.statusCode != 200) {
       throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al eliminar especie',
-        ),
+        _parseResponseMessage(response, 'Error ${response.statusCode} al eliminar especie'),
       );
     }
   }
 
-  // ==================== ZONAS AMBIENTALES (CatÃ¡logo pÃºblico) ====================
+  // ==================== ZONAS AMBIENTALES (Catálogo público) ====================
 
   Future<List<dynamic>> getCatalogZones() async {
     final response = await _client.get(
@@ -1570,7 +1555,7 @@ class ApiService {
     ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
-        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener zonas del catÃ¡logo'),
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener zonas del catálogo'),
       );
     }
     return jsonDecode(response.body) as List<dynamic>;
@@ -1595,6 +1580,7 @@ class ApiService {
     final response = await _client.post(
       AppConfig.buildUri('/admin/zones'),
       headers: await _headers(authorized: true),
+      body: jsonEncode(data),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
@@ -1608,6 +1594,7 @@ class ApiService {
     final response = await _client.put(
       AppConfig.buildUri('/admin/zones/$id'),
       headers: await _headers(authorized: true),
+      body: jsonEncode(data),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
@@ -1643,7 +1630,7 @@ class ApiService {
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
-        _parseResponseMessage(response, 'Error ${response.statusCode} al cambiar contraseÃ±a'),
+        _parseResponseMessage(response, 'Error ${response.statusCode} al cambiar contraseña'),
       );
     }
   }
@@ -1668,7 +1655,7 @@ class ApiService {
     ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
-        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener anÃ¡lisis'),
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener análisis'),
       );
     }
     final decoded = jsonDecode(response.body);
@@ -1682,13 +1669,11 @@ class ApiService {
     final response = await _client.put(
       AppConfig.buildUri('/analysis/$analysisId/visibility'),
       headers: await _headers(authorized: true),
+      body: jsonEncode({'visibilidad': visibility}),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al actualizar visibilidad',
-        ),
+        _parseResponseMessage(response, 'Error ${response.statusCode} al actualizar visibilidad'),
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
@@ -1701,10 +1686,7 @@ class ApiService {
     ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al obtener sesiones',
-        ),
+        _parseResponseMessage(response, 'Error ${response.statusCode} al obtener sesiones'),
       );
     }
     final decoded = jsonDecode(response.body);
@@ -1721,15 +1703,12 @@ class ApiService {
     );
     if (response.statusCode != 204) {
       throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al revocar sesiÃ³n',
-        ),
+        _parseResponseMessage(response, 'Error ${response.statusCode} al revocar sesión'),
       );
     }
   }
 
-  /// Solicitar cÃ³digo de recuperaciÃ³n de contraseÃ±a
+  /// Solicitar código de recuperación de contraseña
   Future<Map<String, dynamic>> forgotPassword(String email) async {
     final response = await _client.post(
       AppConfig.buildUri('/auth/forgot-password'),
@@ -1740,14 +1719,14 @@ class ApiService {
       throw ApiException(
         _parseResponseMessage(
           response,
-          'Error ${response.statusCode} al solicitar recuperaciÃ³n',
+          'Error ${response.statusCode} al solicitar recuperación',
         ),
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  /// Restablecer contraseÃ±a con cÃ³digo de recuperaciÃ³n
+  /// Restablecer contraseña con código de recuperación
   Future<Map<String, dynamic>> resetPassword(String token, String newPassword) async {
     final response = await _client.post(
       AppConfig.buildUri('/auth/reset-password'),
@@ -1758,14 +1737,14 @@ class ApiService {
       throw ApiException(
         _parseResponseMessage(
           response,
-          'Error ${response.statusCode} al restablecer contraseÃ±a',
+          'Error ${response.statusCode} al restablecer contraseña',
         ),
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  /// Recuperar contraseÃ±a usando el cÃ³digo de recuperaciÃ³n de un solo uso
+  /// Recuperar contraseña usando el código de recuperación de un solo uso
   Future<Map<String, dynamic>> recoverWithCode(String code, String newPassword) async {
     final response = await _client.post(
       AppConfig.buildUri('/auth/recover-with-code'),
@@ -1783,7 +1762,7 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  /// Generar un nuevo cÃ³digo de recuperaciÃ³n para el usuario autenticado
+  /// Generar un nuevo código de recuperación para el usuario autenticado
   Future<Map<String, dynamic>> regenerateRecoveryCode() async {
     final response = await _client.post(
       AppConfig.buildUri('/auth/recovery-code/regenerate'),
@@ -1793,14 +1772,14 @@ class ApiService {
       throw ApiException(
         _parseResponseMessage(
           response,
-          'Error ${response.statusCode} al generar el cÃ³digo de recuperaciÃ³n',
+          'Error ${response.statusCode} al generar el código de recuperación',
         ),
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  /// Verificar correo electrÃ³nico con cÃ³digo de verificaciÃ³n
+  /// Verificar correo electrónico con código de verificación
   Future<Map<String, dynamic>> verifyEmail(String token) async {
     final response = await _client.post(
       AppConfig.buildUri('/auth/verify-email'),
@@ -1818,7 +1797,7 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  /// Reenviar cÃ³digo de verificaciÃ³n
+  /// Reenviar código de verificación
   Future<Map<String, dynamic>> resendVerification(String email) async {
     final response = await _client.post(
       AppConfig.buildUri('/auth/resend-verification'),
@@ -1829,7 +1808,7 @@ class ApiService {
       throw ApiException(
         _parseResponseMessage(
           response,
-          'Error ${response.statusCode} al reenviar cÃ³digo',
+          'Error ${response.statusCode} al reenviar código',
         ),
       );
     }

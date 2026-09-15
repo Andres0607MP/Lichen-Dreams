@@ -45,17 +45,15 @@ class _PrivacySettingsScreenState extends State<PrivacySettingsScreen> {
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Flexible(
-          child: Text(
-            'Privacidad y seguridad',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+        title: Text(
+          'Privacidad y seguridad',
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
       body: SingleChildScrollView(

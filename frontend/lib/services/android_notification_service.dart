@@ -26,8 +26,8 @@ class AndroidNotificationService {
 
       await _flutterLocalNotificationsPlugin.initialize(
         settings: initializationSettings,
-        onDidReceiveNotificationResponse: (details) {},
-        onDidReceiveBackgroundNotificationResponse: (details) {},
+        onDidReceiveNotificationResponse: null,
+        onDidReceiveBackgroundNotificationResponse: null,
       );
 
 // Create the dedicated channel for analysis ready notifications

@@ -29,7 +29,9 @@ class AuthState extends ChangeNotifier {
 
   AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
       : _apiService = apiService ?? ApiService(),
-        _googleAuth = googleAuth ?? GoogleAuthService();
+        _googleAuth = googleAuth ?? GoogleAuthService() {
+    _apiService.setUnauthorizedHandler(() => clearAuthState());
+  }
 
   String? get token => _token;
   String? get refreshToken => _refreshToken;
@@ -205,7 +207,7 @@ class AuthState extends ChangeNotifier {
       );
       if (data['access_token'] != null) {
         _token = data['access_token'] as String?;
-        _refreshToken = data['refresh_token'] as String?;
+        _refreshToken = data['refreshToken'] as String?;
         if (data['user'] is Map<String, dynamic>) {
           final user = data['user'] as Map<String, dynamic>;
           _role = user['rol']?.toString();
@@ -217,7 +219,6 @@ class AuthState extends ChangeNotifier {
         notifyListeners();
         await NotificationsState.instance.loadNotifications();
       }
-      return data;
     } finally {
       setState(() => _loading = false);
     }
