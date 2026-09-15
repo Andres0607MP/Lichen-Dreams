@@ -11,7 +11,7 @@ import logging
 from google.auth.exceptions import TransportError
 
 from config.db import get_db
-from config.settings import normalize_image_path, GOOGLE_CLIENT_ID
+from config.settings import normalize_image_path, GOOGLE_CLIENT_ID, MAX_ACTIVE_SESSIONS
 from models.core import Usuario, Sesion, Role, PasswordResetToken, EmailVerificationToken, RecoveryCode
 from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
@@ -125,23 +125,36 @@ def _issue_auth_tokens(
 ) -> dict:
     """Crea una sesión activa nueva y emite los JWT de Lichen Dreams.
 
-    Misma lógica que el login por email/contraseña: revoca las sesiones
-    activas previas del usuario y crea una única sesión activa. La sesión
-    guarda metadatos del cliente y la expiración alineada con el refresh token.
+    Respeta el límite de sesiones activas configurado (por defecto 3).
+    Si ya se alcanza el límite, rechaza el login sin crear ni revocar sesiones.
     """
     import uuid
+    from fastapi import HTTPException, status
 
-    sid = uuid.uuid4().hex
+    # Límite configurado
+    max_active_sessions = MAX_ACTIVE_SESSIONS
 
-    db.query(Sesion).filter(
+    # Bloquear filas de sesiones activas del usuario para evitar condiciones de carrera
+    active_sessions = db.query(Sesion).filter(
         Sesion.id_usuario == user.id_usuario,
         Sesion.estado_sesion == "active"
-    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
+    ).with_for_update().order_by(Sesion.fecha_inicio.asc()).all()
+
+    if len(active_sessions) >= max_active_sessions:
+        # Límite alcanzado: rechazar sin crear ni revocar sesiones
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="SESSION_LIMIT_REACHED",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    sid = uuid.uuid4().hex
+    token_hash = _hash_token(sid)
 
     dispositivo, sistema_operativo = _parse_client_device(user_agent)
 
     sesion = Sesion(
-        token_sesion=sid,
+        token_sesion_hash=token_hash,
         dispositivo=dispositivo,
         sistema_operativo=sistema_operativo,
         ip_usuario=(client_ip or None)[:50] if client_ip else None,
@@ -472,17 +485,31 @@ def me(current_user: Usuario = Depends(get_current_user)):
 
 @router.post("/logout", summary="Cerrar sesión")
 def logout(
+    request: Request,
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Revoca TODAS las sesiones activas del usuario autenticado."""
-    db.query(Sesion).filter(
-        Sesion.id_usuario == current_user.id_usuario,
-        Sesion.estado_sesion == "active"
-    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
-
-    db.commit()
-
+    """Revoca únicamente la sesión actual asociada al token."""
+    # Extraer token del encabezado Authorization
+    authorization = request.headers.get("Authorization")
+    sid = None
+    if authorization and authorization.startswith("Bearer "):
+        token = authorization[7:]
+        try:
+            payload = decode_token(token)
+            if payload:
+                sid = payload.get("sid")
+        except Exception:
+            pass
+    if sid:
+        sid_hash = hashlib.sha256(sid.encode()).hexdigest()
+        sesion = db.query(Sesion).filter(
+            Sesion.token_sesion_hash == sid_hash,
+            Sesion.id_usuario == current_user.id_usuario
+        ).first()
+        if sesion:
+            sesion.estado_sesion = "revoked"
+            db.commit()
     return {
         "message": "Sesión cerrada exitosamente"
     }
@@ -512,8 +539,9 @@ def refresh_token(
             status_code=401,
             detail="Token inválido"
         )
+    sid_hash = hashlib.sha256(sid.encode()).hexdigest()
     sesion = db.query(Sesion).filter(
-        Sesion.token_sesion == sid
+        Sesion.token_sesion_hash == sid_hash
     ).first()
     if not sesion:
         raise HTTPException(
@@ -563,8 +591,9 @@ def logout_refresh(
             detail="Refresh token inválido"
         )
 
+    sid_hash = hashlib.sha256(sid.encode()).hexdigest()
     sesion = db.query(Sesion).filter(
-        Sesion.token_sesion == sid
+        Sesion.token_sesion_hash == sid_hash
     ).first()
 
     if sesion:
@@ -642,12 +671,9 @@ def delete_account(
 
     current_user.estado_cuenta = "eliminado"
 
-    db.query(Sesion).filter(
-        Sesion.id_usuario == current_user.id_usuario,
-        Sesion.estado_sesion == "active"
-    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
-
-    db.commit()
+    # Revocar todas las sesiones activas por seguridad
+    from auth.auth_service import revoke_all_sessions
+    revoke_all_sessions(current_user.id_usuario, db)
 
     return None
 
@@ -840,13 +866,9 @@ def reset_password(
     # Mark token as used
     reset_token.used_at = datetime.utcnow()
 
-    # Revoke all active sessions for security
-    db.query(Sesion).filter(
-        Sesion.id_usuario == user.id_usuario,
-        Sesion.estado_sesion == "active"
-    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
-
-    db.commit()
+# Revocar todas las sesiones activas por seguridad
+    from auth.auth.service import revoke_all_sessions
+    revoke_all_sessions(current_user.id_usuario, db)
 
     return PasswordResetResponse(
         message="Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."
@@ -904,13 +926,9 @@ def recover_with_code(
         RecoveryCode.used_at.is_(None)
     ).update({"used_at": datetime.utcnow()}, synchronize_session=False)
 
-    # Revoke all active sessions for security (same as /auth/reset-password)
-    db.query(Sesion).filter(
-        Sesion.id_usuario == user.id_usuario,
-        Sesion.estado_sesion == "active"
-    ).update({"estado_sesion": "revoked"}, synchronize_session=False)
-
-    db.commit()
+    # Revocar todas las sesiones activas por seguridad
+    from auth.auth.service import revoke_all_sessions
+    revoke_all_sessions(user.id_usuario, db)
 
     return PasswordResetResponse(
         message="Contraseña actualizada exitosamente. Por favor, inicia sesión con tu nueva contraseña."

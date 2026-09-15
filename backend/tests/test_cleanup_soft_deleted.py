@@ -1,5 +1,6 @@
 """Tests for the soft-deleted users cleanup script."""
 
+import hashlib
 import os
 from datetime import datetime
 
@@ -152,8 +153,10 @@ def test_hard_delete_user_removes_user_and_dependencies(db):
     user_id = user.id_usuario
 
     # Create dependencies
+    token_sesion_val = "test_token"
+    token_hash = hashlib.sha256(token_sesion_val.encode()).hexdigest()
     session = Sesion(
-        token_sesion="test_token",
+        token_sesion_hash=token_hash,
         dispositivo="Test Device",
         sistema_operativo="Windows",
         ip_usuario="127.0.0.1",

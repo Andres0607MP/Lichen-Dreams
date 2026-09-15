@@ -40,6 +40,9 @@ BACKEND_URL = _resolve_backend_url()
 # valor que usa el frontend como serverClientId / aud del token).
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 
+# Máximo número de sesiones activas simultáneas por usuario
+MAX_ACTIVE_SESSIONS = int(os.getenv("MAX_ACTIVE_SESSIONS", "3"))
+
 UPLOADS_BASE_DIR = Path(__file__).resolve().parent.parent / "uploads"
 UPLOADS_BASE_DIR.mkdir(parents=True, exist_ok=True)
 

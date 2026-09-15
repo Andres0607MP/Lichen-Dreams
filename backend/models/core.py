@@ -66,7 +66,7 @@ class Usuario(Base):
 class Sesion(Base):
     __tablename__ = 'sesiones'
     id_sesion = Column(Integer, primary_key=True, autoincrement=True)
-    token_sesion = Column(String(64), nullable=False)
+    token_sesion_hash = Column(String(64), nullable=False, unique=True)
     dispositivo = Column(String(100))
     sistema_operativo = Column(String(100))
     ip_usuario = Column(String(50))
@@ -76,7 +76,7 @@ class Sesion(Base):
     id_usuario = Column(Integer, ForeignKey('usuarios.id_usuario', ondelete='CASCADE'))
 
     __table_args__ = (
-        Index('idx_token_sesion', 'token_sesion'),
+        Index('idx_token_sesion_hash', 'token_sesion_hash'),
         Index('idx_estado_sesion', 'estado_sesion'),
     )
 

@@ -1,5 +1,6 @@
 """Tests for hard delete user functionality."""
 
+import hashlib
 import os
 from datetime import datetime
 from unittest.mock import patch
@@ -142,8 +143,10 @@ def regular_user_with_dependencies(db):
     db.refresh(user)
 
     # Create dependencies
+    token_sesion_val = "test_token"
+    token_hash = hashlib.sha256(token_sesion_val.encode()).hexdigest()
     session = Sesion(
-        token_sesion="test_token",
+        token_sesion_hash=token_hash,
         dispositivo="Test Device",
         sistema_operativo="Windows",
         ip_usuario="127.0.0.1",

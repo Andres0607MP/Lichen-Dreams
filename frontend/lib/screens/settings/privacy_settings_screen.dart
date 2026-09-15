@@ -866,6 +866,8 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
   }
 }
 
+const int _maxSessions = 3;
+
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
 
@@ -923,6 +925,110 @@ class _SessionsScreenState extends State<SessionsScreen> {
     }
   }
 
+  int? _getCurrentSessionId() {
+    if (_sessions.isEmpty) return null;
+    // Sort by fecha_inicio descending and pick the first
+    try {
+      final sorted = List<dynamic>.from(_sessions)
+        ..sort((a, b) {
+          final dateA = DateTime.tryParse(a['fecha_inicio'] ?? '');
+          final dateB = DateTime.tryParse(b['fecha_inicio'] ?? '');
+          // Treat null as earliest
+          final aVal = dateA?.millisecondsSinceEpoch ?? 0;
+          final bVal = dateB?.millisecondsSinceEpoch ?? 0;
+          return bVal.compareTo(aVal); // descending
+        });
+      return sorted.first['id_sesion'] as int?;
+    } catch (_) {
+      // Fallback to first session
+      return _sessions.first['id_sesion'] as int?;
+    }
+  }
+
+  IconData _getSessionIcon(String dispositivo, String? sistemaOperativo) {
+    final lower = dispositivo.toLowerCase();
+    final osLower = sistemaOperativo?.toLowerCase() ?? '';
+    if (lower.contains('windows') || osLower.contains('windows')) {
+      return Icons.desktop_windows;
+    }
+    if (lower.contains('mac') || osLower.contains('mac') || osLower.contains('darwin')) {
+      return Icons.desktop_mac;
+    }
+    if (lower.contains('linux') || osLower.contains('linux')) {
+      return Icons.computer;
+    }
+    if (lower.contains('android') || osLower.contains('android')) {
+      return Icons.phone_android;
+    }
+    if (lower.contains('ios') || lower.contains('iphone') || lower.contains('ipad') ||
+        osLower.contains('ios') || osLower.contains('iphone') || osLower.contains('ipad')) {
+      return Icons.phone_iphone;
+    }
+    return Icons.device_unknown;
+  }
+
+  String _formatDateTime(String? isoString) {
+    if (isoString == null || isoString.isEmpty) return '';
+    try {
+      final date = DateTime.parse(isoString);
+      return '${date.day}/${date.month}/${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return isoString;
+    }
+  }
+
+  Widget _buildSessionSummary(BuildContext context) {
+    final sessionCount = _sessions.length;
+    final progress = sessionCount / _maxSessions;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Sesiones activas',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '$sessionCount de $_maxSessions sesiones utilizadas',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 4),
+          SizedBox(
+            height: 4,
+            child: LinearProgressIndicator(
+              value: progress.clamp(0.0, 1.0),
+              backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryGreen),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Puedes tener hasta $_maxSessions dispositivos conectados al mismo tiempo.',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -967,48 +1073,145 @@ class _SessionsScreenState extends State<SessionsScreen> {
                         ),
                       ),
                     )
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _sessions.length,
-                      itemBuilder: (context, index) {
-                        final session = _sessions[index] as Map<String, dynamic>;
-                        final isActive = session['estado_sesion'] == 'active';
-                        final dispositivo = session['dispositivo']?.toString() ?? 'Desconocido';
-                        final fechaInicio = session['fecha_inicio']?.toString() ?? '';
+                  : ListView(
+                      padding: EdgeInsets.all(0),
+                      children: [
+                        _buildSessionSummary(context),
+                        const SizedBox(height: 24),
+                        ...List.generate(_sessions.length, (index) {
+                          final session = _sessions[index] as Map<String, dynamic>;
+                          final sessionId = session['id_sesion'] as int?;
+                          final isCurrent = sessionId == _getCurrentSessionId();
+                          final dispositivo = session['dispositivo']?.toString() ?? 'Desconocido';
+                          final sistemaOperativo = session['sistema_operativo']?.toString();
+                          final ipUsuario = session['ip_usuario']?.toString();
+                          final fechaInicio = _formatDateTime(session['fecha_inicio']);
+                          final fechaExpiracion = _formatDateTime(session['fecha_expiracion']);
+                          
 
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: ListTile(
-                            leading: Icon(
-                              isActive ? Icons.check_circle : Icons.cancel,
-                              color: isActive ? AppTheme.primaryGreen : Theme.of(context).colorScheme.onSurfaceVariant,
-                            ),
-                            title: Text(
-                              dispositivo,
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                            ),
-                            subtitle: Text(
-                              fechaInicio,
-                              style: GoogleFonts.poppins(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                            ),
-                            trailing: isActive
-                                ? TextButton(
-                                    onPressed: () => _revokeSession(session['id_sesion'] as int),
-                                    child: Text(
-                                      'Revocar',
-                                      style: GoogleFonts.poppins(color: AppTheme.errorColor),
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Icon
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            _getSessionIcon(dispositivo, sistemaOperativo),
+                            color: AppTheme.primaryGreen,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Device info
+                              Text(
+                                dispositivo,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                ),
+                              ),
+                              if (sistemaOperativo != null && sistemaOperativo.isNotEmpty ||
+                                  ipUsuario != null && ipUsuario.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  [
+                                    if (sistemaOperativo != null && sistemaOperativo.isNotEmpty) sistemaOperativo,
+                                    if (ipUsuario != null && ipUsuario.isNotEmpty) ipUsuario,
+                                  ].where((e) => e != null && e.isNotEmpty).join(' • '),
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              // Session status and actions
+                              Row(
+                                children: [
+                                  if (isCurrent) ...[
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: AppTheme.primaryGreen),
+                                      ),
+                                      child: Text(
+                                        'Sesión actual',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.primaryGreen,
+                                        ),
+                                      ),
                                     ),
-                                  )
-                                : Chip(
-                                    label: Text(
-                                      session['estado_sesion']?.toString() ?? '',
-                                      style: GoogleFonts.poppins(fontSize: 12),
+                                    const SizedBox(width: 8),
+                                  ],
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        if (fechaInicio.isNotEmpty) ...[
+                                          Text(
+                                            'Inicio: $fechaInicio',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                        if (fechaExpiracion.isNotEmpty) ...[
+                                          Text(
+                                            'Hasta: $fechaExpiracion',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                   ),
+                                  // Revoke button (only if not current)
+                                  if (!isCurrent) ...[
+                                    SizedBox(width: 8),
+                                    Tooltip(
+                                      message: 'Cerrar sesión',
+                                      child: IconButton(
+                                        icon: const Icon(Icons.logout_rounded, size: 20),
+                                        color: AppTheme.errorColor,
+                                        onPressed: () => _revokeSession(sessionId!),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
-                        );
-                      },
+                        ),
+                      ],
+                    ),
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
                     ),
     );
   }

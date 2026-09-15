@@ -201,14 +201,12 @@ class ModeloIAResponse(BaseModel):
 
 
 class SesionResponse(BaseModel):
-    
     id_sesion: int
-    token_sesion: str
     dispositivo: Optional[str]
     ip_usuario: Optional[str]
     fecha_inicio: datetime
     estado_sesion: str
-    
+
     class Config:
         from_attributes = True
 

@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../services/notification_sound_service.dart';
+import '../services/android_notification_service.dart';
+import 'dart:async';
 
 class NotificationsState extends ChangeNotifier {
   NotificationsState._();
@@ -300,14 +302,15 @@ class NotificationsState extends ChangeNotifier {
     if (index >= 0) {
       final wasCompleted = _notifications[index]['estado'] == 'completed';
       _notifications[index] = Map<String, dynamic>.from(_notifications[index]);
-      _notifications[index]['titulo'] = 'Tu análisis está listo';
-      _notifications[index]['mensaje'] = resultTitle;
-      _notifications[index]['estado'] = 'completed';
-      _notifications[index]['leida'] = false;
-      if (!wasCompleted) {
-        _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
-      }
-      notifyListeners();
+_notifications[index]['titulo'] = 'Tu análisis está listo';
+       _notifications[index]['mensaje'] = resultTitle;
+       _notifications[index]['estado'] = 'completed';
+       _notifications[index]['leida'] = false;
+       if (!wasCompleted) {
+         _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
+         unawaited(AndroidNotificationService.instance.showAnalysisReady(analysisId, resultTitle));
+       }
+       notifyListeners();
       return;
     }
 
@@ -321,9 +324,10 @@ class NotificationsState extends ChangeNotifier {
       _notifications[indexByMessage]['mensaje'] = resultTitle;
       _notifications[indexByMessage]['estado'] = 'completed';
       _notifications[indexByMessage]['leida'] = false;
-      if (!wasCompleted) {
-        _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
-      }
+if (!wasCompleted) {
+         _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
+         unawaited(AndroidNotificationService.instance.showAnalysisReady(analysisId, resultTitle));
+       }
       notifyListeners();
     } else {
       _notifications.insert(0, {
@@ -335,9 +339,10 @@ class NotificationsState extends ChangeNotifier {
         'estado': 'completed',
         'leida': false,
         'fecha': DateTime.now().toUtc(),
-      });
-      _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
-      notifyListeners();
+});
+       _playSoundForEvent('complete_$analysisId', NotificationSoundService.instance.playAnalysisCompleteSound);
+       unawaited(AndroidNotificationService.instance.showAnalysisReady(analysisId, resultTitle));
+       notifyListeners();
     }
   }
 

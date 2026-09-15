@@ -1,6 +1,8 @@
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session, joinedload
+from datetime import datetime, timedelta
+import hashlib
 
 from config.db import get_db
 from config.settings import PERMISSIONS, PERMISSION_CAN_VIEW_PRIVATE_IMAGES
@@ -39,9 +41,15 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     if user.estado_cuenta != "active":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cuenta desactivada. Contacta al administrador.")
     if sid:
-        ses = db.query(Sesion).filter(Sesion.token_sesion == sid, Sesion.id_usuario == user.id_usuario).first()
-        if not ses or ses.estado_sesion != 'active':
+        sid_hash = hashlib.sha256(sid.encode()).hexdigest()
+        ses = db.query(Sesion).filter(Sesion.token_sesion_hash == sid_hash, Sesion.id_usuario == user.id_usuario).first()
+        if not ses:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión inválida o revocada")
+        if ses.estado_sesion != "active":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión inválida o revocada")
+        if ses.fecha_expiracion and ses.fecha_expiracion < datetime.utcnow():
+            # Sesión expirada
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión expirada")
     return user
 
 
@@ -54,11 +62,21 @@ def get_current_user_optional(token: str = Depends(oauth2_scheme), db: Session =
         if not payload:
             return None
         sub = payload.get("sub")
+        sid = payload.get("sid")
         if not sub:
             return None
         user = db.query(Usuario).options(joinedload(Usuario.rol)).filter(Usuario.correo == sub).first()
         if not user or user.estado_cuenta != "active":
             return None
+        if sid:
+            sid_hash = hashlib.sha256(sid.encode()).hexdigest()
+            ses = db.query(Sesion).filter(Sesion.token_sesion_hash == sid_hash, Sesion.id_usuario == user.id_usuario).first()
+            if not ses:
+                return None
+            if ses.estado_sesion != "active":
+                return None
+            if ses.fecha_expiracion and ses.fecha_expiracion < datetime.utcnow():
+                return None
         return user
     except Exception:
         return None
@@ -83,3 +101,12 @@ def require_admin(current_user: Usuario = Depends(get_current_user)):
     if not current_user.rol or getattr(current_user.rol, 'nombre_rol', None) != 'admin':
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acción de administrador requerida")
     return current_user
+
+
+def revoke_all_sessions(user_id: int, db: Session) -> None:
+    """Revoca todas las sesiones activas de un usuario."""
+    db.query(Sesion).filter(
+        Sesion.id_usuario == user_id,
+        Sesion.estado_sesion == "active"
+    ).update({Sesion.estado_sesion: "revoked"}, synchronize_session=False)
+    db.commit()

@@ -97,7 +97,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getJson(String path) async {
-    final response = await _client.get(AppConfig.buildUri(path));
+    final response = await _client.get(AppConfig.buildUri(path)).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -137,7 +137,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri(path),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -154,7 +154,7 @@ class ApiService {
       AppConfig.buildUri(path),
       headers: await _headers(authorized: true),
       body: jsonEncode(body),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -170,7 +170,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/admin/users'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -214,7 +214,7 @@ class ApiService {
       ),
     );
 
-    final streamedResponse = await _client.send(request);
+    final streamedResponse = await _client.send(request).timeout(const Duration(seconds: 30));
     final response = await http.Response.fromStream(streamedResponse);
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
@@ -255,7 +255,7 @@ class ApiService {
     // Absolute URL -> download directly.
     if (normalized.startsWith('http://') ||
         normalized.startsWith('https://')) {
-      final response = await _client.get(Uri.parse(normalized));
+      final response = await _client.get(Uri.parse(normalized)).timeout(const Duration(seconds: 10));
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw ApiException(
           'Error ${response.statusCode} al descargar imagen externa',
@@ -267,7 +267,7 @@ class ApiService {
     // Public local paths are served by StaticFiles (no auth required).
     if (!AppConfig.isPrivateImagePath(normalized)) {
       final fullUrl = AppConfig.getImageUrl(normalized);
-      final response = await _client.get(Uri.parse(fullUrl));
+      final response = await _client.get(Uri.parse(fullUrl)).timeout(const Duration(seconds: 10));
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw ApiException(
           'Error ${response.statusCode} al descargar imagen: $fullUrl',
@@ -308,7 +308,7 @@ class ApiService {
       final response = await _client.get(
         uri,
         headers: await _headers(authorized: true),
-      );
+      ).timeout(const Duration(seconds: 10));
 
       debugPrint('[IMG-DEBUG] Respuesta inicial: status=${response.statusCode}, '
           'headers={location: ${_redactLocationHeader(response.headers["location"])}}');
@@ -368,7 +368,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/admin/roles/admin'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -385,7 +385,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/admin/roles/user'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -626,7 +626,7 @@ class ApiService {
         AppConfig.buildUri('/auth/refresh'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'refresh_token': refresh}),
-      );
+      ).timeout(const Duration(seconds: 10));
       if (response.statusCode != 200) return false;
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       final access = data['access_token'];
@@ -656,7 +656,7 @@ class ApiService {
             'Authorization': 'Bearer $access',
             'Content-Type': 'application/json',
           },
-        );
+        ).timeout(const Duration(seconds: 10));
       } catch (_) {
         // Best-effort: sin conexión no debe bloquear el cierre local.
       }
@@ -667,7 +667,7 @@ class ApiService {
           AppConfig.buildUri('/auth/logout_refresh'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({'refresh_token': refresh}),
-        );
+        ).timeout(const Duration(seconds: 10));
       } catch (_) {
         // Best-effort.
       }
@@ -690,7 +690,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/profile'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(response, 'Error al obtener el perfil'),
@@ -705,7 +705,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/auth/me'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -721,7 +721,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/reports'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -737,7 +737,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/reports/$reportId'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -812,7 +812,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/liquenpedia'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -839,7 +839,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/liquenpedia/$id'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -876,7 +876,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/history'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -924,7 +924,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/api/maps/points'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -981,7 +981,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/dashboard/stats'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1036,7 +1036,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/results/$id'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1091,7 +1091,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/status'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1108,7 +1108,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/humidity'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1125,7 +1125,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/air-quality'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1142,7 +1142,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/recommendation'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1158,7 +1158,7 @@ class ApiService {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$analysisId/species'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1174,7 +1174,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$analysisId/location'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1191,7 +1191,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/catalog/species'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1232,7 +1232,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/notificaciones'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1457,7 +1457,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/categorias-liquenpedia'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(
@@ -1497,7 +1497,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/species'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(response, 'Error ${response.statusCode} al obtener especies'),
@@ -1552,7 +1552,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/catalog/zones'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(response, 'Error ${response.statusCode} al obtener zonas del catálogo'),
@@ -1567,7 +1567,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/zones'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(response, 'Error ${response.statusCode} al obtener zonas'),
@@ -1652,7 +1652,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/my'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(response, 'Error ${response.statusCode} al obtener análisis'),
@@ -1683,7 +1683,7 @@ Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
     final response = await _client.get(
       AppConfig.buildUri('/auth/sessions'),
       headers: await _headers(authorized: true),
-    );
+    ).timeout(const Duration(seconds: 10));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         _parseResponseMessage(response, 'Error ${response.statusCode} al obtener sesiones'),
