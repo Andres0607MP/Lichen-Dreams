@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lichen Dreams — Descargas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <svg class="deco deco-lines-tr" viewBox="0 0 320 260" xmlns="http://www.w3.org/2000/svg">
+    <path d="M60 0 C 90 40, 40 70, 90 110 C 140 150, 100 170, 150 210 C 190 240, 170 260, 220 260" fill="none" stroke="var(--moss)" stroke-width="1.2" opacity="0.5"/>
+    <path d="M180 -10 C 150 30, 210 60, 170 100 C 130 140, 190 160, 160 200" fill="none" stroke="var(--moss)" stroke-width="1" opacity="0.35"/>
+    <circle cx="90" cy="110" r="5" fill="var(--moss)" opacity="0.5"/>
+    <circle cx="160" cy="200" r="4" fill="var(--moss)" opacity="0.35"/>
+  </svg>
+
+  <div class="wrap">
+    <header class="hero">
+      <svg class="deco deco-lichen-bl" viewBox="0 0 260 220" xmlns="http://www.w3.org/2000/svg">
+        <g opacity="0.9">
+          <path d="M0 220 C 10 150, 60 160, 70 110 C 80 60, 130 70, 120 30 C 112 0, 150 -10, 160 20 C 172 55, 220 40, 210 90 C 202 130, 250 130, 240 170 C 230 210, 260 220, 260 220 L 0 220 Z" fill="#5C7A50" opacity="0.55"/>
+          <path d="M0 220 C 20 180, 40 190, 55 150 C 68 115, 100 125, 95 90 C 90 60, 125 65, 120 35 C 168 55, 150 90, 175 110 C 195 128, 180 160, 205 175 C 225 188, 215 210, 230 220 L 0 220 Z" fill="#A8C878" opacity="0.45"/>
+          <path d="M0 220 C 15 200, 30 205, 42 180 C 52 158, 75 165, 72 140 C 70 118, 95 122, 92 100 C 115 112, 108 135, 128 148 C 145 158, 135 178, 152 190 C 165 199, 158 212, 168 220 L 0 220 Z" fill="#3A4F33" opacity="0.6"/>
+        </g>
+      </svg>
+
+      <div class="eyebrow-row">
+        <div class="title-group">
+          <svg class="leaf-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 20 C4 12 10 4 20 4 C20 14 12 20 4 20 Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M5 19 C9 15 12 12 17 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <h1>Lichen Dreams</h1>
+        </div>
+      </div>
+      <hr class="underline">
+      <p class="tagline">Analiza líquenes, conoce la calidad del aire de tu entorno. Descarga la app o instala una versión anterior.</p>
+    </header>
+
+    <div class="current" id="current-block"></div>
+
+    <section class="history">
+      <div class="history-header">
+        <h2>
+          <svg class="leaf-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 20 C4 12 10 4 20 4 C20 14 12 20 4 20 Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M5 19 C9 15 12 12 17 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          Versiones anteriores
+        </h2>
+        <div class="history-label">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 12a9 9 0 1 0 3-6.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 4v5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Historial de publicaciones
+        </div>
+      </div>
+      <hr class="underline">
+      <div id="history-list"></div>
+    </section>
+
+    <footer>
+      Proyecto ADSO · SENA — <a href="https://github.com/Andres0607MP/Lichen-Dreams" target="_blank" rel="noopener">código en GitHub</a>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

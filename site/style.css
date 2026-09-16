@@ -1,0 +1,310 @@
+:root {
+  --bg: #10140D;
+  --bg-card: #171D12;
+  --ink: #F2EFE2;
+  --ink-soft: #A6B698;
+  --moss: #A8C878;
+  --moss-dim: #7C9760;
+  --line: rgba(242, 239, 226, 0.12);
+  --btn-text: #10140D;
+}
+
+:root[data-theme="light"] {
+  --bg: #EEF0E4;
+  --bg-card: #F8F7F0;
+  --ink: #1F2A22;
+  --ink-soft: #4B564C;
+  --moss: #4F6B45;
+  --moss-dim: #3A4F33;
+  --line: #D7DAC6;
+  --btn-text: #FFFFFF;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--bg); }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Public Sans', -apple-system, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ---------- decorative organic artwork ---------- */
+.deco {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.deco-lines-tr {
+  top: 0;
+  right: -40px;
+  width: 320px;
+  opacity: 0.35;
+}
+
+.deco-lichen-bl {
+  bottom: -20px;
+  left: -30px;
+  width: 260px;
+  opacity: 0.9;
+}
+
+section, header.hero, .current { position: relative; z-index: 1; }
+
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: clamp(32px, 8vw, 56px) clamp(16px, 5vw, 24px) clamp(56px, 12vw, 100px);
+  position: relative;
+}
+
+header.hero {
+  padding-bottom: clamp(28px, 6vw, 44px);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: clamp(28px, 6vw, 44px);
+  min-height: clamp(140px, 30vw, 180px);
+}
+
+.eyebrow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.leaf-icon {
+  width: clamp(24px, 6vw, 30px);
+  height: clamp(24px, 6vw, 30px);
+  flex-shrink: 0;
+  color: var(--moss);
+}
+
+h1 {
+  font-family: 'Fraunces', serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: clamp(30px, 7vw, 42px);
+  margin: 0;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.underline {
+  width: 64px;
+  height: 2px;
+  background: var(--moss);
+  margin: 0 0 22px;
+  border: none;
+}
+
+.tagline {
+  color: var(--ink-soft);
+  font-size: clamp(14px, 3.5vw, 16px);
+  max-width: 42ch;
+  margin: 0;
+}
+
+.current {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: clamp(22px, 5.5vw, 32px) clamp(18px, 5vw, 28px);
+  margin-bottom: clamp(28px, 6vw, 40px);
+}
+
+.current-eyebrow {
+  color: var(--moss);
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+
+.current-version {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(22px, 6vw, 28px);
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--ink);
+}
+
+.current-date {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin-bottom: 18px;
+}
+
+.changelog {
+  margin: 0 0 24px;
+  padding-left: 20px;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.changelog li { margin-bottom: 6px; }
+
+.btn-download {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 20px;
+  background: var(--moss);
+  color: var(--btn-text);
+  text-decoration: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.btn-download:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.btn-download:active { transform: translateY(0); }
+
+.meta-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 10px;
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+section.history { min-height: 260px; padding-bottom: 20px; }
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+section.history h2 {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(20px, 5.5vw, 26px);
+  font-weight: 600;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+}
+
+section.history h2 .leaf-icon { width: 22px; height: 22px; }
+
+.history-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-soft);
+  font-size: 15px;
+}
+
+.history-label svg { width: 18px; height: 18px; color: var(--moss); }
+
+section.history .underline { margin-top: 14px; margin-bottom: 20px; }
+
+.version-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 4px;
+  border-bottom: 1px solid var(--line);
+}
+
+.version-row:last-child { border-bottom: none; }
+
+.version-info .v-name {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 2px;
+  color: var(--ink);
+}
+
+.version-info .v-date {
+  color: var(--ink-soft);
+  font-size: 13px;
+}
+
+.link-download {
+  flex-shrink: 0;
+  color: var(--moss);
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  padding: 8px 14px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+.link-download:hover { background: var(--bg-card); }
+
+.empty-note {
+  color: var(--ink-soft);
+  font-size: 15px;
+  padding: 12px 4px;
+}
+
+footer {
+  text-align: center;
+  margin-top: 52px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  position: relative;
+  z-index: 1;
+}
+
+footer a { color: var(--moss); }
+
+/* Tablets y pantallas medianas */
+@media (max-width: 700px) {
+  .deco-lines-tr { width: 220px; }
+  .deco-lichen-bl { width: 200px; }
+}
+
+/* Móviles */
+@media (max-width: 480px) {
+  .eyebrow-row { flex-direction: column; align-items: flex-start; }
+  .history-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+
+  .deco-lines-tr { width: 150px; opacity: 0.25; }
+  .deco-lichen-bl { width: 150px; }
+
+  .current { border-radius: 16px; }
+
+  .version-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .link-download { width: 100%; text-align: center; }
+
+  .btn-download { padding: 14px 18px; font-size: 15px; }
+}
+
+/* Móviles muy pequeños */
+@media (max-width: 360px) {
+  .wrap { padding-left: 14px; padding-right: 14px; }
+  .deco-lines-tr, .deco-lichen-bl { display: none; }
+}
