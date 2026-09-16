@@ -18,6 +18,12 @@ class AppConfig {
     return Uri.parse('$baseUrl$normalizedPath');
   }
 
+  static Uri buildWsUri(String path) {
+    final normalizedPath = path.startsWith('/') ? path : '/$path';
+    final uri = Uri.parse('$baseUrl$normalizedPath');
+    return uri.replace(scheme: uri.scheme == 'https' ? 'wss' : 'ws');
+  }
+
   static String getImageUrl(String imagePath) {
     if (imagePath.startsWith('http')) {
       return imagePath;

@@ -925,22 +925,12 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   int? _getCurrentSessionId() {
     if (_sessions.isEmpty) return null;
-    // Sort by fecha_inicio descending and pick the first
-    try {
-      final sorted = List<dynamic>.from(_sessions)
-        ..sort((a, b) {
-          final dateA = DateTime.tryParse(a['fecha_inicio'] ?? '');
-          final dateB = DateTime.tryParse(b['fecha_inicio'] ?? '');
-          // Treat null as earliest
-          final aVal = dateA?.millisecondsSinceEpoch ?? 0;
-          final bVal = dateB?.millisecondsSinceEpoch ?? 0;
-          return bVal.compareTo(aVal); // descending
-        });
-      return sorted.first['id_sesion'] as int?;
-    } catch (_) {
-      // Fallback to first session
-      return _sessions.first['id_sesion'] as int?;
+    for (final session in _sessions) {
+      if (session['es_actual'] == true) {
+        return session['id_sesion'] as int?;
+      }
     }
+    return null;
   }
 
   IconData _getSessionIcon(String dispositivo, String? sistemaOperativo) {

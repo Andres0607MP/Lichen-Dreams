@@ -1,7 +1,11 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
+import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/app_config.dart';
 import '../services/api_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/navigation_service.dart';
@@ -22,16 +26,17 @@ class AuthState extends ChangeNotifier {
   int? _userId;
   String? _proveedor;
   bool _loading = false;
+  WidgetsBindingObserver? _lifecycleObserver;
 
   static const String _userNameKey = 'user_name';
   static const String _userIdKey = 'user_id';
   static const String _proveedorKey = 'user_proveedor';
 
-  AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
-      : _apiService = apiService ?? ApiService(),
-        _googleAuth = googleAuth ?? GoogleAuthService() {
-    _apiService.setUnauthorizedHandler(() => clearAuthState());
-  }
+AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
+       : _apiService = apiService ?? ApiService(),
+         _googleAuth = googleAuth ?? GoogleAuthService() {
+     _apiService.setUnauthorizedHandler(() => clearAuthState());
+   }
 
   String? get token => _token;
   String? get refreshToken => _refreshToken;
@@ -50,6 +55,7 @@ class AuthState extends ChangeNotifier {
     _role = await _apiService.getSavedRole();
     await _loadPersistedUserInfo();
     notifyListeners();
+    _startSessionCheckTimer();
   }
 
   Future<void> _loadPersistedUserInfo() async {
@@ -88,7 +94,7 @@ class AuthState extends ChangeNotifier {
     await prefs.remove(_proveedorKey);
   }
 
-  /// Refresca la información canónica de la cuenta (/auth/me) de forma
+  /// Refresca la informaciÃ³n canÃ³nica de la cuenta (/auth/me) de forma
   /// best-effort: rol, nombre, id de usuario y proveedor ('local' | 'google').
   Future<void> syncProvider() async {
     if (_token == null || _token!.isEmpty) return;
@@ -105,7 +111,7 @@ class AuthState extends ChangeNotifier {
       await _persistUserInfo();
       notifyListeners();
     } catch (_) {
-      // best-effort: si la red falla se conserva la información local.
+      // best-effort: si la red falla se conserva la informaciÃ³n local.
     }
   }
 
@@ -139,7 +145,7 @@ class AuthState extends ChangeNotifier {
     try {
       final idToken = await _googleAuth.signInAndGetIdToken();
       if (idToken == null) {
-        // El usuario canceló Google Sign-In: continuar en la pantalla actual.
+        // El usuario cancelÃ³ Google Sign-In: continuar en la pantalla actual.
         return false;
       }
 
@@ -242,6 +248,8 @@ class AuthState extends ChangeNotifier {
       unawaited(context.read<ProfileState>().reset());
       unawaited(context.read<ArticlesState>().reset());
     }
+    _stopSessionCheckTimer();
+    _closeWebSocket();
     notifyListeners();
   }
 
@@ -263,6 +271,8 @@ class AuthState extends ChangeNotifier {
       unawaited(context.read<ProfileState>().reset());
       unawaited(context.read<ArticlesState>().reset());
     }
+    _stopSessionCheckTimer();
+    _closeWebSocket();
     notifyListeners();
   }
 
@@ -299,5 +309,217 @@ class AuthState extends ChangeNotifier {
   void setState(bool Function() fn) {
     final changed = fn();
     if (changed) notifyListeners();
+  }
+
+  WebSocket? _sessionWebSocket;
+  Timer? _reconnectTimer;
+  int _reconnectDelay = 1;
+  bool _isShowingSessionRevokedDialog = false;
+  bool _isWebSocketConnected = false;
+
+  void _connectWebSocket() {
+    if (_sessionWebSocket != null || _isWebSocketConnected) return;
+    if (!isAuthenticated) return;
+    final token = _token;
+    if (token == null || token.isEmpty) return;
+    _reconnectDelay = 1;
+    final uri = AppConfig.buildWsUri('/ws/sessions').toString();
+    WebSocket.connect(uri, headers: {
+      'Authorization': 'Bearer $token',
+    }).then((ws) {
+      if (_token == null) {
+        ws.close();
+        return;
+      }
+      _sessionWebSocket = ws;
+      _isWebSocketConnected = true;
+      _reconnectTimer?.cancel();
+      _reconnectTimer = null;
+      _reconnectDelay = 1;
+      ws.listen(
+        (data) {
+          try {
+            final message = jsonDecode(data);
+            if (message is Map<String, dynamic>) {
+              final type = message['type']?.toString();
+              if (type == 'SESSION_REVOKED') {
+                _handleSessionRevoked();
+              }
+            }
+          } catch (_) {}
+        },
+        onDone: () {
+          _isWebSocketConnected = false;
+          _sessionWebSocket = null;
+          _scheduleReconnect();
+        },
+        onError: (error) {
+          _isWebSocketConnected = false;
+          _sessionWebSocket = null;
+          _scheduleReconnect();
+        },
+      );
+    }).catchError((error) {
+      _scheduleReconnect();
+    });
+  }
+
+  void _closeWebSocket() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    if (_sessionWebSocket != null) {
+      try {
+        _sessionWebSocket!.close();
+      } catch (_) {}
+      _sessionWebSocket = null;
+    }
+    _isWebSocketConnected = false;
+  }
+
+  void _scheduleReconnect() {
+    if (_reconnectTimer != null) return;
+    if (!_isInForeground) return;
+    if (!isAuthenticated) return;
+    _reconnectTimer = Timer(Duration(seconds: _reconnectDelay), () {
+      _reconnectTimer = null;
+      if (!_isInForeground || !isAuthenticated) return;
+      _reconnectDelay = (_reconnectDelay * 2 > 30) ? 30 : _reconnectDelay * 2;
+      _connectWebSocket();
+    });
+  }
+
+  void _handleSessionRevoked() {
+    if (_isShowingSessionRevokedDialog) return;
+    _isShowingSessionRevokedDialog = true;
+    final context = LichenNavigation.navigatorKey.currentContext;
+    if (context == null) {
+      _isShowingSessionRevokedDialog = false;
+      return;
+    }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('Tu sesión fue revocada'),
+          content: const Text('Esta sesión fue cerrada desde otro dispositivo.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                clearAuthState();
+              },
+              child: const Text('Aceptar'),
+            ),
+          ],
+        );
+      },
+    ).then((_) {
+      _isShowingSessionRevokedDialog = false;
+    });
+  }
+
+  // Session validation via polling
+  Timer? _sessionCheckTimer;
+  bool _isValidatingSession = false;
+  bool _isInForeground = false;
+  static const Duration _sessionCheckInterval = Duration(minutes: 2);
+
+  /// Validates the current session by calling /auth/me
+  /// If the session is invalid or revoked, clears the auth state
+  /// Only responds to HTTP 401 (session revoked/invalid), ignores network errors
+  Future<void> validateSession() async {
+    if (!isAuthenticated) return;
+    if (_isValidatingSession) return;
+    _isValidatingSession = true;
+
+    try {
+      await _apiService.getMe();
+      // Session is valid - nothing to do
+    } on ApiException catch (e) {
+      // Check if this is a 401 error (session revoked or invalid)
+      if (e.statusCode == 401) {
+        // Auth error - clear auth state
+        // Note: AuthenticatedHttpClient may have already called handleUnauthorized()
+        // which calls clearAuthState(). This is safe to call again as it's idempotent.
+        if (isAuthenticated) {
+          await clearAuthState();
+        }
+      }
+      // Other API errors (5xx, etc.) - ignore
+    } on TimeoutException {
+      // Network timeout - ignore
+    } on SocketException {
+      // No connection - ignore
+    } on ClientException {
+      // Connection error - ignore
+    } catch (_) {
+      // Any other error - ignore (network issues, etc.)
+    }
+    
+    _isValidatingSession = false;
+  }
+
+  void _startSessionCheckTimer() {
+    _stopSessionCheckTimer();
+    if (isAuthenticated && _isInForeground) {
+      _sessionCheckTimer = Timer.periodic(
+        _sessionCheckInterval,
+        (_) => validateSession(),
+      );
+    }
+  }
+
+  void _stopSessionCheckTimer() {
+    _sessionCheckTimer?.cancel();
+    _sessionCheckTimer = null;
+  }
+
+  void _onAppLifecycleChanged(AppLifecycleState state) {
+    final wasInForeground = _isInForeground;
+    _isInForeground = state == AppLifecycleState.resumed;
+    
+    if (_isInForeground && !wasInForeground) {
+      validateSession().then((_) {
+        if (isAuthenticated && _isInForeground) {
+          _startSessionCheckTimer();
+          _connectWebSocket();
+        }
+      });
+    } else if (!_isInForeground && wasInForeground) {
+      _stopSessionCheckTimer();
+      _closeWebSocket();
+    }
+  }
+
+  void initLifecycle() {
+    _lifecycleObserver = _AppLifecycleObserver(this);
+    WidgetsBinding.instance.addObserver(_lifecycleObserver!);
+  }
+
+  void disposeLifecycle() {
+    if (_lifecycleObserver != null) {
+      WidgetsBinding.instance.removeObserver(_lifecycleObserver!);
+      _lifecycleObserver = null;
+    }
+  }
+
+  void dispose() {
+    disposeLifecycle();
+    _stopSessionCheckTimer();
+  }
+}
+
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  final AuthState _authState;
+
+  _AppLifecycleObserver(this._authState);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _authState._onAppLifecycleChanged(state);
   }
 }

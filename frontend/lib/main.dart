@@ -26,26 +26,29 @@ import 'services/connectivity_service.dart';
 import 'package:flutter/widgets.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('APP START');
-  await NotificationSoundService.instance.initialize();
-  await AndroidNotificationService.instance.initialize();
-  final apiService = ApiService();
-  final authState = AuthState(apiService: apiService);
-  final iaMonitoringService = IaMonitoringService(apiService);
-  final iaMonitoringState = IaMonitoringState(iaMonitoringService);
-  debugPrint('CHECKING STORED SESSION');
-  await authState.initialize();
-  debugPrint('TOKEN FOUND: ${authState.token != null && authState.token!.isNotEmpty}');
-  debugPrint('USER RESTORED: ${authState.isAuthenticated}');
-  debugPrint('AUTH READY');
-  runApp(LichenDreamsApp(
-    authState: authState,
-    apiService: apiService,
-    iaMonitoringService: iaMonitoringService,
-    iaMonitoringState: iaMonitoringState,
-  ));
-}
+   WidgetsFlutterBinding.ensureInitialized();
+   debugPrint('APP START');
+   await NotificationSoundService.instance.initialize();
+   await AndroidNotificationService.instance.initialize();
+   final apiService = ApiService();
+   final authState = AuthState(apiService: apiService);
+   final iaMonitoringService = IaMonitoringService(apiService);
+   final iaMonitoringState = IaMonitoringState(iaMonitoringService);
+   debugPrint('CHECKING STORED SESSION');
+   await authState.initialize();
+   // Initialize lifecycle observer for session validation
+   authState.initLifecycle();
+   // TODO: Add session validation logic
+   debugPrint('TOKEN FOUND: ${authState.token != null && authState.token!.isNotEmpty}');
+   debugPrint('USER RESTORED: ${authState.isAuthenticated}');
+   debugPrint('AUTH READY');
+   runApp(LichenDreamsApp(
+     authState: authState,
+     apiService: apiService,
+     iaMonitoringService: iaMonitoringService,
+     iaMonitoringState: iaMonitoringState,
+   ));
+ }
 
 class _ConnectivityOverlay extends StatefulWidget {
   final Widget child;
@@ -159,6 +162,7 @@ class LichenDreamsApp extends StatelessWidget {
               themeMode: appSettings.darkMode ? ThemeMode.dark : ThemeMode.light,
               initialRoute: initialRoute,
               onGenerateRoute: AppRouter.generateRoute,
+              navigatorKey: LichenNavigation.navigatorKey,
               navigatorObservers: [LichenRouteObserver()],
               builder: (context, child) {
                 return MediaQuery(

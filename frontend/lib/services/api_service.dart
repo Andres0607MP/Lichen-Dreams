@@ -14,7 +14,8 @@ typedef UnauthorizedHandler = Future<void> Function();
 
 class ApiException implements Exception {
   final String message;
-  ApiException(this.message);
+  final int? statusCode;
+  ApiException(this.message, [this.statusCode]);
 
   @override
   String toString() => message;
@@ -737,6 +738,7 @@ class ApiService {
           response,
           'Error al obtener la información del usuario',
         ),
+        response.statusCode,
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;

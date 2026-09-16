@@ -14,6 +14,11 @@ from auth.jwt_handler import create_access_token as create_token
 from auth.password_handler import hash_password
 from passlib.context import CryptContext
 from pydantic import BaseModel, Field
+from starlette.websockets import WebSocket, WebSocketDisconnect
+from websocket.connection_manager import connection_manager
+from auth.jwt_handler import decode_token as _decode_token
+import hashlib as _hashlib
+import datetime as _datetime
 
 load_dotenv()
 
@@ -228,6 +233,61 @@ def startup():
     finally:
         if db:
             db.close()
+
+@app.websocket("/ws/sessions")
+async def websocket_sessions(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        headers = dict(websocket.headers)
+        auth_header = headers.get("authorization", "")
+        if not auth_header.startswith("Bearer "):
+            await websocket.close(code=4001)
+            return
+        token = auth_header[7:]
+        payload = _decode_token(token)
+        if not payload:
+            await websocket.close(code=4002)
+            return
+        sid = payload.get("sid")
+        sub = payload.get("sub")
+        if not sid or not sub:
+            await websocket.close(code=4003)
+            return
+        db = SessionLocal()
+        try:
+            user = db.query(Usuario).filter(Usuario.correo == sub).first()
+            if not user:
+                await websocket.close(code=4004)
+                return
+            sid_hash = _hashlib.sha256(sid.encode()).hexdigest()
+            sesion = db.query(Sesion).filter(
+                Sesion.token_sesion_hash == sid_hash,
+                Sesion.id_usuario == user.id_usuario,
+            ).first()
+            if not sesion:
+                await websocket.close(code=4005)
+                return
+            if sesion.estado_sesion != "active":
+                await websocket.close(code=4006)
+                return
+            if sesion.fecha_expiracion and sesion.fecha_expiracion < _datetime.datetime.utcnow():
+                await websocket.close(code=4007)
+                return
+            connection_manager.connect(sesion.id_sesion, websocket)
+            while True:
+                try:
+                    await websocket.receive_text()
+                except WebSocketDisconnect:
+                    connection_manager.disconnect(sesion.id_sesion, websocket)
+                    break
+        finally:
+            db.close()
+    except Exception:
+        try:
+            await websocket.close()
+        except Exception:
+            pass
+
 
 @app.get("/")
 def root():

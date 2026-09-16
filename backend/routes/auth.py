@@ -16,6 +16,7 @@ from models.core import Usuario, Sesion, Role, PasswordResetToken, EmailVerifica
 from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
 from auth.auth_service import authenticate_user, get_current_user
+from websocket.connection_manager import connection_manager
 from models.validations import PasswordResetRequest, PasswordResetConfirm, PasswordResetResponse, EmailVerificationRequest, EmailVerificationConfirm, RegisterResponse, RecoverWithCodeRequest, RegenerateRecoveryCodeResponse
 from services.email_service import email_service
 from services.upload_service import download_and_save_profile_image
@@ -680,6 +681,7 @@ def delete_account(
 
 @router.get("/sessions", summary="Obtener sesiones activas")
 def get_sessions(
+    request: Request,
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -688,6 +690,22 @@ def get_sessions(
         Sesion.id_usuario == current_user.id_usuario,
         Sesion.estado_sesion == "active"
     ).order_by(Sesion.fecha_inicio.desc()).all()
+
+    current_session_id = None
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+        payload = decode_token(token)
+        if payload:
+            sid = payload.get("sid")
+            if sid:
+                sid_hash = hashlib.sha256(sid.encode()).hexdigest()
+                current_sesion = db.query(Sesion).filter(
+                    Sesion.token_sesion_hash == sid_hash,
+                    Sesion.id_usuario == current_user.id_usuario,
+                ).first()
+                if current_sesion:
+                    current_session_id = current_sesion.id_sesion
 
     return [
         {
@@ -698,13 +716,14 @@ def get_sessions(
             "fecha_inicio": s.fecha_inicio.isoformat() if s.fecha_inicio else None,
             "fecha_expiracion": s.fecha_expiracion.isoformat() if s.fecha_expiracion else None,
             "estado_sesion": s.estado_sesion,
+            "es_actual": s.id_sesion == current_session_id,
         }
         for s in sesiones
     ]
 
 
 @router.delete("/sessions/{session_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Revocar sesión")
-def revoke_session(
+async def revoke_session(
     session_id: int,
     current_user: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -723,6 +742,7 @@ def revoke_session(
 
     sesion.estado_sesion = "revoked"
     db.commit()
+    await connection_manager.send_session_revoked(sesion.id_sesion)
 
     return None
 

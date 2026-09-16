@@ -8,6 +8,8 @@ class LichenNavigation {
 
   static final LichenNavigation instance = LichenNavigation._();
 
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   final ValueNotifier<int> selectedIndex = ValueNotifier<int>(0);
 
   static const Map<String, int> _routeToIndex = {
