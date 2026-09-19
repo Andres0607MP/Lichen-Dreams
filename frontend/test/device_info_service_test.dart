@@ -83,8 +83,9 @@ void main() {
 
     expect(loginDeviceId, isNotEmpty);
     expect(googleDeviceId, loginDeviceId);
-    expect(login.headers['X-Device-Name'], DeviceInfoService.getDeviceName());
-    expect(google.headers['X-Device-Name'], DeviceInfoService.getDeviceName());
+    final deviceName = await DeviceInfoService.getDeviceName();
+    expect(login.headers['X-Device-Name'], deviceName);
+    expect(google.headers['X-Device-Name'], deviceName);
     expect(login.bodyFields['email'], 'user@example.com');
     expect(jsonDecode(google.body), {
       'id_token': 'google-id-token',

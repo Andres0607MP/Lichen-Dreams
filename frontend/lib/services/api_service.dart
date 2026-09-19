@@ -206,7 +206,7 @@ class ApiService {
     if (includeDeviceHeaders) {
       final deviceInfo = DeviceInfoService();
       headers['X-Device-ID'] = await deviceInfo.getOrCreateDeviceId();
-      headers['X-Device-Name'] = deviceInfo.deviceName;
+      headers['X-Device-Name'] = await DeviceInfoService.getDeviceName();
     }
     if (authorized) {
       var token = await getToken();

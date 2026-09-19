@@ -196,7 +196,9 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth, ConnectivitySe
 
   Future<bool> login(String email, String password) async {
     await clearAuthState(null, false);
-    await DeviceInfoService().getOrCreateDeviceId();
+    final deviceInfo = DeviceInfoService();
+    await deviceInfo.getOrCreateDeviceId();
+    await DeviceInfoService.getDeviceName();
     setState(() => _loading = true);
     try {
       final data = await _apiService.login(email, password);
