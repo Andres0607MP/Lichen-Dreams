@@ -70,6 +70,8 @@ class Sesion(Base):
     dispositivo = Column(String(100))
     sistema_operativo = Column(String(100))
     ip_usuario = Column(String(50))
+    device_id = Column(String(64), nullable=True)
+    nombre_dispositivo = Column(String(255), nullable=True)
     fecha_inicio = Column(TIMESTAMP, server_default=func.now())
     fecha_expiracion = Column(TIMESTAMP, nullable=True)
     estado_sesion = Column(String(50))
@@ -78,6 +80,7 @@ class Sesion(Base):
     __table_args__ = (
         Index('idx_token_sesion_hash', 'token_sesion_hash'),
         Index('idx_estado_sesion', 'estado_sesion'),
+        Index('idx_sesion_user_device', 'id_usuario', 'device_id'),
     )
 
 

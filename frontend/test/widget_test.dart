@@ -14,7 +14,7 @@ import 'package:frontend/services/ia_monitoring_service.dart';
 import 'package:frontend/state/ia_monitoring_state.dart';
 
 void main() {
-  testWidgets('renders the login screen', (WidgetTester tester) async {
+  testWidgets('renders the loading screen while bootstrap checks the backend', (WidgetTester tester) async {
     final apiService = ApiService();
     final iaMonitoringService = IaMonitoringService(apiService);
     final iaMonitoringState = IaMonitoringState(iaMonitoringService);
@@ -26,8 +26,7 @@ void main() {
     ));
 
     expect(find.text('Lichen Dreams'), findsOneWidget);
-    expect(find.text('Iniciar sesión'), findsOneWidget);
-    expect(find.text('Crear una cuenta'), findsOneWidget);
+    expect(find.text('Preparando tu sesión...'), findsWidgets);
 
     await tester.pump(const Duration(milliseconds: 200));
   });

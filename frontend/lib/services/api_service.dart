@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
 import 'authenticated_http_client.dart';
+import 'device_info_service.dart';
 
 typedef UnauthorizedHandler = Future<void> Function();
 
@@ -22,6 +24,28 @@ class ApiException implements Exception {
 }
 
 class ApiService {
+  Future<T> _call<T>(Future<T> Function() fn) async {
+    try {
+      return await fn();
+    } on TimeoutException {
+      throw ApiException(
+        'Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.',
+      );
+    } on SocketException {
+      throw ApiException(
+        'Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.',
+      );
+    } on http.ClientException {
+      throw ApiException(
+        'Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.',
+      );
+    } on ApiException {
+      rethrow;
+    } catch (_) {
+      throw ApiException('Ocurrió un error. Inténtalo nuevamente.');
+    }
+  }
+
   ApiService({http.Client? client, UnauthorizedHandler? onUnauthorized}) {
     _onUnauthorized = onUnauthorized;
     _client = AuthenticatedHttpClient(client ?? http.Client(), this);
@@ -39,13 +63,38 @@ class ApiService {
     _onUnauthorized = handler;
   }
 
+  static const Map<String, String> _userFacingMessages = {
+    'SESSION_LIMIT_REACHED':
+        'Has alcanzado el límite de sesiones activas. Cierra una sesión en otro dispositivo para continuar.',
+    'limit_session_three':
+        'Has alcanzado el límite de sesiones activas. Cierra una sesión en otro dispositivo para continuar.',
+    'Token inválido':
+        'Tu sesión ha expirado o es inválida. Inicia sesión nuevamente.',
+    'Sesión no encontrada':
+        'No se pudo encontrar la sesión. Inicia sesión nuevamente.',
+    'Sesión revocada':
+        'Tu sesión fue revocada desde otro dispositivo.',
+    'Credenciales inválidas':
+        'El correo o la contraseña son incorrectos. Verifica tus datos.',
+    'Usuario ya existe':
+        'Ya existe una cuenta con ese correo. Usa otro correo o inicia sesión.',
+    'Email y password son requeridos':
+        'Por favor, ingresa tu correo y contraseña.',
+    'Token de Google inválido o expirado':
+        'Tu sesión con Google expiró. Vuelve a iniciar sesión con Google.',
+  };
+
+  String _userFacingMessage(String detail) {
+    return _userFacingMessages[detail] ?? 'Ocurrió un error. Inténtalo nuevamente.';
+  }
+
   String _parseResponseMessage(Response response, String fallback) {
     try {
       final decoded = jsonDecode(response.body);
       if (decoded is Map<String, dynamic>) {
         final detail = decoded['detail'];
         if (detail is String && detail.isNotEmpty) {
-          return detail;
+          return _userFacingMessage(detail);
         }
         if (detail is List && detail.isNotEmpty) {
           final mensajes = detail
@@ -123,26 +172,42 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getJson(String path) async {
-    final response = await _client.get(AppConfig.buildUri(path)).timeout(const Duration(seconds: 10));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al consumir $path',
-        ),
-      );
-    }
+    try {
+      final response = await _client.get(AppConfig.buildUri(path)).timeout(const Duration(seconds: 10));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _parseResponseMessage(
+            response,
+            'Error ${response.statusCode} al consumir $path',
+          ),
+        );
+      }
 
-    final decoded = jsonDecode(response.body);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
-    }
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
 
-    return <String, dynamic>{'data': decoded};
+      return <String, dynamic>{'data': decoded};
+    } on Exception catch (error) {
+      if (error is ApiException) rethrow;
+      if (error is TimeoutException || error is SocketException || error is http.ClientException) {
+        throw ApiException('Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.');
+      }
+      throw ApiException('Ocurrió un error. Inténtalo nuevamente.');
+    }
   }
 
-  Future<Map<String, String>> _headers({bool authorized = false}) async {
+  Future<Map<String, String>> _headers({
+    bool authorized = false,
+    bool includeDeviceHeaders = false,
+  }) async {
     final headers = {'Content-Type': 'application/json'};
+    if (includeDeviceHeaders) {
+      final deviceInfo = DeviceInfoService();
+      headers['X-Device-ID'] = await deviceInfo.getOrCreateDeviceId();
+      headers['X-Device-Name'] = deviceInfo.deviceName;
+    }
     if (authorized) {
       var token = await getToken();
       // Sin access token local pero con refresh disponible: intentar UNA
@@ -160,39 +225,56 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> getProtectedJson(String path) async {
-    final response = await _client.get(
-      AppConfig.buildUri(path),
-      headers: await _headers(authorized: true),
-    ).timeout(const Duration(seconds: 10));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al consumir $path',
-        ),
-      );
+    try {
+      final response = await _client.get(
+        AppConfig.buildUri(path),
+        headers: await _headers(authorized: true),
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _parseResponseMessage(
+            response,
+            'Error ${response.statusCode} al consumir $path',
+          ),
+        );
+      }
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } on Exception catch (error) {
+      if (error is ApiException) rethrow;
+      if (error is TimeoutException || error is SocketException || error is http.ClientException) {
+        throw ApiException('Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.');
+      }
+      throw ApiException('Ocurrió un error. Inténtalo nuevamente.');
     }
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> postProtectedJson(String path, Map<String, dynamic> body) async {
-    final response = await _client.post(
-      AppConfig.buildUri(path),
-      headers: await _headers(authorized: true),
-      body: jsonEncode(body),
-    ).timeout(const Duration(seconds: 10));
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        _parseResponseMessage(
-          response,
-          'Error ${response.statusCode} al consumir $path',
-        ),
-      );
+    try {
+      final response = await _client.post(
+        AppConfig.buildUri(path),
+        headers: await _headers(authorized: true),
+        body: jsonEncode(body),
+      ).timeout(const Duration(seconds: 10));
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw ApiException(
+          _parseResponseMessage(
+            response,
+            'Error ${response.statusCode} al consumir $path',
+          ),
+        );
+      }
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } on Exception catch (error) {
+      if (error is ApiException) rethrow;
+      if (error is TimeoutException || error is SocketException || error is http.ClientException) {
+        throw ApiException('Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.');
+      }
+      throw ApiException('Ocurrió un error. Inténtalo nuevamente.');
     }
-    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<List<dynamic>> getUsers() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/users'),
       headers: await _headers(authorized: true),
@@ -206,7 +288,8 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as List<dynamic>;
-  }
+    });
+}
 
   Future<void> deleteUser(int id) async {
     final response = await _client.delete(
@@ -273,6 +356,7 @@ class ApiService {
   /// rutas privadas (/uploads/profiles/..., /uploads/analyses/...) usan el
   /// endpoint autenticado del backend.
   Future<Uint8List> downloadImageBytes(String imagePath) async {
+    return await _call(() async {
     final normalized = imagePath.trim();
     if (normalized.isEmpty) {
       throw ApiException('Path de imagen vacío');
@@ -303,7 +387,8 @@ class ApiService {
     }
 
     return downloadPrivateImageBytes(normalized);
-  }
+    });
+}
 
   /// Helper para redactar query parameters sensibles de URLs de R2
   static String _redactLocationHeader(String? location) {
@@ -320,6 +405,7 @@ class ApiService {
 
   /// Descargar imagen privada (profiles/ o analyses/) con token de auth
   Future<Uint8List> downloadPrivateImageBytes(String imagePath) async {
+    return await _call(() async {
     final normalized = imagePath.trim();
     if (!normalized.startsWith('/uploads/')) {
       throw ApiException('Path de imagen invalido: $imagePath');
@@ -357,7 +443,8 @@ class ApiService {
       debugPrint('[IMG-ERROR] ${e.runtimeType}: $e\n$stackTrace');
       rethrow;
     }
-  }
+    });
+}
 
   Future<Map<String, dynamic>> updateUser(
     int id, {
@@ -391,6 +478,7 @@ class ApiService {
   }
 
   Future<int> getAdminRoleId() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/roles/admin'),
       headers: await _headers(authorized: true),
@@ -405,9 +493,11 @@ class ApiService {
     }
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return data['id_rol'] as int;
-  }
+    });
+}
 
   Future<int> getUserRoleId() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/roles/user'),
       headers: await _headers(authorized: true),
@@ -422,14 +512,20 @@ class ApiService {
     }
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     return data['id_rol'] as int;
-  }
+    });
+}
 
   /// Login con email y contraseña
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
       final uri = AppConfig.buildUri('/auth/login');
       final request = http.Request('POST', uri);
-      request.headers.addAll(await _headers(authorized: false));
+      request.headers.addAll(
+        await _headers(
+          authorized: false,
+          includeDeviceHeaders: true,
+        ),
+      );
       request.headers['Content-Type'] = 'application/x-www-form-urlencoded';
       request.bodyFields = {'email': email, 'password': password};
 
@@ -463,11 +559,12 @@ class ApiService {
           'Error en autenticación: ${response.statusCode}',
         ),
       );
-    } on http.ClientException catch (error) {
-      throw ApiException('Error de conexión: ${error.message}');
     } on Exception catch (error) {
       if (error is ApiException) rethrow;
-      throw ApiException('Error de conexión: ${error.toString()}');
+      if (error is TimeoutException || error is SocketException || error is http.ClientException) {
+        throw ApiException('Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.');
+      }
+      throw ApiException('Ocurrió un error. Inténtalo nuevamente.');
     }
   }
 
@@ -483,7 +580,10 @@ class ApiService {
       final response = await _client
           .post(
             AppConfig.buildUri('/auth/google'),
-            headers: {'Content-Type': 'application/json'},
+            headers: await _headers(
+              authorized: false,
+              includeDeviceHeaders: true,
+            ),
             body: jsonEncode({'id_token': idToken, 'modo': modo}),
           )
           .timeout(const Duration(seconds: 15));
@@ -544,11 +644,12 @@ class ApiService {
           'Error al iniciar sesión con Google: ${response.statusCode}',
         ),
       );
-    } on http.ClientException catch (error) {
-      throw ApiException('Error de conexión: ${error.message}');
     } on Exception catch (error) {
       if (error is ApiException) rethrow;
-      throw ApiException('Error de conexión: ${error.toString()}');
+      if (error is TimeoutException || error is SocketException || error is http.ClientException) {
+        throw ApiException('Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.');
+      }
+      throw ApiException('Ocurrió un error. Inténtalo nuevamente.');
     }
   }
 
@@ -591,9 +692,12 @@ class ApiService {
           'Error en registro: ${response.statusCode}',
         ),
       );
-    } catch (error) {
+    } on Exception catch (error) {
       if (error is ApiException) rethrow;
-      throw ApiException('Error al registrarse: ${error.toString()}');
+      if (error is TimeoutException || error is SocketException || error is http.ClientException) {
+        throw ApiException('Error de conexión. Verifica tu conexión a internet e inténtalo nuevamente.');
+      }
+      throw ApiException('Ocurrió un error. Inténtalo nuevamente.');
     }
   }
 
@@ -632,6 +736,11 @@ class ApiService {
     await prefs.remove(_userRoleKey);
   }
 
+  Future<void> saveAuthTokens(String accessToken, String refreshToken) async {
+    await _saveToken(accessToken);
+    await _saveRefreshToken(refreshToken);
+  }
+
   /// Guardar refresh token
   Future<void> _saveRefreshToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -643,6 +752,7 @@ class ApiService {
   /// Protegido contra loops: si ya hay una renovación en curso, no lanza otra.
   /// Devuelve `true` si se obtuvo un access token nuevo.
   Future<bool> refreshSession() async {
+    return await _call(() async {
     final refresh = await getRefreshToken();
     if (refresh == null || refresh.isEmpty) return false;
     if (_refreshingToken) return false;
@@ -666,11 +776,13 @@ class ApiService {
     } finally {
       _refreshingToken = false;
     }
-  }
+    });
+}
 
   /// Cerrar sesión: revoca la sesión en backend (best-effort) y SIEMPRE
   /// limpia las credenciales locales para no bloquear al usuario.
   Future<void> logout() async {
+    return await _call(() async {
     final access = await getToken();
     final refresh = await getRefreshToken();
 
@@ -703,7 +815,8 @@ class ApiService {
     await prefs.remove(_tokenKey);
     await prefs.remove(_refreshTokenKey);
     await prefs.remove(_userRoleKey);
-  }
+    });
+}
 
   /// Verificar si hay sesión activa
   Future<bool> hasActiveSession() async {
@@ -713,6 +826,7 @@ class ApiService {
 
   /// Obtener perfil del usuario autenticado
   Future<Map<String, dynamic>> getProfile() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/profile'),
       headers: await _headers(authorized: true),
@@ -723,11 +837,13 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   /// Obtener la información de la sesión actual (/auth/me), incluido el
   /// proveedor de la cuenta ('local' | 'google').
   Future<Map<String, dynamic>> getMe() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/auth/me'),
       headers: await _headers(authorized: true),
@@ -742,9 +858,11 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   Future<List<dynamic>> getReports() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/reports'),
       headers: await _headers(authorized: true),
@@ -758,9 +876,11 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as List<dynamic>;
-  }
+    });
+}
 
   Future<Map<String, dynamic>> getReport(int reportId) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/reports/$reportId'),
       headers: await _headers(authorized: true),
@@ -774,7 +894,8 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   Future<Map<String, dynamic>> createEnvironmentalReport({
     required String title,
@@ -836,6 +957,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getLiquenpediaArticles() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/liquenpedia'),
       headers: await _headers(authorized: true),
@@ -859,10 +981,12 @@ class ApiService {
       return list;
     }
     return <Map<String, dynamic>>[];
-  }
+    });
+}
 
   /// Obtener un artículo específico (público, pero con permiso especial para admin)
   Future<Map<String, dynamic>> getLiquenpediaArticle(int id) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/liquenpedia/$id'),
       headers: await _headers(authorized: true),
@@ -878,7 +1002,8 @@ class ApiService {
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     _normalizeImageUrl(decoded);
     return decoded;
-  }
+    });
+}
 
   /// Guardar un análisis en el historial del usuario autenticado
   Future<Map<String, dynamic>> saveHistory(Map<String, dynamic> payload) async {
@@ -900,6 +1025,7 @@ class ApiService {
 
   /// Obtener historial de análisis del usuario autenticado
   Future<List<Map<String, dynamic>>> getAnalysisHistory() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/history'),
       headers: await _headers(authorized: true),
@@ -943,10 +1069,12 @@ class ApiService {
       return list;
     }
     throw ApiException('Respuesta inesperada del historial de análisis');
-  }
+    });
+}
 
   /// Obtener puntos ambientales para el mapa
   Future<List<Map<String, dynamic>>> getMapPoints() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/api/maps/points'),
       headers: await _headers(authorized: true),
@@ -967,7 +1095,8 @@ class ApiService {
       return list;
     }
     return <Map<String, dynamic>>[];
-  }
+    });
+}
 
   /// Eliminar un registro del historial
   Future<void> deleteHistory(int historyId) async {
@@ -1003,6 +1132,7 @@ class ApiService {
 
   /// Obtener estadísticas principales para el dashboard
   Future<Map<String, dynamic>> getDashboardStats() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/dashboard/stats'),
       headers: await _headers(authorized: true),
@@ -1016,7 +1146,8 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   /// Enviar imagen para análisis por backend
   Future<Map<String, dynamic>> submitAnalysis(
@@ -1058,6 +1189,7 @@ class ApiService {
 
   /// Obtener detalles de un análisis específico
   Future<Map<String, dynamic>> getAnalysisResult(int id) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/results/$id'),
       headers: await _headers(authorized: true),
@@ -1073,7 +1205,8 @@ class ApiService {
     final decoded = jsonDecode(response.body) as Map<String, dynamic>;
     _normalizeImageUrl(decoded);
     return decoded;
-  }
+    });
+}
 
   void _normalizeImageUrl(Map<String, dynamic> json) {
     final candidates = [
@@ -1113,6 +1246,7 @@ class ApiService {
 
   /// Obtener el estado actual del análisis
   Future<Map<String, dynamic>> getAnalysisStatus(int id) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/status'),
       headers: await _headers(authorized: true),
@@ -1126,10 +1260,12 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   /// Obtener la humedad asociada a un análisis
   Future<Map<String, dynamic>> getHumidity(int id) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/humidity'),
       headers: await _headers(authorized: true),
@@ -1143,10 +1279,12 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   /// Obtener la calidad del aire asociada a un análisis
   Future<Map<String, dynamic>> getAirQuality(int id) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/air-quality'),
       headers: await _headers(authorized: true),
@@ -1160,10 +1298,12 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   /// Obtener recomendación asociada a un análisis
   Future<Map<String, dynamic>> getRecommendation(int id) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$id/recommendation'),
       headers: await _headers(authorized: true),
@@ -1177,9 +1317,11 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   Future<Map<String, dynamic>> getSpecies(int analysisId) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$analysisId/species'),
       headers: await _headers(authorized: true),
@@ -1193,9 +1335,11 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   Future<Map<String, dynamic>> getAnalysisLocation(int analysisId) async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/$analysisId/location'),
       headers: await _headers(authorized: true),
@@ -1209,10 +1353,12 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+    });
+}
 
   /// Catálogo de especies disponible para usuarios autenticados (lectura).
   Future<List<Map<String, dynamic>>> getCatalogSpecies() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/catalog/species'),
       headers: await _headers(authorized: true),
@@ -1230,7 +1376,8 @@ class ApiService {
       return data.map((e) => Map<String, dynamic>.from(e as Map)).toList();
     }
     return [];
-  }
+    });
+}
 
   /// Asocia o quita (idEspecie = null) la especie que el usuario seleccionó.
   Future<Map<String, dynamic>> updateAnalysisSpecies(
@@ -1254,6 +1401,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getNotifications() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/notificaciones'),
       headers: await _headers(authorized: true),
@@ -1273,7 +1421,8 @@ class ApiService {
       );
     }
     return <Map<String, dynamic>>[];
-  }
+    });
+}
 
   Future<void> clearNotifications() async {
     final response = await _client.delete(
@@ -1470,6 +1619,7 @@ class ApiService {
 
   /// Obtener categorías de artículos
   Future<List<Map<String, dynamic>>> getCategoriasLiquenpedia() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/categorias-liquenpedia'),
       headers: await _headers(authorized: true),
@@ -1489,7 +1639,8 @@ class ApiService {
       );
     }
     return <Map<String, dynamic>>[];
-  }
+    });
+}
 
   /// Eliminar artículo (solo admin)
   Future<void> deleteLiquenpediaArticle(int id) async {
@@ -1510,6 +1661,7 @@ class ApiService {
   // ==================== ESPECIES DE LÍQUENES (Admin) ====================
 
   Future<List<dynamic>> getAdminSpecies() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/species'),
       headers: await _headers(authorized: true),
@@ -1520,7 +1672,8 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as List<dynamic>;
-  }
+    });
+}
 
   Future<Map<String, dynamic>> createAdminSpecies(Map<String, dynamic> data) async {
     final response = await _client.post(
@@ -1566,6 +1719,7 @@ class ApiService {
   // ==================== ZONAS AMBIENTALES (CatÃ¡logo pÃºblico) ====================
 
   Future<List<dynamic>> getCatalogZones() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/catalog/zones'),
       headers: await _headers(authorized: true),
@@ -1576,11 +1730,13 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as List<dynamic>;
-  }
+    });
+}
 
   // ==================== ZONAS AMBIENTALES (Admin) ====================
 
   Future<List<dynamic>> getZones() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/admin/zones'),
       headers: await _headers(authorized: true),
@@ -1591,7 +1747,8 @@ class ApiService {
       );
     }
     return jsonDecode(response.body) as List<dynamic>;
-  }
+    });
+}
 
   Future<Map<String, dynamic>> createZone(Map<String, dynamic> data) async {
     final response = await _client.post(
@@ -1664,6 +1821,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getMyAnalyses() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/analysis/my'),
       headers: await _headers(authorized: true),
@@ -1678,7 +1836,8 @@ class ApiService {
       return decoded;
     }
     return [];
-  }
+    });
+}
 
   Future<Map<String, dynamic>> updateAnalysisVisibility(int analysisId, String visibility) async {
     final response = await _client.put(
@@ -1697,6 +1856,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getSessions() async {
+    return await _call(() async {
     final response = await _client.get(
       AppConfig.buildUri('/auth/sessions'),
       headers: await _headers(authorized: true),
@@ -1714,7 +1874,8 @@ class ApiService {
       return decoded;
     }
     return [];
-  }
+    });
+}
 
   Future<void> revokeSession(int sessionId) async {
     final response = await _client.delete(

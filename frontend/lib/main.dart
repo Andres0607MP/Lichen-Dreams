@@ -132,7 +132,7 @@ class LichenDreamsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initialRoute = authState.isAuthenticated ? AppRoutes.loading : AppRoutes.login;
+    final initialRoute = AppRoutes.loading;
     return MultiProvider(
        providers: [
          ChangeNotifierProvider.value(value: authState),

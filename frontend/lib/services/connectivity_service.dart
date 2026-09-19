@@ -4,6 +4,12 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
+typedef BackendHealthProgressCallback = void Function(
+  int attempt,
+  int maxAttempts,
+  bool retrying,
+);
+
 enum ConnectivityStatus {
   connected,
   checking,
@@ -11,9 +17,13 @@ enum ConnectivityStatus {
 }
 
 class ConnectivityService {
-  ConnectivityService({http.Client? client})
-      : _client = client ?? http.Client() {
-    _startMonitoring();
+  ConnectivityService({
+    http.Client? client,
+    bool startMonitoring = true,
+  }) : _client = client ?? http.Client() {
+    if (startMonitoring) {
+      _startMonitoring();
+    }
   }
 
   final http.Client _client;
@@ -49,6 +59,56 @@ class ConnectivityService {
     _monitoringTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       _checkConnectivity();
     });
+  }
+
+  Future<bool> checkBackendWithRetry({
+    Duration timeout = const Duration(seconds: 15),
+    int maxAttempts = 3,
+    List<Duration> backoffs = const [
+      Duration(seconds: 5),
+      Duration(seconds: 10),
+    ],
+    BackendHealthProgressCallback? onProgress,
+  }) async {
+    final attempts = maxAttempts > 0 ? maxAttempts : 1;
+
+    for (var attempt = 1; attempt <= attempts; attempt++) {
+      onProgress?.call(attempt, attempts, attempt > 1);
+
+      try {
+        final response = await _client
+            .get(AppConfig.buildUri('/api/test'))
+            .timeout(timeout);
+
+        if (response.statusCode >= 500 && attempt < attempts) {
+          await _waitForBackoff(attempt, backoffs);
+          continue;
+        }
+
+        return response.statusCode < 500;
+      } on TimeoutException {
+        if (attempt >= attempts) return false;
+      } on SocketException {
+        if (attempt >= attempts) return false;
+      } on HandshakeException {
+        if (attempt >= attempts) return false;
+      } on http.ClientException {
+        if (attempt >= attempts) return false;
+      } catch (_) {
+        return false;
+      }
+
+      await _waitForBackoff(attempt, backoffs);
+    }
+
+    return false;
+  }
+
+  Future<void> _waitForBackoff(int attempt, List<Duration> backoffs) async {
+    if (backoffs.isEmpty) return;
+    final index = attempt - 1;
+    if (index < 0 || index >= backoffs.length) return;
+    await Future.delayed(backoffs[index]);
   }
 
   Future<void> _checkConnectivity() async {

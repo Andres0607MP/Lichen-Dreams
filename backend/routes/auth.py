@@ -2,11 +2,12 @@ from datetime import date, datetime, timedelta
 from fastapi import APIRouter, HTTPException, status, Depends, Form, Request
 from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional, Literal
-from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 import secrets
 import hashlib
 import logging
+import uuid
 
 from google.auth.exceptions import TransportError
 
@@ -118,9 +119,100 @@ def _parse_client_device(user_agent: str | None):
     return dispositivo, so
 
 
+def _normalize_optional_header(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
+def _allocate_session(
+    db: Session,
+    user: Usuario,
+    device_id: str | None,
+    device_name: str | None,
+    user_agent: str | None = None,
+    client_ip: str | None = None,
+) -> str:
+    """Crea una sesión activa nueva dentro de la transacción actual."""
+    now = datetime.utcnow()
+
+    try:
+        with db.begin_nested():
+            # Serializa la asignación por usuario y evita carreras cuando no hay filas activas.
+            db.query(Usuario).filter(
+                Usuario.id_usuario == user.id_usuario
+            ).with_for_update().one()
+
+            expired_sessions = db.query(Sesion).filter(
+                Sesion.id_usuario == user.id_usuario,
+                Sesion.estado_sesion == "active",
+                Sesion.fecha_expiracion.is_not(None),
+                Sesion.fecha_expiracion < now,
+            ).with_for_update().all()
+            for sesion in expired_sessions:
+                sesion.estado_sesion = "revoked"
+            if expired_sessions:
+                db.flush()
+
+            active_sessions = db.query(Sesion).filter(
+                Sesion.id_usuario == user.id_usuario,
+                Sesion.estado_sesion == "active",
+            ).with_for_update().order_by(Sesion.fecha_inicio.asc()).all()
+
+            same_device_sessions = []
+            if device_id is not None:
+                same_device_sessions = [
+                    sesion for sesion in active_sessions
+                    if sesion.device_id == device_id
+                ]
+            for sesion in same_device_sessions:
+                sesion.estado_sesion = "revoked"
+            if same_device_sessions:
+                db.flush()
+
+            active_count = sum(
+                1 for sesion in active_sessions
+                if sesion.estado_sesion == "active"
+            )
+
+            if active_count >= MAX_ACTIVE_SESSIONS:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="SESSION_LIMIT_REACHED",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
+
+            sid = uuid.uuid4().hex
+            token_hash = _hash_token(sid)
+            dispositivo, sistema_operativo = _parse_client_device(user_agent)
+
+            sesion = Sesion(
+                token_sesion_hash=token_hash,
+                dispositivo=dispositivo,
+                sistema_operativo=sistema_operativo,
+                ip_usuario=(client_ip or None)[:50] if client_ip else None,
+                device_id=device_id,
+                nombre_dispositivo=device_name,
+                fecha_inicio=now,
+                fecha_expiracion=now + timedelta(days=30),
+                estado_sesion="active",
+                id_usuario=user.id_usuario,
+            )
+
+            db.add(sesion)
+            db.flush()
+    except HTTPException:
+        raise
+
+    return sid
+
+
 def _issue_auth_tokens(
     db: Session,
     user: Usuario,
+    device_id: str | None = None,
+    device_name: str | None = None,
     user_agent: str | None = None,
     client_ip: str | None = None,
 ) -> dict:
@@ -129,55 +221,26 @@ def _issue_auth_tokens(
     Respeta el límite de sesiones activas configurado (por defecto 3).
     Si ya se alcanza el límite, rechaza el login sin crear ni revocar sesiones.
     """
-    import uuid
-    from fastapi import HTTPException, status
-
-    # Límite configurado
-    max_active_sessions = MAX_ACTIVE_SESSIONS
-
-    # Bloquear filas de sesiones activas del usuario para evitar condiciones de carrera
-    active_sessions = db.query(Sesion).filter(
-        Sesion.id_usuario == user.id_usuario,
-        Sesion.estado_sesion == "active"
-    ).with_for_update().order_by(Sesion.fecha_inicio.asc()).all()
-
-    if len(active_sessions) >= max_active_sessions:
-        # Límite alcanzado: rechazar sin crear ni revocar sesiones
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="SESSION_LIMIT_REACHED",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    sid = uuid.uuid4().hex
-    token_hash = _hash_token(sid)
-
-    dispositivo, sistema_operativo = _parse_client_device(user_agent)
-
-    sesion = Sesion(
-        token_sesion_hash=token_hash,
-        dispositivo=dispositivo,
-        sistema_operativo=sistema_operativo,
-        ip_usuario=(client_ip or None)[:50] if client_ip else None,
-        fecha_inicio=datetime.utcnow(),
-        fecha_expiracion=datetime.utcnow() + timedelta(days=30),
-        estado_sesion="active",
-        id_usuario=user.id_usuario
+    sid = _allocate_session(
+        db,
+        user,
+        device_id=device_id,
+        device_name=device_name,
+        user_agent=user_agent,
+        client_ip=client_ip,
     )
-
-    db.add(sesion)
-    db.commit()
-    db.refresh(sesion)
 
     access = create_access_token(
         subject=user.correo,
-        sid=sid
+        sid=sid,
     )
 
     refresh = create_refresh_token(
         subject=user.correo,
-        sid=sid
+        sid=sid,
     )
+
+    db.commit()
 
     return {
         "access_token": access,
@@ -191,8 +254,8 @@ def _issue_auth_tokens(
             "foto_perfil": user.foto_perfil,
             "id_rol": user.id_rol,
             "rol": user.rol.nombre_rol if user.rol else None,
-            "proveedor": user.proveedor
-        }
+            "proveedor": user.proveedor,
+        },
     }
 
 
@@ -221,9 +284,14 @@ def login(
             detail="Credenciales inválidas"
         )
 
+    device_id = _normalize_optional_header(request.headers.get("X-Device-ID"))
+    device_name = _normalize_optional_header(request.headers.get("X-Device-Name"))
+
     return _issue_auth_tokens(
         db,
         user,
+        device_id=device_id,
+        device_name=device_name,
         user_agent=request.headers.get("user-agent"),
         client_ip=request.client.host if request.client else None,
     )
@@ -392,9 +460,14 @@ def google_login(
         (user.foto_perfil or "(NULL)"),
     )
 
+    device_id = _normalize_optional_header(request.headers.get("X-Device-ID"))
+    device_name = _normalize_optional_header(request.headers.get("X-Device-Name"))
+
     return _issue_auth_tokens(
         db,
         user,
+        device_id=device_id,
+        device_name=device_name,
         user_agent=request.headers.get("user-agent"),
         client_ip=request.client.host if request.client else None,
     )
@@ -713,6 +786,8 @@ def get_sessions(
             "dispositivo": s.dispositivo,
             "sistema_operativo": s.sistema_operativo,
             "ip_usuario": s.ip_usuario,
+            "device_id": s.device_id,
+            "nombre_dispositivo": s.nombre_dispositivo,
             "fecha_inicio": s.fecha_inicio.isoformat() if s.fecha_inicio else None,
             "fecha_expiracion": s.fecha_expiracion.isoformat() if s.fecha_expiracion else None,
             "estado_sesion": s.estado_sesion,

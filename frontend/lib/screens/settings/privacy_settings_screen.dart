@@ -933,6 +933,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
     return null;
   }
 
+  String? _nonEmptyText(dynamic value) {
+    final text = value?.toString().trim();
+    return text != null && text.isNotEmpty ? text : null;
+  }
+
   IconData _getSessionIcon(String dispositivo, String? sistemaOperativo) {
     final lower = dispositivo.toLowerCase();
     final osLower = sistemaOperativo?.toLowerCase() ?? '';
@@ -1070,9 +1075,16 @@ class _SessionsScreenState extends State<SessionsScreen> {
                           final session = _sessions[index] as Map<String, dynamic>;
                           final sessionId = session['id_sesion'] as int?;
                           final isCurrent = sessionId == _getCurrentSessionId();
-                          final dispositivo = session['dispositivo']?.toString() ?? 'Desconocido';
-                          final sistemaOperativo = session['sistema_operativo']?.toString();
-                          final ipUsuario = session['ip_usuario']?.toString();
+                          final nombreDispositivo = _nonEmptyText(
+                            session['nombre_dispositivo'],
+                          );
+                          final sistemaOperativo = _nonEmptyText(
+                            session['sistema_operativo'],
+                          );
+                          final dispositivo = nombreDispositivo ??
+                              sistemaOperativo ??
+                              'Desconocido';
+                          final ipUsuario = _nonEmptyText(session['ip_usuario']);
                           final fechaInicio = _formatDateTime(session['fecha_inicio']);
                           final fechaExpiracion = _formatDateTime(session['fecha_expiracion']);
                           

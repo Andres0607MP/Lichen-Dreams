@@ -56,5 +56,17 @@ void main() {
       expect(result, isTrue);
       expect(authState.loading, isFalse);
     });
+
+    test('logout y limpieza de autenticacion conservan device_id', () async {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('device_id', 'persistent-device-id');
+      final authState = AuthState(apiService: MockApiService());
+
+      await authState.clearAuthState(null, false);
+      expect(prefs.getString('device_id'), 'persistent-device-id');
+
+      await authState.logout();
+      expect(prefs.getString('device_id'), 'persistent-device-id');
+    });
   });
 }

@@ -6,7 +6,10 @@ import 'dart:convert';
 import 'package:http/http.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
+import '../routes/route_names.dart';
 import '../services/api_service.dart';
+import '../services/connectivity_service.dart';
+import '../services/device_info_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/navigation_service.dart';
 import 'notifications_state.dart';
@@ -16,9 +19,12 @@ import 'map_state.dart';
 import 'profile_state.dart';
 import 'articles_state.dart';
 
+enum BootstrapStatus { loading, retrying, error }
+
 class AuthState extends ChangeNotifier {
   final ApiService _apiService;
   final GoogleAuthService _googleAuth;
+  final ConnectivityService _connectivityService;
   String? _token;
   String? _refreshToken;
   String? _role;
@@ -26,15 +32,18 @@ class AuthState extends ChangeNotifier {
   int? _userId;
   String? _proveedor;
   bool _loading = false;
+  BootstrapStatus _bootstrapStatus = BootstrapStatus.loading;
+  bool _isBootstrapping = false;
   WidgetsBindingObserver? _lifecycleObserver;
 
   static const String _userNameKey = 'user_name';
   static const String _userIdKey = 'user_id';
   static const String _proveedorKey = 'user_proveedor';
 
-AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
+AuthState({ApiService? apiService, GoogleAuthService? googleAuth, ConnectivityService? connectivityService})
        : _apiService = apiService ?? ApiService(),
-         _googleAuth = googleAuth ?? GoogleAuthService() {
+         _googleAuth = googleAuth ?? GoogleAuthService(),
+         _connectivityService = connectivityService ?? ConnectivityService(startMonitoring: false) {
      _apiService.setUnauthorizedHandler(() => clearAuthState());
    }
 
@@ -48,6 +57,18 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
   bool get isAuthenticated => _token != null && _token!.isNotEmpty;
   bool get isAdmin => _role == 'admin';
   bool get loading => _loading;
+  BootstrapStatus get bootstrapStatus => _bootstrapStatus;
+  bool get isBootstrapping => _isBootstrapping;
+
+  String get bootstrapMessage {
+    if (_bootstrapStatus == BootstrapStatus.retrying) {
+      return 'El servidor se está iniciando...';
+    }
+    if (_bootstrapStatus == BootstrapStatus.error) {
+      return 'No pudimos conectar con el servidor.';
+    }
+    return 'Preparando tu sesión...';
+  }
 
   Future<void> initialize() async {
     _token = await _apiService.getToken();
@@ -56,6 +77,64 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
     await _loadPersistedUserInfo();
     notifyListeners();
     _startSessionCheckTimer();
+  }
+
+  Future<void> bootstrapAndDecide(BuildContext context) async {
+    if (_isBootstrapping) return;
+    _isBootstrapping = true;
+    _setBootstrapStatus(
+      _bootstrapStatus == BootstrapStatus.error
+          ? BootstrapStatus.retrying
+          : BootstrapStatus.loading,
+    );
+
+    final navigator = Navigator.of(context);
+
+    try {
+      final backendAvailable = await _connectivityService.checkBackendWithRetry(
+        onProgress: (attempt, maxAttempts, retrying) {
+          if (retrying) {
+            _setBootstrapStatus(BootstrapStatus.retrying);
+          }
+        },
+      );
+
+      if (!backendAvailable) {
+        _setBootstrapStatus(BootstrapStatus.error);
+        return;
+      }
+
+      if (!isAuthenticated) {
+        await clearAuthState(null, false);
+        _replaceRoute(navigator, AppRoutes.login);
+        return;
+      }
+
+      _setBootstrapStatus(BootstrapStatus.loading);
+      await validateSession();
+
+      if (!isAuthenticated) {
+        _replaceRoute(navigator, AppRoutes.login);
+        return;
+      }
+
+      _replaceRoute(navigator, AppRoutes.dashboard);
+    } catch (_) {
+      _setBootstrapStatus(BootstrapStatus.error);
+    } finally {
+      _isBootstrapping = false;
+    }
+  }
+
+  void _setBootstrapStatus(BootstrapStatus status) {
+    if (_bootstrapStatus == status) return;
+    _bootstrapStatus = status;
+    notifyListeners();
+  }
+
+  void _replaceRoute(NavigatorState navigator, String routeName) {
+    if (!navigator.mounted) return;
+    navigator.pushNamedAndRemoveUntil(routeName, (_) => false);
   }
 
   Future<void> _loadPersistedUserInfo() async {
@@ -116,12 +195,19 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
   }
 
   Future<bool> login(String email, String password) async {
-    await clearAuthState();
+    await clearAuthState(null, false);
+    await DeviceInfoService().getOrCreateDeviceId();
     setState(() => _loading = true);
     try {
       final data = await _apiService.login(email, password);
       _token = data['access_token'] as String?;
       _refreshToken = data['refresh_token'] as String?;
+      if (data['access_token'] != null && data['refresh_token'] != null) {
+        await _apiService.saveAuthTokens(
+          data['access_token'] as String,
+          data['refresh_token'] as String,
+        );
+      }
       if (data['user'] is Map) {
         final user = data['user'] as Map<String, dynamic>;
         _role = user['rol']?.toString();
@@ -132,6 +218,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
       await _persistUserInfo();
       notifyListeners();
       await NotificationsState.instance.loadNotifications();
+      _hasNavigatedToLogin = false;
       return true;
     } finally {
       _loading = false;
@@ -141,6 +228,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
 
   Future<bool> loginWithGoogle({bool registrar = false}) async {
     await clearAuthState();
+    await DeviceInfoService().getOrCreateDeviceId();
     setState(() => _loading = true);
     try {
       final idToken = await _googleAuth.signInAndGetIdToken();
@@ -155,6 +243,12 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
       );
       _token = data['access_token'] as String?;
       _refreshToken = data['refresh_token'] as String?;
+      if (data['access_token'] != null && data['refresh_token'] != null) {
+        await _apiService.saveAuthTokens(
+          data['access_token'] as String,
+          data['refresh_token'] as String,
+        );
+      }
       if (data['user'] is Map) {
         final user = data['user'] as Map<String, dynamic>;
         _role = user['rol']?.toString();
@@ -165,6 +259,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
       await _persistUserInfo();
       notifyListeners();
       await NotificationsState.instance.loadNotifications();
+      _hasNavigatedToLogin = false;
       return true;
     } finally {
       _loading = false;
@@ -214,6 +309,12 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
       if (data['access_token'] != null) {
         _token = data['access_token'] as String?;
         _refreshToken = data['refreshToken'] as String?;
+        if (data['access_token'] != null && data['refreshToken'] != null) {
+          await _apiService.saveAuthTokens(
+            data['access_token'] as String,
+            data['refreshToken'] as String,
+          );
+        }
         if (data['user'] is Map<String, dynamic>) {
           final user = data['user'] as Map<String, dynamic>;
           _role = user['rol']?.toString();
@@ -224,6 +325,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
         await _persistUserInfo();
         notifyListeners();
         await NotificationsState.instance.loadNotifications();
+        _hasNavigatedToLogin = false;
       }
     } finally {
       setState(() => _loading = false);
@@ -253,7 +355,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
     notifyListeners();
   }
 
-  Future<void> clearAuthState([BuildContext? context]) async {
+  Future<void> clearAuthState([BuildContext? context, bool navigateToLogin = true]) async {
     await _apiService.clearAuth();
     _token = null;
     _refreshToken = null;
@@ -274,6 +376,16 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
     _stopSessionCheckTimer();
     _closeWebSocket();
     notifyListeners();
+    if (navigateToLogin && !_hasNavigatedToLogin) {
+      _hasNavigatedToLogin = true;
+      final navContext = LichenNavigation.navigatorKey.currentContext;
+      if (navContext != null) {
+        Navigator.of(navContext).pushNamedAndRemoveUntil(
+          AppRoutes.login,
+          (route) => false,
+        );
+      }
+    }
   }
 
   int? _parseUserId(dynamic value) {
@@ -316,6 +428,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
   int _reconnectDelay = 1;
   bool _isShowingSessionRevokedDialog = false;
   bool _isWebSocketConnected = false;
+  bool _hasNavigatedToLogin = false;
 
   void _connectWebSocket() {
     if (_sessionWebSocket != null || _isWebSocketConnected) return;
@@ -459,7 +572,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
     } catch (_) {
       // Any other error - ignore (network issues, etc.)
     }
-    
+
     _isValidatingSession = false;
   }
 
@@ -481,7 +594,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth})
   void _onAppLifecycleChanged(AppLifecycleState state) {
     final wasInForeground = _isInForeground;
     _isInForeground = state == AppLifecycleState.resumed;
-    
+
     if (_isInForeground && !wasInForeground) {
       validateSession().then((_) {
         if (isAuthenticated && _isInForeground) {
