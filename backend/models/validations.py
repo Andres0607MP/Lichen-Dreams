@@ -33,6 +33,33 @@ class UsuarioUpdate(BaseModel):
     telefono: Optional[str] = Field(None, pattern=r'^\+?1?\d{9,15}$')
 
 
+class FcmTokenRequest(BaseModel):
+    fcm_token: str = Field(..., min_length=1, max_length=4096)
+
+    @field_validator("fcm_token")
+    @classmethod
+    def validar_fcm_token(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("El token FCM no puede estar vacÃ­o")
+        if any(ch.isspace() for ch in value):
+            raise ValueError("El token FCM no puede contener espacios")
+        if any(ord(ch) < 32 or ord(ch) == 127 for ch in value):
+            raise ValueError("El token FCM contiene caracteres de control")
+        # Lista de valores claramente inválidos o de marcador de posición
+        placeholders = [
+            "fake_token",
+            "test_token",
+            "your_fcm_token_here",
+            "placeholder",
+            "example_token",
+            "fcm_token",
+            "token",
+        ]
+        if value.lower() in placeholders:
+            raise ValueError("El token FCM es un valor de marcador de posición no válido")
+        return value
+
+
 class UsuarioResponse(BaseModel):
     
     id_usuario: int

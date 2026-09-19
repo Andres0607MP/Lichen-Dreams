@@ -507,3 +507,100 @@ def test_get_sessions_incluye_metadatos_de_dispositivo(client):
     session = response.json()[0]
     assert session["device_id"] is None
     assert session["nombre_dispositivo"] is None
+
+
+def test_fcm_token_se_registra_en_la_sesion_autenticada(client):
+    tokens = _auth_user(client)
+    email = tokens["user"]["correo"]
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    response = client.post(
+        "/auth/fcm-token",
+        json={"fcm_token": "fcm-token-1"},
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    session = _sessions_for_email(email)[0]
+    assert session.fcm_token == "fcm-token-1"
+
+
+def test_fcm_token_requiere_autenticacion(client):
+    response = client.post(
+        "/auth/fcm-token",
+        json={"fcm_token": "fcm-token-1"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_fcm_token_reemplaza_el_token_de_la_misma_sesion(client):
+    tokens = _auth_user(client)
+    email = tokens["user"]["correo"]
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    first = client.post(
+        "/auth/fcm-token",
+        json={"fcm_token": "fcm-token-1"},
+        headers=headers,
+    )
+    second = client.post(
+        "/auth/fcm-token",
+        json={"fcm_token": "fcm-token-2"},
+        headers=headers,
+    )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    sessions = _sessions_for_email(email)
+    assert len(sessions) == 1
+    assert sessions[0].fcm_token == "fcm-token-2"
+
+
+@pytest.mark.parametrize(
+    "fcm_token",
+    [
+        "",
+        "   ",
+        "token with spaces",
+        "x" * 4097,
+        "fake_token",
+    ],
+)
+def test_fcm_token_rechaza_valores_invalidos(client, fcm_token):
+    tokens = _auth_user(client)
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    response = client.post(
+        "/auth/fcm-token",
+        json={"fcm_token": fcm_token},
+        headers=headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_fcm_token_no_permite_asociarlo_a_otra_sesion(client):
+    first_tokens = _auth_user(client)
+    second_tokens = _auth_user(client)
+    first_email = first_tokens["user"]["correo"]
+    second_email = second_tokens["user"]["correo"]
+    first_session = _sessions_for_email(first_email)[0]
+    second_session = _sessions_for_email(second_email)[0]
+    headers = {"Authorization": f"Bearer {first_tokens['access_token']}"}
+
+    response = client.post(
+        "/auth/fcm-token",
+        json={
+            "fcm_token": "fcm-token-owner",
+            "id_usuario": second_session.id_usuario,
+            "id_sesion": second_session.id_sesion,
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 200
+    assert _sessions_for_email(first_email)[0].fcm_token == "fcm-token-owner"
+    assert _sessions_for_email(second_email)[0].fcm_token is None
+    assert len(_sessions_for_email(first_email)) == 1
+    assert len(_sessions_for_email(second_email)) == 1

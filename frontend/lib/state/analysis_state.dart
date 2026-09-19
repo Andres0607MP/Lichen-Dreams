@@ -59,6 +59,7 @@ class AnalysisState extends ChangeNotifier {
   String get status => _status;
   bool get isProcessing => _status == 'processing';
   bool get hasActiveAnalysis => _activeAnalysisId != null && _status == 'processing';
+  bool get hasCompletedResult => _status == 'completed' && _lastResult != null;
   String? get error => _error;
   Map<String, dynamic>? get lastResult => _lastResult;
   int? get lastCompletedId => _lastCompletedId;
@@ -68,7 +69,7 @@ class AnalysisState extends ChangeNotifier {
   double get estimatedProgress => _estimatedProgress;
 
   Future<void> startAnalysis({required File image, int? locationId, int? idEspecie, String imageSource = 'camera'}) async {
-    if (_activeAnalysisId != null && _status == 'processing') {
+    if (_status == 'processing') {
       throw ApiException('Ya tienes un análisis en proceso. Espera a que termine.');
     }
 

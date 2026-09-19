@@ -18,7 +18,7 @@ from auth.password_handler import hash_password, verify_password
 from auth.jwt_handler import create_access_token, create_refresh_token, decode_token
 from auth.auth_service import authenticate_user, get_current_user
 from websocket.connection_manager import connection_manager
-from models.validations import PasswordResetRequest, PasswordResetConfirm, PasswordResetResponse, EmailVerificationRequest, EmailVerificationConfirm, RegisterResponse, RecoverWithCodeRequest, RegenerateRecoveryCodeResponse
+from models.validations import PasswordResetRequest, PasswordResetConfirm, PasswordResetResponse, EmailVerificationRequest, EmailVerificationConfirm, RegisterResponse, RecoverWithCodeRequest, RegenerateRecoveryCodeResponse, FcmTokenRequest
 from services.email_service import email_service
 from services.upload_service import download_and_save_profile_image
 
@@ -555,6 +555,36 @@ def me(current_user: Usuario = Depends(get_current_user)):
         "rol": current_user.rol.nombre_rol if current_user.rol else None,
         "proveedor": current_user.proveedor
     }
+
+
+@router.post("/fcm-token", summary="Registrar token FCM de la sesión actual")
+def register_fcm_token(
+    payload: FcmTokenRequest,
+    request: Request,
+    current_user: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    authorization = request.headers.get("Authorization", "")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
+
+    token = authorization[7:].strip()
+    jwt_payload = decode_token(token)
+    sid = jwt_payload.get("sid") if jwt_payload else None
+    if not sid:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión inválida")
+
+    sid_hash = hashlib.sha256(sid.encode()).hexdigest()
+    sesion = db.query(Sesion).filter(
+        Sesion.token_sesion_hash == sid_hash,
+        Sesion.id_usuario == current_user.id_usuario,
+    ).first()
+    if not sesion or sesion.estado_sesion != "active":
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Sesión inválida o revocada")
+
+    sesion.fcm_token = payload.fcm_token
+    db.commit()
+    return {"message": "Token FCM registrado"}
 
 
 @router.post("/logout", summary="Cerrar sesión")

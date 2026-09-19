@@ -72,6 +72,7 @@ class Sesion(Base):
     ip_usuario = Column(String(50))
     device_id = Column(String(64), nullable=True)
     nombre_dispositivo = Column(String(255), nullable=True)
+    fcm_token = Column(String(4096), nullable=True)
     fecha_inicio = Column(TIMESTAMP, server_default=func.now())
     fecha_expiracion = Column(TIMESTAMP, nullable=True)
     estado_sesion = Column(String(50))

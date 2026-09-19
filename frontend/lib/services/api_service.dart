@@ -1530,6 +1530,15 @@ class ApiService {
     final response = await _client.post(
       AppConfig.buildUri('/location/find-or-create'),
       headers: await _headers(authorized: true),
+      body: jsonEncode({
+        'latitude': latitude,
+        'longitude': longitude,
+        'radius_meters': radiusMeters,
+        'direccion': direccion,
+        'municipio': municipio,
+        'departamento': departamento,
+        'pais': pais,
+      }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(

@@ -62,7 +62,7 @@ class InformationSettingsScreen extends StatelessWidget {
                   icon: Icons.info_outline_rounded,
                   iconColor: const Color(0xFF1976D2),
                   title: 'Versión',
-                  subtitle: '1.0.0',
+                  subtitle: '1.1.0',
                   showChevron: false,
                 ),
                 const SizedBox(height: 8),

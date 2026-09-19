@@ -51,6 +51,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   void initState() {
     super.initState();
     LichenNavigation.instance.sync(1);
+    final analysisState = context.read<AnalysisState>();
+    _previousStatus = analysisState.status;
+    _lastShownCompletedDataVersion = analysisState.dataVersion;
   }
 
   @override
@@ -73,7 +76,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         _selectedSpeciesImageRef = null;
       });
       if (mounted) {
-        context.read<AnalysisState>().reset();
+        final analysisState = context.read<AnalysisState>();
+        if (!analysisState.isProcessing) {
+          analysisState.reset();
+        }
       }
     } catch (error) {
       if (!mounted) return;
@@ -96,9 +102,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     }
 
     final analysisState = context.read<AnalysisState>();
-    analysisState.reset();
 
-    if (analysisState.hasActiveAnalysis) {
+    if (analysisState.isProcessing) {
       _isSubmitting = false;
       if (!mounted) return;
       AppNotification.show(
@@ -109,10 +114,50 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       return;
     }
 
+    analysisState.reset();
+
     int? locationId;
     if (_selectedSource == ImageSource.camera) {
       Position? position;
       try {
+        final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+        if (!serviceEnabled) {
+          if (!mounted) return;
+          AppNotification.show(
+            context,
+            message: 'El GPS está desactivado. Actívalo en los ajustes e intenta de nuevo.',
+            isError: true,
+          );
+          _isSubmitting = false;
+          return;
+        }
+
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+          if (permission == LocationPermission.denied) {
+            if (!mounted) return;
+            AppNotification.show(
+              context,
+              message: 'Se necesita permiso de ubicación para analizar. Concede el permiso e intenta de nuevo.',
+              isError: true,
+            );
+            _isSubmitting = false;
+            return;
+          }
+        }
+
+        if (permission == LocationPermission.deniedForever) {
+          if (!mounted) return;
+          AppNotification.show(
+            context,
+            message: 'El permiso de ubicación está bloqueado permanentemente. Actívalo desde los ajustes de la app.',
+            isError: true,
+          );
+          _isSubmitting = false;
+          return;
+        }
+
         position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.best,
         );
@@ -120,7 +165,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         if (!mounted) return;
         AppNotification.show(
           context,
-          message: 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.',
+          message: 'No se pudo obtener la ubicación. Verifica el GPS y los permisos e intenta de nuevo.',
           isError: true,
         );
         _isSubmitting = false;
@@ -131,7 +176,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         if (!mounted) return;
         AppNotification.show(
           context,
-          message: 'No se pudo obtener la ubicación. Activa el GPS e intenta de nuevo.',
+          message: 'No se pudo obtener la ubicación. Intenta de nuevo.',
           isError: true,
         );
         _isSubmitting = false;
@@ -385,7 +430,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
               ),
             ),
-          ] else if (isCompleted && _selectedImage != null) ...[
+          ] else if (isCompleted && analysisState.hasCompletedResult) ...[
             _buildCompletedPreview(),
             const SizedBox(height: 20),
             SizedBox(

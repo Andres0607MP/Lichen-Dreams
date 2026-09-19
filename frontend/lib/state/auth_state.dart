@@ -12,6 +12,7 @@ import '../services/connectivity_service.dart';
 import '../services/device_info_service.dart';
 import '../services/google_auth_service.dart';
 import '../services/navigation_service.dart';
+import '../services/fcm_service.dart';
 import 'notifications_state.dart';
 import 'dashboard_state.dart';
 import 'history_state.dart';
@@ -221,6 +222,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth, ConnectivitySe
       notifyListeners();
       await NotificationsState.instance.loadNotifications();
       _hasNavigatedToLogin = false;
+      await _registerFcmToken();
       return true;
     } finally {
       _loading = false;
@@ -228,8 +230,20 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth, ConnectivitySe
     }
   }
 
+  Future<void> _registerFcmToken() async {
+    try {
+      if (!FcmService.instance.isInitialized) {
+        await FcmService.instance.initialize();
+        FcmService.instance.setAuthTokenProvider(() => _token);
+      }
+      if (_token != null && _token!.isNotEmpty) {
+        await FcmService.instance.registerToken(_token!);
+      }
+    } catch (_) {}
+  }
+
   Future<bool> loginWithGoogle({bool registrar = false}) async {
-    await clearAuthState();
+    await clearAuthState(null, false);
     await DeviceInfoService().getOrCreateDeviceId();
     setState(() => _loading = true);
     try {
@@ -262,6 +276,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth, ConnectivitySe
       notifyListeners();
       await NotificationsState.instance.loadNotifications();
       _hasNavigatedToLogin = false;
+      await _registerFcmToken();
       return true;
     } finally {
       _loading = false;
@@ -295,7 +310,7 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth, ConnectivitySe
     String? numeroDocumento,
     String? fechaNacimiento,
   }) async {
-    await clearAuthState();
+    await clearAuthState(null, false);
     setState(() => _loading = true);
     try {
       final data = await _apiService.register(
@@ -328,8 +343,10 @@ AuthState({ApiService? apiService, GoogleAuthService? googleAuth, ConnectivitySe
         notifyListeners();
         await NotificationsState.instance.loadNotifications();
         _hasNavigatedToLogin = false;
-      }
-    } finally {
+        await _registerFcmToken();
+}
+     return data;
+     } finally {
       setState(() => _loading = false);
     }
   }
