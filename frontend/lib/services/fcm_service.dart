@@ -3,10 +3,35 @@ import 'dart:convert';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
+import '../routes/route_names.dart';
+import '../services/navigation_service.dart';
+import 'android_notification_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await AndroidNotificationService.instance.initialize();
+    final data = message.data;
+    final titulo = data['titulo'] ?? data['title'] ?? 'Notificación';
+    final mensaje = data['mensaje'] ?? data['body'] ?? '';
+    final idNotificacion = data['id_notificacion'] ?? '';
+    final notifId = int.tryParse(idNotificacion) ??
+        (90000 + idNotificacion.hashCode.abs() % 100000);
+
+    await AndroidNotificationService.instance.showSystemNotification(
+      id: notifId,
+      title: titulo,
+      body: mensaje,
+      payload: idNotificacion,
+    );
+  } catch (e) {
+    debugPrint('[FCM Background] Error showing notification: $e');
+  }
+}
 
 class FcmService {
   FcmService._();
@@ -16,6 +41,7 @@ class FcmService {
   bool _initialized = false;
   String? Function()? _getAuthToken;
   StreamSubscription<String>? _tokenRefreshSubscription;
+  RemoteMessage? _initialMessage;
 
   void setAuthTokenProvider(String? Function() provider) {
     _getAuthToken = provider;
@@ -44,11 +70,21 @@ class FcmService {
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('[FCM] onMessage recibido: ${message.messageId}');
+      _showLocalNotification(message);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('[FCM] onMessageOpenedApp recibido: ${message.messageId}');
+      _navigateToActivityCenter(message);
     });
+
+    _initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (_initialMessage != null) {
+      debugPrint('[FCM] App abierta desde notificación (getInitialMessage)');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToActivityCenter(_initialMessage!);
+      });
+    }
   }
 
   Future<void> registerToken(String authToken) async {
@@ -96,6 +132,35 @@ class FcmService {
   String? get token => _fcmToken;
 
   bool get isInitialized => _initialized;
+
+  void _showLocalNotification(RemoteMessage message) {
+    final data = message.data;
+    final titulo = data['titulo'] ?? data['title'] ?? 'Notificación';
+    final mensaje = data['mensaje'] ?? data['body'] ?? '';
+    final idNotificacion = data['id_notificacion'] ?? '';
+
+    final notifId = int.tryParse(idNotificacion) ??
+        (90000 + idNotificacion.hashCode.abs() % 100000);
+
+    AndroidNotificationService.instance.showSystemNotification(
+      id: notifId,
+      title: titulo,
+      body: mensaje,
+      payload: idNotificacion,
+    );
+  }
+
+  void _navigateToActivityCenter(RemoteMessage message) {
+    debugPrint('[FCM] Navegando al Centro de Actividad');
+    final navigator = LichenNavigation.navigatorKey.currentState;
+    if (navigator != null) {
+      navigator.pushNamed(AppRoutes.historial);
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToActivityCenter(message);
+      });
+    }
+  }
 
   Future<void> dispose() async {
     await _tokenRefreshSubscription?.cancel();

@@ -5,6 +5,7 @@ from typing import Optional, List
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session, joinedload
 import os
+import logging
 import boto3
 from botocore.exceptions import ClientError
 
@@ -14,6 +15,7 @@ from auth.auth_service import get_current_user
 from auth.password_handler import hash_password
 from services.zone_membership import sync_zone_to_analyses
 from services.upload_service import delete_user_r2_objects
+from services.push_service import send_to_token, clear_invalid_token, FcmResult, FcmSendResult
 from models.validations import (
     EspecieLiquenCreate, EspecieLiquenUpdate, EspecieLiquenResponse,
     ZonaAmbientalCreate, ZonaAmbientalUpdate, ZonaAmbientalResponse,
@@ -384,6 +386,52 @@ def delete_report(
     return None
 
 
+def _notify_user_via_fcm(db: Session, user_id: int, titulo: str, mensaje: str,
+                         tipo_notificacion: str, destino: str,
+                         extra_data: Optional[dict] = None) -> int:
+    """Envía un push FCM a todas las sesiones activas con fcm_token de un usuario.
+
+    Retorna la cantidad de notificaciones push enviadas exitosamente.
+    Los tokens inválidos se limpian de la BD. Los errores no se propagan.
+    """
+    sessions = (
+        db.query(Sesion)
+        .filter(
+            Sesion.id_usuario == user_id,
+            Sesion.estado_sesion == "active",
+            Sesion.fcm_token.isnot(None),
+            Sesion.fcm_token != "",
+        )
+        .all()
+    )
+    if not sessions:
+        return 0
+
+    sent = 0
+    data: dict[str, str] = {
+        "titulo": titulo,
+        "mensaje": mensaje,
+        "tipo_notificacion": tipo_notificacion,
+        "destino": destino,
+        **(extra_data or {}),
+    }
+
+    for sesion in sessions:
+        result = send_to_token(
+            sesion.fcm_token,
+            data=data,
+            title=titulo,
+            body=mensaje,
+        )
+        if result.result == FcmResult.ok:
+            sent += 1
+        elif result.result == FcmResult.invalid_token:
+            clear_invalid_token(db, sesion.fcm_token)
+        # failed/disabled se registran dentro de send_to_token, no se propagan
+
+    return sent
+
+
 @router.post("/notifications", response_model=NotificationCreateResponse, status_code=status.HTTP_201_CREATED, summary="Crear notificación de sistema (Admin)")
 def create_notification(
     request: NotificationCreate,
@@ -401,13 +449,26 @@ def create_notification(
             id_usuario=request.id_usuario,
             titulo=request.titulo,
             mensaje=request.mensaje,
-            tipo_notificacion=request.tipo_notificacion,
+                tipo_notificacion=request.tipo_notificacion,
             estado_notificacion="pendiente",
             fecha=datetime.now(timezone.utc),
         )
         db.add(notif)
         db.commit()
         db.refresh(notif)
+        try:
+            _notify_user_via_fcm(
+                db,
+                user_id=request.id_usuario,
+                titulo=request.titulo,
+                mensaje=request.mensaje,
+                tipo_notificacion=request.tipo_notificacion,
+                destino="user",
+                extra_data={"id_notificacion": str(notif.id_notificacion)},
+            )
+        except Exception as e:
+            logger = logging.getLogger("lichdreams.notifications")
+            logger.warning(f"[FCM] No se pudo enviar push FCM: {e}")
         return NotificationCreateResponse(
             message="Notificación creada correctamente",
             count=1,
@@ -415,6 +476,7 @@ def create_notification(
         )
     elif request.destino == "all":
         users = db.query(Usuario).filter(Usuario.estado_cuenta != 'eliminado').all()
+        created_count = 0
         for user in users:
             notif = Notificacion(
                 id_usuario=user.id_usuario,
@@ -425,10 +487,25 @@ def create_notification(
                 fecha=datetime.now(timezone.utc),
             )
             db.add(notif)
+            db.flush()
+            created_count += 1
+            try:
+                _notify_user_via_fcm(
+                    db,
+                    user_id=user.id_usuario,
+                    titulo=request.titulo,
+                    mensaje=request.mensaje,
+                    tipo_notificacion=request.tipo_notificacion,
+                    destino="all",
+                    extra_data={"id_notificacion": str(notif.id_notificacion)},
+                )
+            except Exception as e:
+                logger = logging.getLogger("lichdreams.notifications")
+                logger.warning(f"[FCM] No se pudo enviar push FCM al usuario {user.id_usuario}: {e}")
         db.commit()
         return NotificationCreateResponse(
             message="Notificaciones creadas correctamente",
-            count=len(users),
+            count=created_count,
             destino="all",
         )
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="destino debe ser 'user' o 'all'")

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'routes/app_routes.dart';
 import 'routes/route_names.dart';
@@ -25,12 +26,12 @@ import 'state/app_settings_state.dart';
 import 'services/api_service.dart';
 import 'services/android_notification_service.dart';
 import 'services/connectivity_service.dart';
-import 'package:flutter/widgets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('APP START');
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   await NotificationSoundService.instance.initialize();
   await AndroidNotificationService.instance.initialize();
   final apiService = ApiService();

@@ -43,3 +43,4 @@ opencv-python
 numpy
 Pillow
 boto3==1.26.0
+firebase-admin==13.10.0
