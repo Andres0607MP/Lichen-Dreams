@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import '../routes/route_names.dart';
 import '../services/navigation_service.dart';
+import '../state/notifications_state.dart';
 import 'android_notification_service.dart';
 
 @pragma('vm:entry-point')
@@ -71,10 +72,12 @@ class FcmService {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('[FCM] onMessage recibido: ${message.messageId}');
       _showLocalNotification(message);
+      NotificationsState.instance.loadNotifications(force: true);
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('[FCM] onMessageOpenedApp recibido: ${message.messageId}');
+      NotificationsState.instance.loadNotifications(force: true);
       _navigateToActivityCenter(message);
     });
 

@@ -116,26 +116,24 @@ def send_to_token(
         logger.debug("[FCM] firebase_admin no está instalado.")
         return FcmSendResult(result=FcmResult.disabled)
 
-    message_payload: Dict[str, Any] = {
-        "token": token,
-        "data": {k: str(v) for k, v in data.items()},
-        "android": {
-            "priority": "high",
-            "notification": {
-                "icon": "ic_notification",
-                "color": "#4F7A45",
-            },
-        },
-    }
+    android_notification = messaging.AndroidNotification(
+        icon="ic_notification",
+        color="#4F7A45",
+        title=title,
+        body=body,
+    )
 
-    if title is not None:
-        message_payload["android"]["notification"].update({
-            "title": title,
-            "body": body,
-        })
+    android_config = messaging.AndroidConfig(
+        priority="high",
+        notification=android_notification,
+    )
 
     try:
-        message = messaging.Message(**message_payload)
+        message = messaging.Message(
+            token=token,
+            data={k: str(v) for k, v in data.items()},
+            android=android_config,
+        )
         message_id = messaging.send(message)
         return FcmSendResult(result=FcmResult.ok, message_id=message_id)
     except Exception as exc:
