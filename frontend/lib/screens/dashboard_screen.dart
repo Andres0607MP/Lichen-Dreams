@@ -25,6 +25,7 @@ import '../state/catalog_state.dart';
 import '../screens/dashboard_stats_detail_sheet.dart';
 import '../config/app_config.dart';
 
+
 const String profileImagePath = 'assets/logo/saludo.png';
 
 class DashboardScreen extends StatefulWidget {
@@ -81,22 +82,42 @@ class _DashboardScreenState extends State<DashboardScreen>
         notificationsState.setSoundEnabled(appSettings.soundEnabled);
       }
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() => _hasAnimated = true);
-        precacheImage(const AssetImage(profileImagePath), context);
-        final articlesState = context.read<ArticlesState>();
-        final notificationsState = context.read<NotificationsState>();
-        final catalogState = context.read<CatalogState>();
-        if (!articlesState.hasFreshData && !articlesState.loading) {
-          articlesState.loadArticles();
-        }
-        notificationsState.loadNotifications();
-        if (catalogState.species.isEmpty && !catalogState.loadingSpecies) {
-          catalogState.loadSpecies();
-        }
-      }
-    });
+WidgetsBinding.instance.addPostFrameCallback((_) {
+       if (mounted) {
+         setState(() => _hasAnimated = true);
+         precacheImage(const AssetImage(profileImagePath), context);
+         final articlesState = context.read<ArticlesState>();
+         final notificationsState = context.read<NotificationsState>();
+         final catalogState = context.read<CatalogState>();
+         if (articlesState.articles.isEmpty && !articlesState.loading) {
+           articlesState.loadArticles();
+         }
+         notificationsState.loadNotifications();
+if (catalogState.species.isEmpty && !catalogState.loadingSpecies) {
+            catalogState.loadPublicSpecies();
+          }
+         // Precaching Liquenpedia images
+if (articlesState.articles.isNotEmpty) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final dashboardWidth = screenWidth.clamp(0.0, 1100.0);
+final cardWidth = dashboardWidth - 56; // 16*2 (carousel margin) + 12*2 (item margin)
+              final imageWidthLogical = cardWidth.clamp(0.0, double.infinity);
+            final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+            final imageWidthPx = (imageWidthLogical * pixelRatio).ceil();
+            for (final article in articlesState.articles) {
+              final imagenArticulo = article.imagenArticulo;
+              if (imagenArticulo != null && imagenArticulo.isNotEmpty) {
+                final url = AppConfig.getImageUrl(imagenArticulo);
+                final provider = ResizeImage(
+                  NetworkImage(url),
+                  width: imageWidthPx,
+                );
+                precacheImage(provider, context);
+              }
+            }
+          }
+       }
+     });
   }
 
   @override
@@ -299,7 +320,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ),
         ),
-        if (trailing != null) trailing,
+        if (trailing != null) ...[trailing],
       ],
     );
   }
@@ -776,23 +797,43 @@ class _DashboardScreenState extends State<DashboardScreen>
               color: AppTheme.liquenpediaPrimary,
               onTap: () => Navigator.pushNamed(context, AppRoutes.liquenpedia),
             ),
-            Selector<CatalogState, int>(
-              selector: (context, catalogState) => catalogState.species.length,
-              builder: (context, speciesCount, child) {
-                return QuickActionCard(
-                  entranceDelay: 150,
-                  title: 'Especies',
-                  subtitle: 'Catálogo de especies',
-                  icon: Icons.eco_rounded,
-                  color: AppTheme.especiesPrimary,
-                  badge: speciesCount > 0 ? _buildBadge('$speciesCount') : null,
-                  onTap: () => Navigator.pushNamed(
-                    context,
-                    AppRoutes.adminSpeciesSettings,
-                  ),
-                );
-              },
-            ),
+Selector<CatalogState, int>(
+               selector: (context, catalogState) => catalogState.species.length,
+               builder: (context, speciesCount, child) {
+                 Widget counterWidget;
+                 if (speciesCount > 0) {
+                   counterWidget = Text(
+                     '$speciesCount especies',
+                     style: GoogleFonts.poppins(
+                       fontSize: 11,
+                       fontWeight: FontWeight.w400,
+                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                     ),
+                   );
+                 } else {
+                   counterWidget = Text(
+                     'Sin especies',
+                     style: GoogleFonts.poppins(
+                       fontSize: 11,
+                       fontWeight: FontWeight.w400,
+                       color: Theme.of(context).colorScheme.onSurfaceVariant,
+                     ),
+                   );
+                 }
+                 return QuickActionCard(
+                   entranceDelay: 150,
+                   title: 'Especies',
+                   subtitle: 'Catálogo de especies',
+                   icon: Icons.eco_rounded,
+                   color: AppTheme.especiesPrimary,
+                   badge: counterWidget,
+                   onTap: () => Navigator.pushNamed(
+                     context,
+                     AppRoutes.adminSpeciesSettings,
+                   ),
+                 );
+               },
+             ),
           ],
         );
       },

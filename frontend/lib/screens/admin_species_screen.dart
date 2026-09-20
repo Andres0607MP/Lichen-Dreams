@@ -44,6 +44,7 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = context.select<AuthState, bool>((a) => a.isAdmin);
     return LichenScaffold(
       apiService: Provider.of<ApiService>(context, listen: false),
       showBottomNav: false,
@@ -64,11 +65,12 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_rounded, color: AppTheme.especiesPrimary),
-            onPressed: () => _showSpeciesForm(context),
-            tooltip: 'Nueva especie',
-          ),
+          if (isAdmin)
+            IconButton(
+              icon: const Icon(Icons.add_rounded, color: AppTheme.especiesPrimary),
+              onPressed: () => _showSpeciesForm(context),
+              tooltip: 'Nueva especie',
+            ),
         ],
       ),
       body: ListenableBuilder(
@@ -102,7 +104,7 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
             return _buildEmptyState(context);
           }
 
-          final isAdmin = context.select<AuthState, bool>((a) => a.isAdmin);
+
 
           return Column(
             children: [

@@ -1688,6 +1688,7 @@ class ApiService {
     final response = await _client.post(
       AppConfig.buildUri('/admin/species'),
       headers: await _headers(authorized: true),
+      body: jsonEncode(data),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(

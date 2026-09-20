@@ -170,16 +170,18 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
       );
     }
 
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final adaptiveMaxHeight = 300.0 + (textScale - 1.0) * 100.0;
     return Column(
       children: [
         ConstrainedBox(
-          constraints: const BoxConstraints(
+          constraints: BoxConstraints(
             minHeight: 240,
-            maxHeight: 300,
+            maxHeight: adaptiveMaxHeight,
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final carouselHeight = constraints.maxHeight.clamp(240.0, 300.0);
+              final carouselHeight = constraints.maxHeight.clamp(240.0, adaptiveMaxHeight);
               return Container(
                 height: carouselHeight,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -289,107 +291,125 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (imageUrl != null && imageUrl.isNotEmpty)
-                  AspectRatio(
-                    aspectRatio: 16 / 6,
-                    child: Container(
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: categoryColor.withValues(alpha: 0.05),
+child: ClipRRect(
+             borderRadius: BorderRadius.circular(24),
+             child: Column(
+               crossAxisAlignment: CrossAxisAlignment.start,
+               children: [
+if (imageUrl != null && imageUrl.isNotEmpty)
+                    Expanded(
+                      flex: 3,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+final width = constraints.maxWidth;
+                           final pixelRatio = MediaQuery.of(context).devicePixelRatio;
+return Container(
+                             decoration: BoxDecoration(
+                               color: categoryColor.withValues(alpha: 0.05),
+                             ),
+child: Image.network(
+                                imageUrlResolved!,
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                                cacheWidth: (width * pixelRatio).ceil(),
+                                errorBuilder: (context, error, stackTrace) {
+                                  return _buildPlaceholderCover(categoryColor);
+                                },
+                              )
+                           );
+                        },
                       ),
-                      child: imageUrlResolved != null
-                          ? Image.network(
-                              imageUrlResolved,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildPlaceholderCover(categoryColor);
-                              },
-                            )
-                          : _buildPlaceholderCover(categoryColor),
-                    ),
-                  )
-                else
-                  AspectRatio(
-                    aspectRatio: 16 / 6,
-                    child: _buildPlaceholderCover(categoryColor),
-                  ),
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        article.titulo,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Theme.of(context).colorScheme.onSurface,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        softWrap: true,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    )
+else
+                    Expanded(
+                      flex: 3,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Container(
                             decoration: BoxDecoration(
-                              color: categoryColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(6),
+                              color: categoryColor.withValues(alpha: 0.05),
                             ),
-                            child: Text(
-                              article.categoria,
-                              style: GoogleFonts.poppins(
-                                fontSize: 9,
-                                fontWeight: FontWeight.w600,
-                                color: categoryColor,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                            child: _buildPlaceholderCover(categoryColor),
+                          );
+                        },
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        article.contenido.length > 80
-                            ? '${article.contenido.substring(0, 80)}...'
-                            : article.contenido,
-                        style: GoogleFonts.poppins(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          height: 1.3,
-                        ),
-                        maxLines: 2,
-                        softWrap: true,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Por ${article.autor}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w400,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+                    ),
+                 Expanded(
+                   flex: 2,
+                   child: Padding(
+                     padding: const EdgeInsets.all(12),
+                     child: Column(
+                       crossAxisAlignment: CrossAxisAlignment.start,
+                       mainAxisSize: MainAxisSize.min,
+                       children: [
+                         Text(
+                           article.titulo,
+                           style: GoogleFonts.poppins(
+                             fontSize: 14,
+                             fontWeight: FontWeight.w700,
+                             color: Theme.of(context).colorScheme.onSurface,
+                             height: 1.3,
+                           ),
+                           maxLines: 2,
+                           softWrap: true,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                         const SizedBox(height: 6),
+                         Row(
+                           children: [
+                             Container(
+                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                               decoration: BoxDecoration(
+                                 color: categoryColor.withValues(alpha: 0.1),
+                                 borderRadius: BorderRadius.circular(6),
+                               ),
+                               child: Text(
+                                 article.categoria,
+                                 style: GoogleFonts.poppins(
+                                   fontSize: 9,
+                                   fontWeight: FontWeight.w600,
+                                   color: categoryColor,
+                                 ),
+                                 maxLines: 1,
+                                 overflow: TextOverflow.ellipsis,
+                               ),
+                             ),
+                           ],
+                         ),
+                         const SizedBox(height: 6),
+                         Text(
+                           article.contenido.length > 80
+                               ? '${article.contenido.substring(0, 80)}...'
+                               : article.contenido,
+                           style: GoogleFonts.poppins(
+                             fontSize: 11,
+                             fontWeight: FontWeight.w400,
+                             color: Theme.of(context).colorScheme.onSurfaceVariant,
+                             height: 1.3,
+                           ),
+                           maxLines: 2,
+                           softWrap: true,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                         const SizedBox(height: 4),
+                         Text(
+                           'Por ${article.autor}',
+                           style: GoogleFonts.poppins(
+                             fontSize: 10,
+                             fontWeight: FontWeight.w400,
+                             color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                           ),
+                           maxLines: 1,
+                           overflow: TextOverflow.ellipsis,
+                         ),
+                       ],
+                     ),
+                   ),
+                 ),
+               ],
+             ),
+           ),
         ).animate().fadeIn(duration: 500.ms, delay: (index * 80).ms),
       ),
     );

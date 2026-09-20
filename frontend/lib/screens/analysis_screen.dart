@@ -11,6 +11,7 @@ import 'package:provider/provider.dart';
 
 import '../routes/route_names.dart';
 import '../models/analysis_record.dart';
+import '../screens/camera_screen.dart';
 import '../screens/result_screen.dart';
 import '../services/api_service.dart';
 import '../services/navigation_service.dart';
@@ -36,6 +37,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   final ImagePicker _imagePicker = ImagePicker();
   File? _selectedImage;
   ImageSource _selectedSource = ImageSource.camera;
+  ImageSource? _pendingImageSource;
   bool _isSubmitting = false;
   bool _isNavigatingToResult = false;
   bool _showCompletedProgress = false;
@@ -54,6 +56,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     final analysisState = context.read<AnalysisState>();
     _previousStatus = analysisState.status;
     _lastShownCompletedDataVersion = analysisState.dataVersion;
+    _recoverLostImage();
   }
 
   @override
@@ -64,32 +67,82 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    try {
-      final pickedFile = await _imagePicker.pickImage(source: source, imageQuality: 80);
-      if (pickedFile == null) return;
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-        _selectedSource = source;
-        _selectedSpeciesId = null;
-        _selectedSpeciesCommonName = null;
-        _selectedSpeciesScientificName = null;
-        _selectedSpeciesImageRef = null;
-      });
-      if (mounted) {
-        final analysisState = context.read<AnalysisState>();
-        if (!analysisState.isProcessing) {
-          analysisState.reset();
-        }
-      }
-    } catch (error) {
-      if (!mounted) return;
-      AppNotification.show(
-        context,
-        message: 'No se pudo seleccionar la imagen. Intenta de nuevo.',
-        isError: true,
-      );
-    }
-  }
+     _pendingImageSource = source;
+     try {
+       final pickedFile = await _imagePicker.pickImage(
+         source: source,
+         imageQuality: 75,
+         maxWidth: 1080,
+         maxHeight: 1080,
+       );
+       if (pickedFile == null) {
+         // If null, we leave _pendingImageSource set for recovery
+         return;
+       }
+       // If we got an image, we clear the pending source because we have the image
+       _pendingImageSource = null;
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+          _selectedSource = source;
+          _selectedSpeciesId = null;
+         _selectedSpeciesCommonName = null;
+         _selectedSpeciesScientificName = null;
+         _selectedSpeciesImageRef = null;
+       });
+       if (mounted) {
+         final analysisState = context.read<AnalysisState>();
+         if (!analysisState.isProcessing) {
+           analysisState.reset();
+         }
+       }
+     } catch (error) {
+       if (!mounted) return;
+       AppNotification.show(
+         context,
+         message: 'No se pudo seleccionar la imagen. Intenta de nuevo.',
+         isError: true,
+       );
+     }
+   }
+
+  Future<void> _recoverLostImage() async {
+     try {
+       final LostDataResponse response = await _imagePicker.retrieveLostData();
+       if (response.isEmpty) {
+         return;
+       }
+       XFile? recoveredFile = response.file ?? response.files?.firstOrNull;
+
+       if (recoveredFile != null) {
+         final File recovered = File(recoveredFile.path);
+         if (!mounted) return;
+         setState(() {
+           _selectedImage = recovered;
+           // Use the pending source if available
+           if (_pendingImageSource != null) {
+             _selectedSource = _pendingImageSource!;
+           }
+           // If we don't have a pending source, we leave _selectedSource unchanged
+           _selectedSpeciesId = null;
+           _selectedSpeciesCommonName = null;
+           _selectedSpeciesScientificName = null;
+           _selectedSpeciesImageRef = null;
+         });
+         if (mounted) {
+           final analysisState = context.read<AnalysisState>();
+           if (!analysisState.isProcessing) {
+             analysisState.reset();
+           }
+         }
+         // Clear the pending source because we have recovered the image
+         _pendingImageSource = null;
+       } else if (response.exception != null) {
+         // Optionally log, but per instructions no user feedback.
+       }
+     } catch (e) {
+       // Ignore errors.
+     }
+   }
 
   Future<void> _submitAnalysis() async {
     if (_isSubmitting) return;
@@ -715,6 +768,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
   Widget _buildImageSection() {
     final image = _selectedImage;
+
     if (image != null) {
       return Column(
         children: [
@@ -808,12 +862,39 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: context.watch<AnalysisState>().hasActiveAnalysis ? null : () => _pickImage(ImageSource.camera),
+                onPressed: context.watch<AnalysisState>().hasActiveAnalysis
+                    ? null
+                    : () async {
+                        final file = await Navigator.push<File?>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CameraScreen(),
+                          ),
+                        );
+                        if (!mounted || file == null) return;
+                        setState(() {
+                          _selectedImage = file;
+                          _selectedSource = ImageSource.camera;
+                          _pendingImageSource = null;
+                          _selectedSpeciesId = null;
+                          _selectedSpeciesCommonName = null;
+                          _selectedSpeciesScientificName = null;
+                          _selectedSpeciesImageRef = null;
+                        });
+                        if (context.read<AnalysisState>().isProcessing == false) {
+                          context.read<AnalysisState>().reset();
+                        }
+                      },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryGreen,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                   shadowColor: Colors.transparent,
                 ),
@@ -1058,9 +1139,27 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             _buildImageSourceOption(
               icon: Icons.camera_alt_rounded,
               label: 'Tomar foto',
-              onTap: () {
+              onTap: () async {
                 Navigator.pop(context);
-                _pickImage(ImageSource.camera);
+                final file = await Navigator.push<File?>(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const CameraScreen(),
+                  ),
+                );
+                if (!mounted || file == null) return;
+                setState(() {
+                  _selectedImage = file;
+                  _selectedSource = ImageSource.camera;
+                  _pendingImageSource = null;
+                  _selectedSpeciesId = null;
+                  _selectedSpeciesCommonName = null;
+                  _selectedSpeciesScientificName = null;
+                  _selectedSpeciesImageRef = null;
+                });
+                if (context.read<AnalysisState>().isProcessing == false) {
+                  context.read<AnalysisState>().reset();
+                }
               },
             ),
             const SizedBox(height: 16),

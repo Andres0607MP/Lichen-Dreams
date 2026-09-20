@@ -16,21 +16,23 @@ class _LichenCarouselState extends State<LichenCarousel> {
   int _currentPage = 0;
 
   final List<String> _carouselImages = [
-    'assets/background/liquenes.png',
-    'assets/background/bioindicadores.png',
-    'assets/logo/logo.png',
+    'assets/background/liquenes.jpg',
+    'assets/background/bioindicadores.jpg',
+    'assets/logo/loguito.png',
   ];
 
   final List<Map<String, dynamic>> _slides = [
     {
+      'title': '¿Qué son los líquenes?',
       'description':
           'Organismos formados por la unión de un hongo y un organismo fotosintético.',
-      'color': AppTheme.primaryGreen,
+      'color': AppTheme.darkGreen,
     },
     {
+      'title': 'Bioindicadores Naturales',
       'description':
           'Los líquenes permiten conocer la calidad del aire porque reaccionan a los cambios ambientales.',
-      'color': AppTheme.lightGreen,
+      'color': AppTheme.darkGreen,
     },
     {
       'description':
@@ -57,16 +59,18 @@ class _LichenCarouselState extends State<LichenCarousel> {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final adaptiveMaxHeight = 280.0 + (textScale - 1) * 100;
     return Column(
       children: [
         ConstrainedBox(
-          constraints: const BoxConstraints(
+          constraints: BoxConstraints(
             minHeight: 220,
-            maxHeight: 280,
+            maxHeight: adaptiveMaxHeight,
           ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final carouselHeight = constraints.maxHeight.clamp(220.0, 280.0);
+              final carouselHeight = constraints.maxHeight.clamp(220.0, adaptiveMaxHeight);
               return Container(
                 height: carouselHeight,
                 margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -164,7 +168,45 @@ class _LichenCarouselState extends State<LichenCarousel> {
                 ),
               ),
             ),
-            Positioned(
+if (slide['title'] != null)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Align(
+                  alignment: Alignment(0, -0.25),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      slide['title'] as String,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                        height: 1.3,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      softWrap: true,
+                    ),
+                  ),
+                ),
+              ),
+              Positioned(
               bottom: 0,
               left: 0,
               right: 0,

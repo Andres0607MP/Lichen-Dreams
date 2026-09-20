@@ -38,6 +38,22 @@ class CatalogState extends ChangeNotifier {
     }
   }
 
+  Future<void> loadPublicSpecies() async {
+    _loadingSpecies = true;
+    _speciesError = null;
+    notifyListeners();
+
+    try {
+      final data = await _apiService.getCatalogSpecies();
+      _species = data;
+    } catch (e) {
+      _speciesError = e.toString();
+    } finally {
+      _loadingSpecies = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> loadZones() async {
     _loadingZones = true;
     _zonesError = null;
@@ -104,8 +120,8 @@ class CatalogState extends ChangeNotifier {
 
   Future<void> _refreshSpeciesQuietly() async {
     try {
-      final data = await _apiService.getAdminSpecies();
-      _species = data.cast<Map<String, dynamic>>();
+      final data = await _apiService.getCatalogSpecies();
+      _species = data;
       _speciesError = null;
     } catch (_) {
       // La mutación ya fue exitosa: se conserva la lista local.

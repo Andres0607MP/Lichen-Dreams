@@ -65,7 +65,10 @@ void main() {
 
   testWidgets('save is disabled until required field is valid', (tester) async {
     final state = catalog();
-    await tester.pumpWidget(app(state));
+    SharedPreferences.setMockInitialValues({'user_role': 'admin'});
+    final auth = AuthState();
+    await auth.initialize();
+    await tester.pumpWidget(app(state, auth: auth));
     await tester.pump();
     await tester.pump();
 
@@ -98,7 +101,10 @@ void main() {
   testWidgets('spaces-only input is rejected and no request is sent', (tester) async {
     final api = _FakeApiService();
     final state = CatalogState(apiService: api);
-    await tester.pumpWidget(app(state));
+    SharedPreferences.setMockInitialValues({'user_role': 'admin'});
+    final auth = AuthState();
+    await auth.initialize();
+    await tester.pumpWidget(app(state, auth: auth));
     await tester.pump();
     await tester.pump();
 
@@ -121,7 +127,10 @@ void main() {
   testWidgets('backend error keeps dialog open, preserves data and shows message', (tester) async {
     final api = _FakeApiService()..failCreate = true;
     final state = CatalogState(apiService: api);
-    await tester.pumpWidget(app(state));
+    SharedPreferences.setMockInitialValues({'user_role': 'admin'});
+    final auth = AuthState();
+    await auth.initialize();
+    await tester.pumpWidget(app(state, auth: auth));
     await tester.pump();
     await tester.pump();
 
@@ -152,7 +161,10 @@ void main() {
   testWidgets('valid create closes dialog and calls the service once', (tester) async {
     final api = _FakeApiService();
     final state = CatalogState(apiService: api);
-    await tester.pumpWidget(app(state));
+    SharedPreferences.setMockInitialValues({'user_role': 'admin'});
+    final auth = AuthState();
+    await auth.initialize();
+    await tester.pumpWidget(app(state, auth: auth));
     await tester.pump();
     await tester.pump();
 
