@@ -9,13 +9,14 @@ class AnalysisState extends ChangeNotifier {
   final ApiService _apiService;
   AnalysisState({ApiService? apiService}) : _apiService = apiService ?? ApiService();
 
-  int? _activeAnalysisId;
+   int? _activeAnalysisId;
   String _status = 'idle'; // idle | processing | completed | failed
   String? _error;
   Timer? _pollTimer;
   Map<String, dynamic>? _lastResult;
   int? _lastCompletedId;
   String? _imageSource;
+  String? _imagePath;
   int _dataVersion = 0;
   DateTime? _startedAt;
   double _estimatedProgress = 0.0;
@@ -64,6 +65,7 @@ class AnalysisState extends ChangeNotifier {
   Map<String, dynamic>? get lastResult => _lastResult;
   int? get lastCompletedId => _lastCompletedId;
   String? get imageSource => _imageSource;
+  String? get imagePath => _imagePath;
   int get dataVersion => _dataVersion;
   DateTime? get startedAt => _startedAt;
   double get estimatedProgress => _estimatedProgress;
@@ -73,6 +75,7 @@ class AnalysisState extends ChangeNotifier {
       throw ApiException('Ya tienes un análisis en proceso. Espera a que termine.');
     }
 
+    _imagePath = image.path;
     _status = 'processing';
     _error = null;
     _activeAnalysisId = null;
@@ -86,12 +89,15 @@ class AnalysisState extends ChangeNotifier {
       final resultJson = await _apiService.submitAnalysis(image, id_ubicacion: locationId, id_especie: idEspecie, imageSource: _imageSource ?? 'camera');
 
       if (resultJson['rechazado'] == true) {
+        final rejectMessage = resultJson['mensaje_rechazo']?.toString() ??
+            'La imagen no corresponde a un liquen.';
         _status = 'rejected';
-        _error = resultJson['mensaje_rechazo']?.toString() ?? 'La imagen no corresponde a un liquen.';
+        _error = rejectMessage;
         _activeAnalysisId = 0;
         _lastResult = Map<String, dynamic>.from(resultJson)..['source'] = _imageSource;
         _lastCompletedId = null;
         _stopProgressEstimation();
+        NotificationsState.instance.rejectAnalysis(rejectMessage);
         notifyListeners();
         return;
       }
@@ -237,11 +243,12 @@ final analysisId = resultJson['id'] is int
   Future<void> reset() {
     _pollTimer?.cancel();
     _progressTimer?.cancel();
-    _activeAnalysisId = null;
+     _activeAnalysisId = null;
     _status = 'idle';
     _error = null;
     _lastResult = null;
     _lastCompletedId = null;
+    _imagePath = null;
     _startedAt = null;
     _estimatedProgress = 0.0;
     _availableSpecies = [];

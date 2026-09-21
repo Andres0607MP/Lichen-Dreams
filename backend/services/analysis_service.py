@@ -202,6 +202,22 @@ class AnalysisService:
 
         categoria_normalizada = resultado_ia.strip().lower()
         if categoria_normalizada in ("liquen desconocido", "desconocido"):
+            mensaje_rechazo = "La imagen no corresponde a un liquen o no fue posible identificarla. Intenta con otra fotografía."
+            try:
+                with SessionLocal() as db:
+                    notificacion = Notificacion(
+                        id_usuario=id_usuario,
+                        titulo="Imagen no válida",
+                        mensaje=f"analysis_id=0|{mensaje_rechazo}",
+                        tipo_notificacion="analysis",
+                        estado_notificacion="rejected",
+                        fecha=datetime.now(timezone.utc),
+                    )
+                    db.add(notificacion)
+                    db.flush()
+                    db.commit()
+            except Exception as exc:
+                logging.error(f"Error al crear notificacion de rechazo: {exc}")
             return {
                 "id": 0,
                 "id_usuario": id_usuario,
@@ -232,7 +248,7 @@ class AnalysisService:
                 "estado_validacion": estado_validacion,
                 "visibilidad": "private",
                 "rechazado": True,
-                "mensaje_rechazo": "La imagen no corresponde a un liquen o no fue posible identificarla. Intenta con otra fotografía.",
+                "mensaje_rechazo": mensaje_rechazo,
             }
 
         if image_source == 'gallery':

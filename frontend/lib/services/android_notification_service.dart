@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class AndroidNotificationService {
@@ -95,6 +96,44 @@ await _flutterLocalNotificationsPlugin.show(
        notificationDetails: platformChannelSpecifics,
        payload: analysisId.toString(),
      );
+  }
+
+  /// Muestra una notificación ANDROID en ROJO para el caso de imagen
+  /// inválida / no reconocida como líquen.
+  /// Reutiliza el canal `analysis_ready` (importancia, vibración y sonido) pero
+  /// aplica `color: Colors.red` + `colorized: true` para diferenciarla visualmente
+  /// de los resultados válidos de `showAnalysisReady`.
+  Future<void> showInvalidImage(int analysisId, String message) async {
+    if (!kIsWeb && defaultTargetPlatform != TargetPlatform.android) {
+      return;
+    }
+    if (!_initialized) {
+      await initialize();
+    }
+    if (_analysisReadyChannel == null) return;
+
+    final androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      _analysisReadyChannel!.id,
+      _analysisReadyChannel!.name,
+      channelDescription: _analysisReadyChannel!.description,
+      importance: _analysisReadyChannel!.importance,
+      enableVibration: _analysisReadyChannel!.enableVibration,
+      vibrationPattern: _analysisReadyChannel!.vibrationPattern,
+      playSound: _analysisReadyChannel!.playSound,
+      color: Colors.red,
+      colorized: true,
+    );
+
+    final platformChannelSpecifics =
+        NotificationDetails(android: androidPlatformChannelSpecifics);
+
+    await _flutterLocalNotificationsPlugin.show(
+      id: analysisId,
+      title: 'Imagen no válida',
+      body: message,
+      notificationDetails: platformChannelSpecifics,
+      payload: analysisId.toString(),
+    );
   }
 
   Future<void> showSystemNotification({

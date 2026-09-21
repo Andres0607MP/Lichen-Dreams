@@ -7,16 +7,19 @@ class UsersState extends ChangeNotifier {
   List<dynamic> _users = [];
   bool _loading = false;
   String? _error;
+  int _refreshVersion = 0;
 
   List<dynamic> get users => List.unmodifiable(_users);
   bool get loading => _loading;
   String? get error => _error;
+  int get refreshVersion => _refreshVersion;
 
   Future<void> loadUsers() async {
     setState(() => _loading = true);
     _error = null;
     try {
       _users = await _apiService.getUsers();
+      _refreshVersion++;
       notifyListeners();
     } catch (e) {
       _error = e.toString();

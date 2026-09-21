@@ -1,19 +1,20 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class ImagePreviewDialog extends StatefulWidget {
   final String imageUrl;
+  final File? file;
   final String? semanticLabel;
 
   const ImagePreviewDialog({
     super.key,
     required this.imageUrl,
+    this.file,
     this.semanticLabel,
   });
-
-  @override
-  State<ImagePreviewDialog> createState() => _ImagePreviewDialogState();
 
   static void show(BuildContext context, String imageUrl, {String? semanticLabel}) {
     showDialog(
@@ -26,6 +27,26 @@ class ImagePreviewDialog extends StatefulWidget {
       ),
     );
   }
+
+  static void showFile(
+    BuildContext context,
+    File file, {
+    String? semanticLabel,
+  }) {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.85),
+      barrierDismissible: true,
+      builder: (context) => ImagePreviewDialog(
+        imageUrl: '',
+        file: file,
+        semanticLabel: semanticLabel,
+      ),
+    );
+  }
+
+  @override
+  State<ImagePreviewDialog> createState() => _ImagePreviewDialogState();
 }
 
 class _ImagePreviewDialogState extends State<ImagePreviewDialog> {
@@ -37,6 +58,57 @@ class _ImagePreviewDialogState extends State<ImagePreviewDialog> {
 
   void _handleDoubleTap() {
     _resetZoom();
+  }
+
+  Widget _buildImageChild() {
+    if (widget.file != null) {
+      return Image.file(
+        widget.file!,
+        fit: BoxFit.contain,
+        width: double.infinity,
+        semanticLabel: widget.semanticLabel,
+      );
+    }
+
+    return Image.network(
+      widget.imageUrl,
+      fit: BoxFit.contain,
+      width: double.infinity,
+      semanticLabel: widget.semanticLabel,
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return const Center(
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: Colors.white,
+            ),
+          ),
+        );
+      },
+      errorBuilder: (context, error, stackTrace) {
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.broken_image_rounded,
+              size: 48,
+              color: Colors.white70,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No se pudo cargar la imagen',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.white70,
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -63,45 +135,7 @@ class _ImagePreviewDialogState extends State<ImagePreviewDialog> {
                 padding: const EdgeInsets.all(24),
                 child: GestureDetector(
                   onDoubleTap: _handleDoubleTap,
-                  child: Image.network(
-                    widget.imageUrl,
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                    semanticLabel: widget.semanticLabel,
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(
-                        child: SizedBox(
-                          width: 32,
-                          height: 32,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
-                        ),
-                      );
-                    },
-                    errorBuilder: (context, error, stackTrace) {
-                      return Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.broken_image_rounded,
-                            size: 48,
-                            color: Colors.white70,
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            'No se pudo cargar la imagen',
-                            style: GoogleFonts.poppins(
-                              fontSize: 14,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                  child: _buildImageChild(),
                 ),
               ),
             ),

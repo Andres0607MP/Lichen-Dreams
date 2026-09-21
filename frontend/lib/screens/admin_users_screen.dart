@@ -1,8 +1,8 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
-import '../config/app_config.dart';
 import '../services/api_service.dart';
 import '../state/users_state.dart';
 import '../state/auth_state.dart';
@@ -1136,13 +1136,71 @@ class _UserCardState extends State<_UserCard>
   }
 }
 
-class _Avatar extends StatelessWidget {
+class _Avatar extends StatefulWidget {
   final String name;
   final String? photo;
   const _Avatar({required this.name, this.photo});
+
+  @override
+  State<_Avatar> createState() => _AvatarState();
+}
+
+class _AvatarState extends State<_Avatar> {
+  Uint8List? _bytes;
+  bool _loading = false;
+  int _lastVersion = -1;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final version = context.watch<UsersState>().refreshVersion;
+    if (version != _lastVersion) {
+      _lastVersion = version;
+      _loadIfNeeded();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant _Avatar old) {
+    super.didUpdateWidget(old);
+    if (old.photo != widget.photo) {
+      _loadIfNeeded();
+    }
+  }
+
+  void _loadIfNeeded() {
+    final path = widget.photo;
+    if (path == null || path.isEmpty) {
+      if (_bytes != null && mounted) setState(() => _bytes = null);
+      return;
+    }
+    if (_loading) return;
+    _load(path);
+  }
+
+  Future<void> _load(String path) async {
+    if (!mounted) return;
+    setState(() => _loading = true);
+    try {
+      final apiService = Provider.of<ApiService>(context, listen: false);
+      final bytes = await apiService.downloadPrivateImageBytes(path);
+      if (!mounted) return;
+      setState(() {
+        _bytes = bytes;
+        _loading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _bytes = null;
+        _loading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final initials = _extractInitials(name);
+    final initials = _extractInitials(widget.name);
     return Container(
       width: 48,
       height: 48,
@@ -1160,15 +1218,28 @@ class _Avatar extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
-        child: photo != null && photo!.isNotEmpty
-             ? Image.network(
-                 AppConfig.getImageUrl(photo!),
-                 fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => _buildInitialsFallback(initials),
-              )
-            : _buildInitialsFallback(initials),
+        child: _buildContent(initials),
       ),
     );
+  }
+
+  Widget _buildContent(String initials) {
+    final path = widget.photo;
+    if (path == null || path.isEmpty) return _buildInitialsFallback(initials);
+    if (_bytes != null) return Image.memory(_bytes!, fit: BoxFit.cover);
+    if (_loading) {
+      return Center(
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppTheme.primaryGreen,
+          ),
+        ),
+      );
+    }
+    return _buildInitialsFallback(initials);
   }
 
   Widget _buildInitialsFallback(String initials) {
@@ -1187,8 +1258,9 @@ class _Avatar extends StatelessWidget {
   String _extractInitials(String name) {
     final parts = name.trim().split(RegExp(r'\s+'));
     if (parts.isEmpty || name == 'Sin nombre') return '?';
-    if (parts.length == 1)
+    if (parts.length == 1) {
       return parts[0].isNotEmpty ? parts[0][0].toUpperCase() : '?';
+    }
     return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
   }
 }

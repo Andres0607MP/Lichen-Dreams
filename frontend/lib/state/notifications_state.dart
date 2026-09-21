@@ -133,6 +133,8 @@ class NotificationsState extends ChangeNotifier {
         mappedEstado = 'processing';
       } else if (estado == 'fallida' || estado == 'failed' || estado == 'error') {
         mappedEstado = 'failed';
+      } else if (estado == 'rejected' || estado == 'rechazado') {
+        mappedEstado = 'rejected';
       } else {
         mappedEstado = estado;
       }
@@ -377,5 +379,30 @@ if (!wasCompleted) {
       }
       notifyListeners();
     }
+  }
+
+  /// Notificación específica para imágenes inválidas / no reconocidas como líquen
+  /// (caso `rechazado == true` del backend, `id == 0`).
+  /// Inserta una entrada única en la lista de notificaciones (se evita duplicado
+  /// mediante un id basado en timestamp) y dispara una única notificación ANDROID
+  /// en ROJO a través de `AndroidNotificationService.showInvalidImage`.
+  void rejectAnalysis(String mensaje) {
+    final id = 'invalid_${DateTime.now().millisecondsSinceEpoch}';
+    _notifications.insert(0, {
+      'id': id,
+      'analysis_id': null,
+      'titulo': 'Imagen no válida',
+      'mensaje': mensaje,
+      'tipo': 'analysis',
+      'estado': 'rejected',
+      'leida': false,
+      'fecha': DateTime.now().toUtc(),
+    });
+    _playSoundForEvent(
+      'reject_$id',
+      NotificationSoundService.instance.playAnalysisFailedSound,
+    );
+    notifyListeners();
+    unawaited(AndroidNotificationService.instance.showInvalidImage(0, mensaje));
   }
 }

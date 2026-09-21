@@ -42,6 +42,7 @@ class AdminUserResponse(BaseModel):
     estado_cuenta: Optional[str]
     fecha_registro: datetime
     rol: Optional[str] = None
+    foto_perfil: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -171,6 +172,7 @@ def get_all_users(
             estado_cuenta=u.estado_cuenta,
             fecha_registro=u.fecha_registro,
             rol=u.rol.nombre_rol if u.rol else None,
+            foto_perfil=u.foto_perfil,
         )
         for u in users
     ]

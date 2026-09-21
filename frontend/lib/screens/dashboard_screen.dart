@@ -487,6 +487,12 @@ final cardWidth = dashboardWidth - 56; // 16*2 (carousel margin) + 12*2 (item ma
   ) {
     final quality = stats.environmentalQuality;
     final colorScheme = Theme.of(context).colorScheme;
+    final healthy = stats.healthyCount;
+    final affected = stats.affectedCount;
+    final unknown = stats.unknownCount;
+    final eligibleTotal = healthy + affected + unknown;
+    final double? healthyRatio =
+        eligibleTotal > 0 ? healthy / eligibleTotal : null;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
@@ -597,48 +603,71 @@ final cardWidth = dashboardWidth - 56; // 16*2 (carousel margin) + 12*2 (item ma
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            quality.label,
+                        Text(
+                          _dashboardQualityTitle(stats),
+                          style: GoogleFonts.poppins(
+                            fontSize: isLargeScreen ? 24 : 20,
+                            fontWeight: FontWeight.w700,
+                            color: quality.primaryColor,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 300),
+                          child: Text(
+                            eligibleTotal <= 0
+                                ? 'Sin análisis de cámara registrados'
+                                : '$healthy de $eligibleTotal análisis saludables',
+                            key: ValueKey<String>('$healthy/$eligibleTotal'),
                             style: GoogleFonts.poppins(
-                              fontSize: 13,
+                              fontSize: isLargeScreen ? 15 : 13,
                               fontWeight: FontWeight.w500,
                               color: colorScheme.onSurfaceVariant,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 300),
-                            child: Text(
-                              stats.airQuality,
-                              key: ValueKey(stats.airQuality),
-                              style: GoogleFonts.poppins(
-                                fontSize: isLargeScreen ? 32 : 28,
-                                fontWeight: FontWeight.w800,
-                                color: quality.primaryColor,
-                                letterSpacing: -0.5,
-                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _dashboardQualityDescription(stats),
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: colorScheme.onSurfaceVariant.withValues(
+                              alpha: 0.85,
                             ),
                           ),
+                        ),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: _getQualityProgress(quality.level),
-                    backgroundColor: quality.secondaryColor.withValues(
-                      alpha: 0.2,
+                if (healthyRatio != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: healthyRatio,
+                      backgroundColor:
+                          quality.secondaryColor.withValues(alpha: 0.15),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        quality.primaryColor,
+                      ),
+                      minHeight: 6,
                     ),
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      quality.primaryColor,
-                    ),
-                    minHeight: 6,
                   ),
-                ),
                 const SizedBox(height: 12),
+                if (eligibleTotal > 0)
+                  Text(
+                    '$healthy saludables · $affected afectados · $unknown no identificados',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                if (eligibleTotal > 0) const SizedBox(height: 12),
                 Text(
                   'Basado en tus análisis de cámara',
                   style: GoogleFonts.poppins(
@@ -655,21 +684,36 @@ final cardWidth = dashboardWidth - 56; // 16*2 (carousel margin) + 12*2 (item ma
     );
   }
 
-  double _getQualityProgress(EnvironmentalQualityLevel level) {
-    switch (level) {
-      case EnvironmentalQualityLevel.excellent:
-        return 1.0;
-      case EnvironmentalQualityLevel.good:
-        return 0.8;
-      case EnvironmentalQualityLevel.moderate:
-        return 0.6;
-      case EnvironmentalQualityLevel.poor:
-        return 0.4;
-      case EnvironmentalQualityLevel.critical:
-        return 0.2;
-      case EnvironmentalQualityLevel.unknown:
-        return 0.0;
+  String _dashboardQualityTitle(DashboardStats stats) {
+    final level = stats.environmentalQuality.level;
+    if (level == EnvironmentalQualityLevel.excellent ||
+        level == EnvironmentalQualityLevel.good) {
+      return 'Indicador favorable';
     }
+    if (level == EnvironmentalQualityLevel.poor ||
+        level == EnvironmentalQualityLevel.critical) {
+      return 'Indicador de posible presión';
+    }
+    if (level == EnvironmentalQualityLevel.moderate) {
+      return 'Indicador mixto';
+    }
+    return 'Sin información suficiente';
+  }
+
+  String _dashboardQualityDescription(DashboardStats stats) {
+    final level = stats.environmentalQuality.level;
+    if (level == EnvironmentalQualityLevel.excellent ||
+        level == EnvironmentalQualityLevel.good) {
+      return 'Indicador favorable de las condiciones ambientales locales';
+    }
+    if (level == EnvironmentalQualityLevel.poor ||
+        level == EnvironmentalQualityLevel.critical) {
+      return 'Indicador de posible presión ambiental elevada';
+    }
+    if (level == EnvironmentalQualityLevel.moderate) {
+      return 'Coinciden observaciones saludables y afectadas en la zona';
+    }
+    return 'No hay resultados identificables suficientes para evaluar.';
   }
 
   Widget _buildStatCard({

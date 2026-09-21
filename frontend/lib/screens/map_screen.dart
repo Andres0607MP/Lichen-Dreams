@@ -26,6 +26,7 @@ class MapScreen extends StatefulWidget {
 class _MapScreenState extends State<MapScreen> {
   MapAnalysisPoint? _selectedPoint;
   int? _expandedAnalysisId;
+  final GlobalKey _mapCardKey = GlobalKey();
   GoogleMapController? _mapController;
   bool _locationPermissionGranted = false;
   bool _locationServiceEnabled = false;
@@ -148,6 +149,35 @@ class _MapScreenState extends State<MapScreen> {
   void _zoomOut() {
     if (_mapController == null || !mounted) return;
     _mapController!.animateCamera(CameraUpdate.zoomOut());
+  }
+
+  void _focusMapOnSelectedPoint() {
+    final point = _selectedPoint;
+    if (!mounted || _mapController == null || point == null) return;
+
+    void applyCamera() {
+      if (point.lat.isFinite && point.lng.isFinite) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: point.latLng,
+              zoom: 18,
+              tilt: 55,
+              bearing: 0,
+            ),
+          ),
+        );
+      } else {
+        debugPrint('MAP SCREEN: punto sin coordenadas válidas id=${point.id}');
+      }
+    }
+
+    final ctx = _mapCardKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(ctx).then((_) => applyCamera());
+    } else {
+      applyCamera();
+    }
   }
 
   void _toggleMapType() {
@@ -440,8 +470,9 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
-  Widget _buildMapCard(Set<Marker> markers, Set<Circle> circles, LatLng initialPosition, double zoom) {
+  Widget _buildMapCard(Set<Marker> markers, Set<Circle> circles, LatLng initialPosition, double zoom, {Key? key}) {
     return LayoutBuilder(
+      key: key,
       builder: (context, constraints) {
         final mapHeight = (constraints.maxWidth * 0.52).clamp(300.0, 420.0);
         return SizedBox(
@@ -1010,20 +1041,9 @@ class _MapScreenState extends State<MapScreen> {
                 _expandedAnalysisId = point.id;
                 expandedGroupsState[point.qualityLevel] = true;
               });
-              if (point.lat.isFinite && point.lng.isFinite) {
-                _mapController?.animateCamera(
-                  CameraUpdate.newCameraPosition(
-                    CameraPosition(
-                      target: point.latLng,
-                      zoom: 18,
-                      tilt: 55,
-                      bearing: 0,
-                    ),
-                  ),
-                );
-              } else {
-                debugPrint('MAP SCREEN: punto sin coordenadas válidas id=${point.id}');
-              }
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _focusMapOnSelectedPoint();
+              });
             },
             formatDate: _formatDate,
             qualityColor: _qualityColor(level),
@@ -1230,12 +1250,18 @@ class _MapScreenState extends State<MapScreen> {
     );
     final ownPoints = _getFilteredOwnPoints(mapState);
     final communityPoints = _getFilteredCommunityPoints(mapState);
-    final markers = _buildMarkers(filteredPoints);
+    final focusPoints = _selectedPoint != null
+        ? [_selectedPoint!]
+        : filteredPoints;
+    final markers = _buildMarkers(focusPoints);
     final circles = mapState.filteredCircles(showZones: _showZones, showOwn: _showMyAnalyses, showCommunity: _showCommunity);
     final transitionCircles = _showZones
         ? _buildTransitionCircles(_zoneSourcePoints(mapState))
         : const <Circle>{};
     final allCircles = {...circles, ...transitionCircles};
+    final renderedCircles = _selectedPoint != null
+        ? {_selectedPoint!.toEnvironmentalCircle()}
+        : allCircles;
     final initialPosition = _selectedPoint != null
         ? _selectedPoint!.latLng
         : const LatLng(4.7110, -74.0721);
@@ -1267,7 +1293,7 @@ class _MapScreenState extends State<MapScreen> {
           const SizedBox(height: 12),
           _buildLegendSection(),
           const SizedBox(height: 12),
-          _buildMapCard(markers, allCircles, initialPosition, initialZoom),
+          _buildMapCard(markers, renderedCircles, initialPosition, initialZoom, key: _mapCardKey),
           const SizedBox(height: 20),
           if (ownPoints.isNotEmpty)
             _buildAnalysisPanel(

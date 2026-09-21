@@ -35,7 +35,7 @@ def user_to_response(user: Usuario):
         "nombre": user.nombre,
         "telefono": user.telefono,
         "rol": user.rol.nombre_rol if user.rol else None,
-        "activo": user.estado_cuenta == 'active'
+        "activo": user.estado_cuenta == 'active',
     }
 
 @router.get("", response_model=List[UserResponse], summary="Obtener lista de usuarios")

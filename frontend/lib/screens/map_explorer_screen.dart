@@ -49,6 +49,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   bool _showCatalogZones = true;
   AirQualityLevel? _qualityFilter;
   EnvironmentalZoneModel? _selectedCatalogZone;
+  bool _showFiltersSheet = false;
 
   static const Color moderateYellow = Color(0xFFFFC107);
 
@@ -565,6 +566,7 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
   }
 
   Widget _buildMapContent(MapState mapState) {
+    final isWide = MediaQuery.sizeOf(context).width >= 600;
     final points = _visiblePoints(mapState);
     // Las zonas (incluidas las transiciones) se calculan SIEMPRE sobre el
     // conjunto completo de puntos visibles, ANTES de aplicar el filtro de
@@ -624,9 +626,11 @@ class _MapExplorerScreenState extends State<MapExplorerScreen> {
             _buildZoneTopOverlay(selectedZone),
           if (selected != null && selectedZone == null && selectedCatalogZone == null)
             _buildPointTopOverlay(selected, selected.visualQualityLevel.statusColor),
-          _buildLegend(),
+          if (isWide) _buildLegend(),
+          if (!isWide) _buildFiltersTrigger(),
           _buildMapControls(),
           _buildBottomSheet(),
+          if (_showFiltersSheet) _buildFiltersSheet(),
         ],
       ),
     );
@@ -1150,6 +1154,177 @@ Widget _buildMapControls() {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildFiltersTrigger() {
+    final hasActiveFilters = _qualityFilter != null ||
+        !_showOwn ||
+        !_showCommunity ||
+        !_showZones ||
+        !_showCatalogZones;
+    final surface = Theme.of(context).colorScheme.surface;
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final onSurfaceVariant =
+        Theme.of(context).colorScheme.onSurfaceVariant;
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: 16,
+      child: SafeArea(
+        top: false,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => setState(() => _showFiltersSheet = true),
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: surface.withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: AppTheme.borderColor.withValues(
+                      alpha: hasActiveFilters ? 0.8 : 0.4),
+                  width: hasActiveFilters ? 1.6 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.10),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.filter_list_rounded,
+                    size: AppTheme.iconLG,
+                    color: hasActiveFilters
+                        ? AppTheme.primaryGreen
+                        : onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Filtros',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: hasActiveFilters ? AppTheme.primaryGreen : onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFiltersSheet() {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.42,
+      minChildSize: 0.14,
+      maxChildSize: 0.85,
+      snap: true,
+      snapSizes: const [0.18, 0.42, 0.55],
+      builder: (context, scrollController) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.96),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(20)),
+            border: Border.all(
+                color: AppTheme.borderColor.withValues(alpha: 0.4)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
+              ),
+            ],
+          ),
+          child: ListView(
+            controller: scrollController,
+            padding: EdgeInsets.fromLTRB(
+              16,
+              10,
+              16,
+              MediaQuery.of(context).padding.bottom + 10,
+            ),
+            children: [
+              _buildSheetHandle(),
+              const SizedBox(height: 8),
+              _buildFiltersSheetContent(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFiltersSheetContent() {
+    final onSurface = Theme.of(context).colorScheme.onSurface;
+    final onSurfaceVariant =
+        Theme.of(context).colorScheme.onSurfaceVariant;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              tooltip: 'Cerrar',
+              icon: const Icon(Icons.close_rounded),
+              color: onSurfaceVariant,
+              onPressed: () =>
+                  setState(() => _showFiltersSheet = false),
+            ),
+          ],
+        ),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Filtros del mapa',
+            style: GoogleFonts.poppins(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: onSurface,
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildLayerControls(),
+        const SizedBox(height: 16),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'Estado ambiental',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        MapQualityFilterBar(
+          selected: _qualityFilter,
+          onChanged: (level) {
+            setState(() {
+              _qualityFilter = level;
+              if (level != null) {
+                _selectedPoint = null;
+                _selectedZone = null;
+              }
+            });
+          },
+        ),
+      ],
     );
   }
 

@@ -18,7 +18,7 @@ if not logger.handlers:
 
 PERMISSION_CAN_VIEW_PRIVATE_IMAGES = "CAN_VIEW_PRIVATE_IMAGES"
 PERMISSIONS = {
-    "admin": set(),
+    "admin": {PERMISSION_CAN_VIEW_PRIVATE_IMAGES},
     "admin_privado": {PERMISSION_CAN_VIEW_PRIVATE_IMAGES},
     "auditor": {PERMISSION_CAN_VIEW_PRIVATE_IMAGES},
 }

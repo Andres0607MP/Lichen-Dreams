@@ -139,7 +139,6 @@ class LichenDreamsApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final initialRoute = AppRoutes.loading;
     return MultiProvider(
        providers: [
          ChangeNotifierProvider.value(value: authState),
@@ -161,6 +160,7 @@ class LichenDreamsApp extends StatelessWidget {
       child: _ConnectivityOverlay(
         child: Consumer<AppSettingsState>(
           builder: (context, appSettings, child) {
+            final initialRoute = AppRoutes.loading;
             return MaterialApp(
               debugShowCheckedModeBanner: false,
               title: 'Lichen Dreams',

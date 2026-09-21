@@ -58,6 +58,8 @@ Color notificationStatusColor(String estado, String tipo) {
       return AppTheme.warningColor;
     case 'failed':
       return AppTheme.errorColor;
+    case 'rejected':
+      return AppTheme.errorColor;
     default:
       return tipo == 'analysis' ? AppTheme.primaryGreen : AppTheme.lightGreen;
   }
@@ -70,6 +72,8 @@ IconData notificationStatusIcon(String estado, String tipo) {
     case 'processing':
       return Icons.pending_rounded;
     case 'failed':
+      return Icons.error_rounded;
+    case 'rejected':
       return Icons.error_rounded;
     default:
       return tipo == 'analysis' ? Icons.analytics_rounded : Icons.notifications_rounded;

@@ -14,6 +14,7 @@ import '../models/analysis_record.dart';
 import '../screens/camera_screen.dart';
 import '../screens/result_screen.dart';
 import '../services/api_service.dart';
+import '../widgets/shared/image_preview_dialog.dart';
 import '../services/navigation_service.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/app_notification.dart';
@@ -57,6 +58,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     _previousStatus = analysisState.status;
     _lastShownCompletedDataVersion = analysisState.dataVersion;
     _recoverLostImage();
+
+    if (_selectedImage == null && analysisState.imagePath != null) {
+      final file = File(analysisState.imagePath!);
+      if (file.existsSync()) {
+        _selectedImage = file;
+      }
+    }
   }
 
   @override
@@ -509,23 +517,33 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _selectedImage = null;
-                });
-                Future.microtask(() {
-                  if (mounted) {
-                    context.read<AnalysisState>().reset();
-                  }
-                });
-              },
-              child: Text(
-                'Analizar otra imagen',
-                style: GoogleFonts.poppins(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: _primaryGreen,
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: TextButton(
+                onPressed: () {
+                  setState(() {
+                    _selectedImage = null;
+                  });
+                  Future.microtask(() {
+                    if (mounted) {
+                      context.read<AnalysisState>().reset();
+                    }
+                  });
+                },
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  'Tomar otra fotografía',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -574,7 +592,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               ),
             const SizedBox(height: 28),
           ] else ...[
-            _buildImageSection(),
+            _buildImageSection(context),
             const SizedBox(height: 28),
           ],
 
@@ -766,7 +784,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     );
   }
 
-  Widget _buildImageSection() {
+  Widget _buildImageSection(BuildContext context) {
     final image = _selectedImage;
 
     if (image != null) {
@@ -774,11 +792,15 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(16),
-            child: Image.file(
-              image,
-              width: double.infinity,
-              height: 280,
-              fit: BoxFit.cover,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: () => ImagePreviewDialog.showFile(context, image),
+              child: Image.file(
+                image,
+                width: double.infinity,
+                height: 280,
+                fit: BoxFit.cover,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -801,7 +823,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             width: double.infinity,
             height: 52,
             child: ElevatedButton(
-              onPressed: context.watch<AnalysisState>().hasActiveAnalysis ? null : _submitAnalysis,
+              onPressed: context.watch<AnalysisState>().isProcessing ? null : _submitAnalysis,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _primaryGreen,
                 foregroundColor: Colors.white,
@@ -810,13 +832,35 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 elevation: 0,
                 shadowColor: Colors.transparent,
               ),
-              child: Text(
-                'Analizar con IA',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: context.watch<AnalysisState>().isProcessing
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          'Analizando…',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      'Analizar con IA',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
         ],
