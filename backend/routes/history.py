@@ -23,7 +23,7 @@ class HistoryResponse(BaseModel):
     estado: str = ""
     estado_validacion: str = ""
     visibilidad: str = ""
-    humedad: float = 0.0
+    humedad: Optional[float] = None
     calidad_del_aire: str = ""
     recomendacion: str = ""
     ubicacion: str = ""
@@ -102,7 +102,7 @@ def _history_item_to_contract(item: HistorialActividad) -> HistoryResponse:
         estado=analysis_data.get('estado') or "",
         estado_validacion=analysis_data.get('estado_validacion') or "",
         visibilidad=analysis_data.get('visibilidad') or "",
-        humedad=float(analysis_data.get('humedad') or 0.0),
+        humedad=analysis_data.get('humedad'),
         calidad_del_aire=analysis_data.get('calidad_del_aire') or "",
         recomendacion=analysis_data.get('recomendacion') or "",
         ubicacion=location,

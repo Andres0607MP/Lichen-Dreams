@@ -46,7 +46,7 @@ class AnalysisService:
     def _analysis_to_contract(self, analysis: Analisis) -> Dict[str, Any]:
         image = analysis.imagenes[0] if analysis.imagenes else None
         url_imagen = image.url if image and image.url else (image.ruta_imagen if image else "")
-        humidity = float(analysis.humedad_relativa or 0.0)
+        humidity = float(analysis.humedad_relativa) if analysis.humedad_relativa is not None else None
         status_value = self._normalize_status(analysis.estado_validacion)
         recommendation = analysis.observaciones or analysis.resultado_ia or ""
         image_base64 = None
@@ -235,8 +235,8 @@ class AnalysisService:
                 "especie_nombre_comun": None,
                 "estado": estado_validacion,
                 "status": estado_validacion,
-                "humedad": 0.0,
-                "humidity": 0.0,
+                "humedad": None,
+                "humidity": None,
                 "calidad_del_aire": calidad_aire,
                 "air_quality": calidad_aire,
                 "nivel_contaminacion": nivel_contaminacion,
@@ -267,8 +267,8 @@ class AnalysisService:
                 "nombre_especie": None,  # gallery results do not store species info
                 "estado": estado_validacion,
                 "status": estado_validacion,
-                "humedad": 0.0,
-                "humidity": 0.0,
+                "humedad": None,
+                "humidity": None,
                 "calidad_del_aire": calidad_aire,
                 "air_quality": calidad_aire,
                 "nivel_contaminacion": nivel_contaminacion,
@@ -454,8 +454,8 @@ class AnalysisService:
                 "especie_nombre_comun": analysis.especie.nombre_comun if analysis.especie else None,
                 "estado": status_value,
                 "status": status_value,
-                "humedad": float(analysis.humedad_relativa or 0.0),
-                "humidity": float(analysis.humedad_relativa or 0.0),
+                "humedad": float(analysis.humedad_relativa) if analysis.humedad_relativa is not None else None,
+                "humidity": float(analysis.humedad_relativa) if analysis.humedad_relativa is not None else None,
                 "calidad_del_aire": analysis.calidad_aire or "",
                 "air_quality": analysis.calidad_aire or "",
                 "recomendacion": analysis.observaciones or "",
@@ -491,8 +491,8 @@ class AnalysisService:
             "especie_nombre_comun": especie_nombre_comun,
             "estado": self._normalize_status(analysis.estado_validacion),
             "status": self._normalize_status(analysis.estado_validacion),
-            "humedad": float(analysis.humedad_relativa or 0.0),
-            "humidity": float(analysis.humedad_relativa or 0.0),
+            "humedad": analysis.humedad_relativa,
+            "humidity": analysis.humedad_relativa,
             "calidad_del_aire": analysis.calidad_aire or "",
             "air_quality": analysis.calidad_aire or "",
             "recomendacion": analysis.observaciones or "",
@@ -526,8 +526,8 @@ class AnalysisService:
             "especie_nombre_comun": especie_nombre_comun,
             "estado": self._normalize_status(analysis.estado_validacion),
             "status": self._normalize_status(analysis.estado_validacion),
-            "humedad": float(analysis.humedad_relativa or 0.0),
-            "humidity": float(analysis.humedad_relativa or 0.0),
+            "humedad": analysis.humedad_relativa,
+            "humidity": analysis.humedad_relativa,
             "calidad_del_aire": analysis.calidad_aire or "",
             "air_quality": analysis.calidad_aire or "",
             "recomendacion": analysis.observaciones or "",
@@ -563,8 +563,8 @@ class AnalysisService:
             "especie_nombre_comun": especie_nombre_comun,
             "estado": self._normalize_status(analysis.estado_validacion),
             "status": self._normalize_status(analysis.estado_validacion),
-            "humedad": float(analysis.humedad_relativa or 0.0),
-            "humidity": float(analysis.humedad_relativa or 0.0),
+            "humedad": analysis.humedad_relativa,
+            "humidity": analysis.humedad_relativa,
             "calidad_del_aire": analysis.calidad_aire or "",
             "air_quality": analysis.calidad_aire or "",
             "recomendacion": recommendation,
@@ -640,8 +640,8 @@ class AnalysisService:
                     "nombre_especie": especie.nombre_cientifico if especie and especie.nombre_cientifico else None,
                     "estado": status_value,
                     "status": status_value,
-                    "humedad": float(analysis.humedad_relativa or 0.0),
-                    "humidity": float(analysis.humedad_relativa or 0.0),
+                    "humedad": analysis.humedad_relativa,
+                    "humidity": analysis.humedad_relativa,
                     "calidad_del_aire": analysis.calidad_aire or "",
                     "air_quality": analysis.calidad_aire or "",
                     "recomendacion": analysis.observaciones or analysis.resultado_ia or "",

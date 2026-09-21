@@ -25,6 +25,6 @@ def test_analysis_service_provides_contract_fields_without_database():
         "fecha_creacion",
     }
     assert expected_fields.issubset(result.keys())
-    assert isinstance(result["humedad"], (int, float))
+    assert result["humedad"] is None or isinstance(result["humedad"], (int, float))
     assert isinstance(result["estado"], str)
     assert result["url_imagen"] == "/image.jpg"

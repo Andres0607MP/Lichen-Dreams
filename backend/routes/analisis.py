@@ -38,8 +38,8 @@ class AnalysisBaseResponse(BaseModel):
     especie_nombre_comun: str | None = None
     estado: str = ""
     status: str = ""
-    humedad: float = 0.0
-    humidity: float = 0.0
+    humedad: float | None = None
+    humidity: float | None = None
     calidad_del_aire: str = ""
     air_quality: str = ""
     recomendacion: str = ""

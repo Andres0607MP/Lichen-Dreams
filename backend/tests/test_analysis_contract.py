@@ -105,7 +105,7 @@ def test_analysis_process_contract_uses_spanish_fields():
     assert expected_fields.issubset(payload.keys())
     assert isinstance(payload["resultado"], str)
     assert isinstance(payload["estado"], str)
-    assert isinstance(payload["humedad"], (int, float))
+    assert payload["humedad"] is None or isinstance(payload["humedad"], (int, float))
 
 
 def test_analysis_status_contract_uses_spanish_fields():
