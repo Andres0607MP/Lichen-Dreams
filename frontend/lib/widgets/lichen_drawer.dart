@@ -415,123 +415,130 @@ class _LichenDrawerState extends State<LichenDrawer> {
               ],
             ),
           ),
-          _buildNavItem(
-            context,
-            index: 0,
-            icon: Icons.home_rounded,
-            title: 'Inicio',
-            route: AppRoutes.dashboard,
-          ),
-          _buildNavItem(
-            context,
-            index: 1,
-            icon: Icons.camera_alt_rounded,
-            title: 'Análisis',
-            route: AppRoutes.analisis,
-          ),
-          _buildNavItem(
-            context,
-            index: 2,
-            icon: Icons.map_rounded,
-            title: 'Mapa',
-            route: AppRoutes.mapa,
-          ),
-          _buildNavItem(
-            context,
-            index: 3,
-            icon: Icons.history_rounded,
-            title: 'Historial',
-            route: AppRoutes.historial,
-          ),
-          _buildNavItem(
-            context,
-            index: 4,
-            icon: Icons.person_rounded,
-            title: 'Perfil',
-            route: AppRoutes.perfil,
-          ),
-          const Divider(),
-          ListTile(
-            leading: Icon(Icons.eco_rounded, color: AppTheme.primaryGreen),
-            title: Text('Liquenpedia', style: GoogleFonts.poppins()),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, AppRoutes.liquenpedia);
-            },
-          ),
-          if (isAdmin)
-            ListTile(
-              leading: Icon(
-                Icons.admin_panel_settings_rounded,
-                color: AppTheme.primaryGreen,
-              ),
-              title: Text('Administración', style: GoogleFonts.poppins()),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.adminUsers);
-              },
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _buildNavItem(
+                  context,
+                  index: 0,
+                  icon: Icons.home_rounded,
+                  title: 'Inicio',
+                  route: AppRoutes.dashboard,
+                ),
+                _buildNavItem(
+                  context,
+                  index: 1,
+                  icon: Icons.camera_alt_rounded,
+                  title: 'Análisis',
+                  route: AppRoutes.analisis,
+                ),
+                _buildNavItem(
+                  context,
+                  index: 2,
+                  icon: Icons.map_rounded,
+                  title: 'Mapa',
+                  route: AppRoutes.mapa,
+                ),
+                _buildNavItem(
+                  context,
+                  index: 3,
+                  icon: Icons.history_rounded,
+                  title: 'Historial',
+                  route: AppRoutes.historial,
+                ),
+                _buildNavItem(
+                  context,
+                  index: 4,
+                  icon: Icons.person_rounded,
+                  title: 'Perfil',
+                  route: AppRoutes.perfil,
+                ),
+                const Divider(),
+                ListTile(
+                  leading: Icon(Icons.eco_rounded, color: AppTheme.primaryGreen),
+                  title: Text('Liquenpedia', style: GoogleFonts.poppins()),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, AppRoutes.liquenpedia);
+                  },
+                ),
+                if (isAdmin)
+                  ListTile(
+                    leading: Icon(
+                      Icons.admin_panel_settings_rounded,
+                      color: AppTheme.primaryGreen,
+                    ),
+                    title: Text('Administración', style: GoogleFonts.poppins()),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.adminUsers);
+                    },
+                  ),
+                if (isAdmin)
+                  ListTile(
+                    leading: Icon(
+                      Icons.notifications_rounded,
+                      color: AppTheme.primaryGreen,
+                    ),
+                    title: Text('Notificaciones', style: GoogleFonts.poppins()),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.adminNotifications);
+                    },
+                  ),
+                if (isAdmin)
+                  ListTile(
+                    leading: Icon(
+                      Icons.monitor_heart_rounded,
+                      color: AppTheme.primaryGreen,
+                    ),
+                    title: Text('Monitor IA', style: GoogleFonts.poppins()),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.iaMonitoring);
+                    },
+                  ),
+                if (isAdmin && devUnlocked)
+                  ListTile(
+                    leading: Icon(
+                      Icons.developer_mode_rounded,
+                      color: AppTheme.primaryGreen,
+                    ),
+                    title: Text('Mapa desarrollador', style: GoogleFonts.poppins()),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.developerMap);
+                    },
+                  ),
+                GestureDetector(
+                  onLongPressStart: _onLongPressStart,
+                  onLongPressEnd: _onLongPressEnd,
+                  child: ListTile(
+                    leading: Icon(Icons.settings_rounded, color: AppTheme.primaryGreen),
+                    title: Text('Configuración', style: GoogleFonts.poppins()),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.pushNamed(context, AppRoutes.configuracion);
+                    },
+                  ),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: Icon(Icons.logout_rounded, color: AppTheme.primaryGreen),
+                  title: Text('Cerrar sesión', style: GoogleFonts.poppins()),
+                  onTap: () async {
+                    await context.read<AuthState>().logout(context);
+                    DevToolsSession.instance.lock();
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      AppRoutes.login,
+                      (_) => false,
+                    );
+                  },
+                ),
+              ],
             ),
-          if (isAdmin)
-            ListTile(
-              leading: Icon(
-                Icons.notifications_rounded,
-                color: AppTheme.primaryGreen,
-              ),
-              title: Text('Notificaciones', style: GoogleFonts.poppins()),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.adminNotifications);
-              },
-            ),
-          if (isAdmin)
-            ListTile(
-              leading: Icon(
-                Icons.monitor_heart_rounded,
-                color: AppTheme.primaryGreen,
-              ),
-              title: Text('Monitor IA', style: GoogleFonts.poppins()),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.iaMonitoring);
-              },
-            ),
-          if (isAdmin && devUnlocked)
-            ListTile(
-              leading: Icon(
-                Icons.developer_mode_rounded,
-                color: AppTheme.primaryGreen,
-              ),
-              title: Text('Mapa desarrollador', style: GoogleFonts.poppins()),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.developerMap);
-              },
-            ),
-          GestureDetector(
-            onLongPressStart: _onLongPressStart,
-            onLongPressEnd: _onLongPressEnd,
-            child: ListTile(
-              leading: Icon(Icons.settings_rounded, color: AppTheme.primaryGreen),
-              title: Text('Configuración', style: GoogleFonts.poppins()),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, AppRoutes.configuracion);
-              },
-            ),
-          ),
-          const Divider(),
-          ListTile(
-            leading: Icon(Icons.logout_rounded, color: AppTheme.primaryGreen),
-            title: Text('Cerrar sesión', style: GoogleFonts.poppins()),
-            onTap: () async {
-              await context.read<AuthState>().logout(context);
-              DevToolsSession.instance.lock();
-              Navigator.pushNamedAndRemoveUntil(
-                context,
-                AppRoutes.login,
-                (_) => false,
-              );
-            },
           ),
         ],
       ),

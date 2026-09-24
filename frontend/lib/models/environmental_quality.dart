@@ -77,7 +77,7 @@ class EnvironmentalQuality {
     EnvironmentalQualityLevel.unknown: EnvironmentalQuality(
       level: EnvironmentalQualityLevel.unknown,
       label: 'No identificado',
-      description: 'No fue posible identificar el organismo',
+      description: 'La imagen no parece ser un líquen reconocible o no se puede clasificar. Intenta con una foto más nítida, buena iluminación y un encuadre cercano.',
       primaryColor: Color(0xFF9E9E9E),
       secondaryColor: Color(0xFFBDBDBD),
       backgroundColor: Color(0xFFF5F5F5),

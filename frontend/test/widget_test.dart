@@ -6,28 +6,35 @@
 // tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:frontend/main.dart';
 import 'package:frontend/state/auth_state.dart';
 import 'package:frontend/services/api_service.dart';
 import 'package:frontend/services/ia_monitoring_service.dart';
 import 'package:frontend/state/ia_monitoring_state.dart';
+import 'package:frontend/state/app_settings_state.dart';
 
 void main() {
   testWidgets('renders the loading screen while bootstrap checks the backend', (WidgetTester tester) async {
     final apiService = ApiService();
     final iaMonitoringService = IaMonitoringService(apiService);
     final iaMonitoringState = IaMonitoringState(iaMonitoringService);
+    SharedPreferences.setMockInitialValues({});
+    final appSettingsState = AppSettingsState();
+    await appSettingsState.loadSettings();
     await tester.pumpWidget(LichenDreamsApp(
       authState: AuthState(apiService: apiService),
       apiService: apiService,
       iaMonitoringService: iaMonitoringService,
       iaMonitoringState: iaMonitoringState,
+      appSettingsState: appSettingsState,
     ));
 
     expect(find.text('Lichen Dreams'), findsOneWidget);
     expect(find.text('Preparando tu sesión...'), findsWidgets);
 
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.pump(const Duration(milliseconds: 200));
   });
 }

@@ -1698,18 +1698,19 @@ class ApiService {
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> updateAdminSpecies(int id, Map<String, dynamic> data) async {
-    final response = await _client.put(
-      AppConfig.buildUri('/admin/species/$id'),
-      headers: await _headers(authorized: true),
-    );
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw ApiException(
-        _parseResponseMessage(response, 'Error ${response.statusCode} al actualizar especie'),
-      );
-    }
-    return jsonDecode(response.body) as Map<String, dynamic>;
-  }
+Future<Map<String, dynamic>> updateAdminSpecies(int id, Map<String, dynamic> data) async {
+     final response = await _client.put(
+       AppConfig.buildUri('/admin/species/$id'),
+       headers: await _headers(authorized: true),
+       body: jsonEncode(data),
+     );
+     if (response.statusCode < 200 || response.statusCode >= 300) {
+       throw ApiException(
+         _parseResponseMessage(response, 'Error ${response.statusCode} al actualizar especie'),
+       );
+     }
+     return jsonDecode(response.body) as Map<String, dynamic>;
+   }
 
   Future<void> deleteAdminSpecies(int id) async {
     final response = await _client.delete(

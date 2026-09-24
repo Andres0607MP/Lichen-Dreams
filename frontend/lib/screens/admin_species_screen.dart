@@ -97,7 +97,7 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
           }
 
           if (_catalogState!.speciesError != null) {
-            return _buildErrorState(context);
+            return _buildErrorState(context, _catalogState!.speciesError!);
           }
 
           if (_catalogState!.species.isEmpty) {
@@ -130,6 +130,32 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
                       aspectRatio = 0.85;
                     }
 
+                    // Altura mínima de celda para que _SpeciesCard no desborde:
+                    // 344 px fijos (imagen 180 + espaciados internos 12/8/16 +
+                    // botones de administración 48 + padding 32 de la card +
+                    // margen inferior 16 + 8 px de holgura) y 134 px por unidad
+                    // de textScaleFactor (título a 2 líneas, nombre común a 2
+                    // líneas y hasta 3 filas de chips escalan hasta 1.30, con
+                    // margen de seguridad adicional).
+                    const double fixedCardHeight = 344.0;
+                    final double textScale =
+                        MediaQuery.textScalerOf(context).scale(1.0);
+                    final double minCellHeight =
+                        fixedCardHeight + 134.0 * textScale;
+                    // Ancho real de cada celda: padding horizontal del grid (16*2)
+                    // y separación entre columnas (mainAxisSpacing/crossAxisSpacing
+                    // de 16) repartidos según crossAxisCount.
+                    final double cellWidth =
+                        (width - 32 - 16 * (crossAxisCount - 1)) / crossAxisCount;
+                    // Se conserva la proporción responsive actual y se toma la
+                    // mayor entre esa altura y la mínima necesaria: la celda puede
+                    // crecer en vertical y el GridView hace scroll con normalidad.
+                    final double proportionalHeight = cellWidth / aspectRatio;
+                    aspectRatio = cellWidth /
+                        (proportionalHeight > minCellHeight
+                            ? proportionalHeight
+                            : minCellHeight);
+
                     return GridView.builder(
                       padding: const EdgeInsets.all(16),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -141,17 +167,18 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
                       itemCount: _catalogState!.species.length,
                       itemBuilder: (context, index) {
                         final species = _catalogState!.species[index];
-                        return _SpeciesCard(
-                          species: species,
-                          isAdmin: isAdmin,
-                          onTap: isAdmin
-                              ? () => _showSpeciesForm(context, species: species)
-                              : () => Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.speciesDetail,
-                                  arguments: species,
-                                ),
-                        );
+return _SpeciesCard(
+  species: species,
+  isAdmin: isAdmin,
+  onTap: isAdmin
+      ? () => _showSpeciesForm(context, species: species)
+      : () => Navigator.pushNamed(
+          context,
+          AppRoutes.speciesDetail,
+          arguments: species,
+        ),
+  onDelete: isAdmin ? () => _confirmDelete(context, species) : null,
+);
                       },
                     );
                   },
@@ -164,7 +191,7 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
     );
   }
 
-  Widget _buildErrorState(BuildContext context) {
+  Widget _buildErrorState(BuildContext context, String errorMessage) {
     final colorScheme = Theme.of(context).colorScheme;
     return Center(
       child: ConstrainedBox(
@@ -174,25 +201,37 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.error_outline_rounded, size: 56, color: AppTheme.errorColor.withValues(alpha: 0.25)),
-              const SizedBox(height: 20),
+              Icon(Icons.error_outline_rounded, size: 72, color: AppTheme.errorColor),
+              const SizedBox(height: 24),
               Text(
                 'No se pudo cargar el catálogo',
-                style: GoogleFonts.poppins(fontSize: 17, fontWeight: FontWeight.w700, color: colorScheme.onSurface),
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               Text(
-                _catalogState!.speciesError!,
-                style: GoogleFonts.poppins(fontSize: 13, color: colorScheme.onSurfaceVariant, height: 1.5),
+                errorMessage,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: () => _catalogState!.loadSpecies(),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: Text('Reintentar', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                style: FilledButton.styleFrom(backgroundColor: AppTheme.especiesPrimary),
+                icon: const Icon(Icons.refresh_rounded, size: 20),
+                label: Text('Reintentar', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.especiesPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ],
           ),
@@ -212,8 +251,8 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 88,
-                height: 88,
+                width: 112,
+                height: 112,
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
@@ -225,26 +264,38 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(Icons.eco_rounded, size: 44, color: AppTheme.especiesPrimary.withValues(alpha: 0.7)),
+                child: Icon(Icons.eco_rounded, size: 64, color: AppTheme.especiesPrimary),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 24),
               Text(
                 'Catálogo vacío',
-                style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700, color: colorScheme.onSurface),
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 'Agrega la primera especie para comenzar a construir el catálogo de líquenes.',
-                style: GoogleFonts.poppins(fontSize: 13, color: colorScheme.onSurfaceVariant, height: 1.5),
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 32),
               FilledButton.icon(
                 onPressed: () => _showSpeciesForm(context),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: Text('Agregar primera especie', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-                style: FilledButton.styleFrom(backgroundColor: AppTheme.especiesPrimary),
+                icon: const Icon(Icons.add_rounded, size: 20),
+                label: Text('Agregar primera especie', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppTheme.especiesPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
               ),
             ],
           ),
@@ -316,9 +367,23 @@ class _AdminSpeciesScreenState extends State<AdminSpeciesScreen> {
       ),
     );
 
-    if (confirmed == true && context.mounted) {
-      try {
-        await _catalogState!.deleteSpecies(species['id_especie']);
+if (confirmed == true && context.mounted) {
+       final idString = species['id_especie']?.toString();
+       final id = int.tryParse(idString ?? '');
+       if (id == null) {
+         if (context.mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(
+               content: Text('ID de especie inválido'),
+               backgroundColor: AppTheme.errorColor,
+               behavior: SnackBarBehavior.floating,
+             ),
+           );
+         }
+         return;
+       }
+       try {
+         await _catalogState!.deleteSpecies(id);
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -368,8 +433,9 @@ class _SpeciesCard extends StatelessWidget {
   final Map<String, dynamic> species;
   final bool isAdmin;
   final VoidCallback onTap;
+  final VoidCallback? onDelete;
 
-  const _SpeciesCard({required this.species, required this.isAdmin, required this.onTap});
+  const _SpeciesCard({required this.species, required this.isAdmin, required this.onTap, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -381,9 +447,16 @@ class _SpeciesCard extends StatelessWidget {
     final imagen = species['imagen_referencia'];
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.shadow05,
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Material(
         color: Theme.of(context).colorScheme.surface,
@@ -392,95 +465,131 @@ class _SpeciesCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(18),
           child: Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                 Container(
-                  width: double.infinity,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: imagen != null && imagen.toString().isNotEmpty
-                        ? Image.network(
-                            AppConfig.getImageUrl(imagen.toString()),
-                            fit: BoxFit.cover,
+                // Image
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: imagen != null && imagen.toString().isNotEmpty
+                      ? Image.network(
+                          AppConfig.getImageUrl(imagen.toString()),
+                          height: 180,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+if (loadingProgress == null) return child;
+                             return Center(
+                               child: CircularProgressIndicator(
+                                 value: loadingProgress.expectedTotalBytes != null
+                                     ? loadingProgress.cumulativeBytesLoaded /
+                                         (loadingProgress.expectedTotalBytes ?? 1)
+                                     : null,
+                               ),
+                             );
+                          },
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 180,
                             width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) => _PlaceholderIcon(),
-                          )
-                        : _PlaceholderIcon(),
-                  ),
+                            color: Theme.of(context).scaffoldBackgroundColor,
+                            child: const Icon(
+                              Icons.eco_rounded,
+                              size: 32,
+                              color: AppTheme.especiesPrimary,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          height: 180,
+                          width: double.infinity,
+                          color: Theme.of(context).scaffoldBackgroundColor,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.eco_rounded,
+                                size: 48,
+                                color: AppTheme.especiesPrimary.withValues(alpha: 0.3),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Sin imagen',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 Text(
                   nombreCientifico,
                   style: GoogleFonts.poppins(
-                    fontSize: 13,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: Theme.of(context).colorScheme.onSurface,
-                    height: 1.25,
                   ),
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (nombreComun != null && nombreComun.toString().isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    nombreComun.toString(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                if (nombreComun != null && nombreComun.toString().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      nombreComun.toString(),
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
                 const SizedBox(height: 8),
                 Wrap(
-                  spacing: 5,
-                  runSpacing: 5,
+                  spacing: 8,
+                  runSpacing: 4,
                   children: [
                     if (colorPredominante != null && colorPredominante.toString().isNotEmpty)
-                      _InfoChip(icon: Icons.palette_rounded, label: colorPredominante.toString()),
+                      _InfoChip(
+                        icon: Icons.palette_rounded,
+                        label: colorPredominante.toString(),
+                      ),
                     if (tipoCrecimiento != null && tipoCrecimiento.toString().isNotEmpty)
-                      _InfoChip(icon: Icons.landscape_rounded, label: tipoCrecimiento.toString()),
+                      _InfoChip(
+                        icon: Icons.landscape_rounded,
+                        label: tipoCrecimiento.toString(),
+                      ),
                     if (habitat != null && habitat.toString().isNotEmpty)
-                      _InfoChip(icon: Icons.forest_rounded, label: habitat.toString()),
+                      _InfoChip(
+                        icon: Icons.forest_rounded,
+                        label: habitat.toString(),
+                      ),
                   ],
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 16),
                 if (isAdmin)
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: onTap,
-                          icon: Icon(Icons.edit_rounded, size: 13),
-                          label: Text('Editar', style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w600)),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppTheme.especiesPrimary,
-                            side: BorderSide(color: AppTheme.especiesPrimary.withValues(alpha: 0.3)),
-                            padding: const EdgeInsets.symmetric(vertical: 5),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
                       IconButton(
-                        onPressed: () => _onDelete(context, species),
-                        icon: Icon(Icons.delete_outline_rounded, size: 15, color: AppTheme.errorColor.withValues(alpha: 0.7)),
-                        tooltip: 'Eliminar',
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppTheme.errorColor.withValues(alpha: 0.06),
-                          padding: const EdgeInsets.all(5),
-                        ),
+                        icon: Icon(Icons.edit_rounded, size: 20),
+                        color: AppTheme.especiesPrimary,
+                        tooltip: 'Editar',
+                        onPressed: onTap,
                       ),
+                      const SizedBox(width: 8),
+IconButton(
+  icon: Icon(Icons.delete_outline_rounded, size: 20),
+  color: AppTheme.errorColor,
+  tooltip: 'Eliminar',
+  onPressed: onDelete != null ? () => onDelete!() : null,
+),
                     ],
                   ),
               ],
@@ -490,24 +599,14 @@ class _SpeciesCard extends StatelessWidget {
       ),
     );
   }
-
-  void _onDelete(BuildContext context, Map<String, dynamic> species) async {
-    final screen = context.findAncestorStateOfType<_AdminSpeciesScreenState>();
-    if (screen != null) {
-      await screen._confirmDelete(context, species);
-    }
-  }
 }
 
-class _PlaceholderIcon extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).scaffoldBackgroundColor,
-      child: Icon(Icons.eco_rounded, size: 32, color: AppTheme.especiesPrimary.withValues(alpha: 0.15)),
-    );
-  }
-}
+
+
+
+  
+
+
 
 class _InfoChip extends StatelessWidget {
   final IconData icon;
@@ -667,7 +766,7 @@ class _SpeciesFormSheetState extends State<_SpeciesFormSheet> {
 
   Future<void> _save() async {
     setState(() => _autovalidate = true);
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState == null || !_formKey.currentState!.validate()) return;
 
     setState(() {
       _isSaving = true;
@@ -700,11 +799,22 @@ class _SpeciesFormSheetState extends State<_SpeciesFormSheet> {
         if (imageUrl != null && imageUrl.isNotEmpty) 'imagen_referencia': imageUrl,
       };
 
-      if (_isEditing) {
-        await _catalogState.updateSpecies(widget.species!['id_especie'], payload);
-      } else {
-        await _catalogState.createSpecies(payload);
-      }
+if (_isEditing) {
+          final idString = widget.species?['id_especie']?.toString();
+          final id = int.tryParse(idString ?? '');
+          if (id == null) {
+            if (mounted) {
+              setState(() {
+                _isSaving = false;
+                _serverError = 'ID de especie inválido';
+              });
+            }
+            return;
+          }
+          await _catalogState.updateSpecies(id, payload);
+        } else {
+          await _catalogState.createSpecies(payload);
+        }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (mounted) {
@@ -717,27 +827,32 @@ class _SpeciesFormSheetState extends State<_SpeciesFormSheet> {
   }
 
   Widget _sectionHeader(String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 18, bottom: 10),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: AppTheme.especiesPrimary.withValues(alpha: 0.8)),
-          const SizedBox(width: 8),
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.4,
-              color: AppTheme.especiesPrimary,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Row(
+            children: [
+              Icon(icon, size: 22, color: AppTheme.especiesPrimary),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppTheme.especiesPrimary,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+        const Divider(height: 1, color: AppTheme.borderColor),
+      ],
     );
   }
 
-  Widget _field({
+Widget _field({
     required TextEditingController controller,
     required String label,
     required bool required,
@@ -748,7 +863,7 @@ class _SpeciesFormSheetState extends State<_SpeciesFormSheet> {
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
@@ -758,19 +873,40 @@ class _SpeciesFormSheetState extends State<_SpeciesFormSheet> {
         onChanged: (_) => setState(() {}),
         style: GoogleFonts.poppins(fontSize: 14, color: colorScheme.onSurface),
         decoration: InputDecoration(
-          label: Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: label),
-                if (required)
-                  TextSpan(text: ' *', style: TextStyle(color: colorScheme.error)),
-              ],
-            ),
+          labelText: label,
+          labelStyle: GoogleFonts.poppins(
+            fontSize: 12,
+            color: required ? colorScheme.error : colorScheme.onSurfaceVariant,
           ),
           hintText: hint,
+          hintStyle: GoogleFonts.poppins(
+            fontSize: 12,
+            color: colorScheme.onSurfaceVariant,
+          ),
           counterText: '',
           filled: true,
           fillColor: Theme.of(context).scaffoldBackgroundColor,
+          contentPadding: AppTheme.inputContentPadding,
+          border: OutlineInputBorder(
+            borderRadius: AppTheme.inputRadius,
+            borderSide: BorderSide(color: colorScheme.outlineVariant),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: AppTheme.inputRadius,
+            borderSide: BorderSide(color: colorScheme.outlineVariant),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: AppTheme.inputRadius,
+            borderSide: BorderSide(color: AppTheme.especiesPrimary),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: AppTheme.inputRadius,
+            borderSide: BorderSide(color: colorScheme.error),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: AppTheme.inputRadius,
+            borderSide: BorderSide(color: colorScheme.error),
+          ),
         ),
       ),
     );
@@ -1009,7 +1145,7 @@ class _ImagePickerField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final hasImage = localPreview != null || (currentImageUrl != null && currentImageUrl!.isNotEmpty);
+    final hasImage = localPreview != null || (currentImageUrl?.isNotEmpty == true);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -1045,13 +1181,13 @@ class _ImagePickerField extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: localPreview != null
-                            ? Image.file(localPreview!, fit: BoxFit.cover)
-                            : Image.network(
-                                AppConfig.getImageUrl(currentImageUrl!),
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) => _PlaceholderContent(onPickImage: onPickImage),
-                              ),
+child: localPreview != null
+    ? Image.file(localPreview!, fit: BoxFit.cover)
+    : Image.network(
+        AppConfig.getImageUrl(currentImageUrl!),
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _PlaceholderContent(onPickImage: onPickImage),
+      ),
                       ),
                       if (isUploading)
                         Container(

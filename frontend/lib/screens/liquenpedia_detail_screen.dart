@@ -205,6 +205,11 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                 overflow: TextOverflow.ellipsis,
               ),
               centerTitle: false,
+              titlePadding: EdgeInsetsDirectional.only(
+                start: 72,
+                end: widget.isAdmin ? 112 : 0,
+                bottom: 16,
+              ),
               background: Stack(
                 children: [
                   Positioned.fill(
@@ -244,9 +249,9 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                     ),
                   ),
                   Positioned(
-                    bottom: 16,
+                    bottom: 50,
                     left: 0,
-                    right: 0,
+                    right: 48,
                     child: Center(
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 280),
@@ -281,9 +286,16 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                     bottom: 12,
                     right: 12,
                     child: Semantics(
+                      button: true,
                       label: 'Ampliar imagen',
-                      child: IgnorePointer(
-                        ignoring: false,
+                      child: GestureDetector(
+                        onTap: () {
+                          final imageUrl = article.imagenArticulo;
+                          if (imageUrl != null && imageUrl.isNotEmpty) {
+                            final resolved = AppConfig.getImageUrl(imageUrl);
+                            ImagePreviewDialog.show(context, resolved);
+                          }
+                        },
                         child: Container(
                           width: 36,
                           height: 36,

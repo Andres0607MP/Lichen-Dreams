@@ -593,15 +593,16 @@ class _QuickStatsGrid extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final isNarrow = constraints.maxWidth < 400;
         final crossAxisCount = constraints.maxWidth > 480 ? 4 : 2;
         return GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
-            childAspectRatio: 1.05,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            childAspectRatio: isNarrow ? 1.15 : 1.05,
+            crossAxisSpacing: isNarrow ? 8 : 12,
+            mainAxisSpacing: isNarrow ? 8 : 12,
           ),
           itemCount: items.length,
           itemBuilder: (context, index) {
@@ -668,6 +669,7 @@ class _QuickStatItem extends StatelessWidget {
                 ),
                 Text(
                   label,
+                  softWrap: true,
                   style: GoogleFonts.poppins(
                     fontSize: 11,
                     fontWeight: FontWeight.w500,
@@ -697,10 +699,8 @@ class _LichenDistributionSection extends StatelessWidget {
     final affected = (stats['liquidos_afectados'] ?? 0) is int
         ? stats['liquidos_afectados'] as int
         : int.tryParse('${stats['liquidos_afectados'] ?? 0}') ?? 0;
-    final unknown = (stats['liquidos_desconocidos'] ?? 0) is int
-        ? stats['liquidos_desconocidos'] as int
-        : int.tryParse('${stats['liquidos_desconocidos'] ?? 0}') ?? 0;
-    final total = healthy + affected + unknown;
+    // No incluimos "Desconocidos" en la distribución ambiental
+    final total = healthy + affected;
 
     if (total == 0) return const SizedBox.shrink();
 
@@ -745,8 +745,6 @@ class _LichenDistributionSection extends StatelessWidget {
                           _LichenLegend(label: 'Saludables', value: healthy, total: total, color: AppTheme.successColor),
                           const SizedBox(height: 12),
                           _LichenLegend(label: 'Afectados', value: affected, total: total, color: AppTheme.errorColor),
-                          const SizedBox(height: 12),
-                          _LichenLegend(label: 'Desconocidos', value: unknown, total: total, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ],
                       ),
                     ),
@@ -754,7 +752,7 @@ class _LichenDistributionSection extends StatelessWidget {
                     SizedBox(
                       width: 160,
                       height: 160,
-                      child: _DonutChart(healthy: healthy, affected: affected, unknown: unknown),
+                      child: _DonutChart(healthy: healthy, affected: affected),
                     ),
                   ],
                 );
@@ -791,7 +789,7 @@ class _LichenDistributionSection extends StatelessWidget {
                       SizedBox(
                         width: 110,
                         height: 110,
-                        child: _DonutChart(healthy: healthy, affected: affected, unknown: unknown),
+                        child: _DonutChart(healthy: healthy, affected: affected),
                       ),
                     ],
                   ),
@@ -799,8 +797,6 @@ class _LichenDistributionSection extends StatelessWidget {
                   _LichenLegend(label: 'Saludables', value: healthy, total: total, color: AppTheme.successColor),
                   const SizedBox(height: 10),
                   _LichenLegend(label: 'Afectados', value: affected, total: total, color: AppTheme.errorColor),
-                  const SizedBox(height: 10),
-                  _LichenLegend(label: 'Desconocidos', value: unknown, total: total, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ],
               );
             },
@@ -832,7 +828,7 @@ class _LichenLegend extends StatelessWidget {
           decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
         ),
         const SizedBox(width: 10),
-        Expanded(
+        Flexible(
           child: Text(
             label,
             style: GoogleFonts.poppins(
@@ -840,8 +836,10 @@ class _LichenLegend extends StatelessWidget {
               fontWeight: FontWeight.w500,
               color: Theme.of(context).colorScheme.onSurface,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
+        const SizedBox(width: 8),
         Text(
           '$value',
           style: GoogleFonts.poppins(
@@ -867,13 +865,12 @@ class _LichenLegend extends StatelessWidget {
 class _DonutChart extends StatelessWidget {
   final int healthy;
   final int affected;
-  final int unknown;
 
-  const _DonutChart({required this.healthy, required this.affected, required this.unknown});
+  const _DonutChart({required this.healthy, required this.affected});
 
   @override
   Widget build(BuildContext context) {
-    final total = healthy + affected + unknown;
+    final total = healthy + affected;
     if (total == 0) return const SizedBox.shrink();
 
     return TweenAnimationBuilder<double>(
@@ -885,7 +882,6 @@ class _DonutChart extends StatelessWidget {
           painter: _DonutChartPainter(
             healthy: healthy.toDouble(),
             affected: affected.toDouble(),
-            unknown: unknown.toDouble(),
             progress: value,
           ),
         );
@@ -897,13 +893,11 @@ class _DonutChart extends StatelessWidget {
 class _DonutChartPainter extends CustomPainter {
   final double healthy;
   final double affected;
-  final double unknown;
   final double progress;
 
   _DonutChartPainter({
     required this.healthy,
     required this.affected,
-    required this.unknown,
     required this.progress,
   });
 
@@ -913,18 +907,16 @@ class _DonutChartPainter extends CustomPainter {
     final radius = size.width / 2 - 8;
     final strokeWidth = 14.0;
     final startAngle = -math.pi / 2;
-    final total = healthy + affected + unknown;
+    final total = healthy + affected;
 
     final segments = <double>[
       healthy / total,
       affected / total,
-      unknown / total,
     ];
 
     final colors = <Color>[
       AppTheme.successColor,
       AppTheme.errorColor,
-      AppTheme.textGray,
     ];
 
     var currentStart = startAngle;
@@ -1018,22 +1010,6 @@ class _AirQualitySection extends StatelessWidget {
                   ],
                 ),
               ),
-              if (stats['nivel_contaminacion_predominante'] != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppTheme.warningEnvironmental.withValues(alpha: 0.10),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    stats['nivel_contaminacion_predominante'].toString(),
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.warningEnvironmental,
-                    ),
-                  ),
-                ),
             ],
           ),
         ),
@@ -1046,7 +1022,7 @@ class _AirQualitySection extends StatelessWidget {
       'buena': 'Buena',
       'mala': 'Mala',
       'moderada': 'Moderada',
-      'desconocida': 'N/D',
+      'desconocida': 'Sin clasificar',
     };
     return map[quality] ?? quality;
   }
@@ -1090,14 +1066,6 @@ class _AmbientConditionsSection extends StatelessWidget {
         color: AppTheme.mapaPrimary,
       ));
     }
-    if (stats['nivel_contaminacion_predominante'] != null) {
-      items.add(_AmbientChip(
-        icon: Icons.cloud_rounded,
-        label: 'Contaminación',
-        value: stats['nivel_contaminacion_predominante'].toString(),
-        color: AppTheme.warningEnvironmental,
-      ));
-    }
 
     if (items.isEmpty) return const SizedBox.shrink();
 
@@ -1125,7 +1093,7 @@ class _AmbientConditionsSection extends StatelessWidget {
               const SizedBox(height: 14),
               LayoutBuilder(
                 builder: (context, constraints) {
-                  final isWide = constraints.maxWidth > 360;
+                  final isWide = constraints.maxWidth > 380;
                   if (isWide) {
                     return Row(
                       children: [
@@ -1318,6 +1286,7 @@ class _InsightsSection extends StatelessWidget {
                               color: Theme.of(context).colorScheme.onSurfaceVariant,
                               height: 1.5,
                             ),
+                            softWrap: true,
                           ),
                         ],
                       ),

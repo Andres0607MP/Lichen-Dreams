@@ -1,0 +1,110 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build APK & Create Release
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.1'
+          channel: 'stable'
+
+      - name: Read version from pubspec.yaml
+        id: version
+        run: |
+          VERSION_LINE=$(grep '^version:' pubspec.yaml | head -1)
+          if [[ ! "$VERSION_LINE" =~ ^version:\ ([0-9]+\.[0-9]+\.[0-9]+)\+([0-9]+)$ ]]; then
+            echo "::error::No se pudo parsear version en pubspec.yaml: $VERSION_LINE"
+            exit 1
+          fi
+          VERSION_NAME="${BASH_REMATCH[1]}"
+          BUILD_NUMBER="${BASH_REMATCH[2]}"
+          echo "version_name=$VERSION_NAME" >> $GITHUB_OUTPUT
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Detectado: version=$VERSION_NAME, build=$BUILD_NUMBER"
+
+      - name: Validate tag matches pubspec version
+        run: |
+          EXPECTED_TAG="v${{ steps.version.outputs.version_name }}"
+          ACTUAL_TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$ACTUAL_TAG" != "$EXPECTED_TAG" ]]; then
+            echo "::error::El tag '$ACTUAL_TAG' no coincide con la versión en pubspec.yaml ('$EXPECTED_TAG')"
+            exit 1
+          fi
+          echo "Tag validado: $ACTUAL_TAG == $EXPECTED_TAG"
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Build APK (release)
+        run: |
+          flutter build apk --release \
+            --build-name=${{ steps.version.outputs.version_name }} \
+            --build-number=${{ steps.version.outputs.build_number }}
+
+      - name: Locate and rename APK
+        id: apk
+        run: |
+          BUILT_APK="build/app/outputs/flutter-apk/app-release.apk"
+          if [[ ! -f "$BUILT_APK" ]]; then
+            echo "::error::APK no encontrado en $BUILT_APK"
+            exit 1
+          fi
+          FINAL_APK="Lichen_Dreams_v${{ steps.version.outputs.version_name }}.apk"
+          cp "$BUILT_APK" "$FINAL_APK"
+          echo "apk_path=$FINAL_APK" >> $GITHUB_OUTPUT
+          echo "APK preparado: $FINAL_APK"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Lichen Dreams ${{ steps.version.outputs.version_name }}
+          generate_release_notes: true
+          files: ${{ steps.apk.outputs.apk_path }}
+
+      - name: Dispatch sync to landing repo
+        if: ${{ env.LANDING_REPO_TOKEN != '' }}
+        uses: actions/github-script@v7
+        env:
+          LANDING_REPO_TOKEN: ${{ secrets.LANDING_REPO_TOKEN }}
+        with:
+          github-token: ${{ env.LANDING_REPO_TOKEN }}
+          script: |
+            await github.rest.repos.createDispatchEvent({
+              owner: 'HeidyVivas',
+              repo: 'Qr_Lichen-Dreams',
+              event_type: 'new-release',
+              client_payload: {
+                version: '${{ steps.version.outputs.version_name }}',
+                tag: '${{ github.ref_name }}'
+              }
+            })
+            console.log('Disparado repository_dispatch new-release a HeidyVivas/Qr_Lichen-Dreams')
+
+      - name: Summary
+        run: |
+          echo "## Build & Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ steps.version.outputs.version_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Build: ${{ steps.version.outputs.build_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Tag: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- APK: ${{ steps.apk.outputs.apk_path }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Release creado con generate_release_notes: true" >> $GITHUB_STEP_SUMMARY

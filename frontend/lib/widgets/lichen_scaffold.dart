@@ -179,25 +179,25 @@ class _LichenScaffoldState extends State<LichenScaffold> with TickerProviderStat
               ),
             ),
           ],
-          AnimatedBuilder(
-            animation: _bottomNavController,
-            child: bodyContent,
-            builder: (context, child) {
-              final bottomPadding = widget.showBottomNav
-                  ? (16 + 84 * _bottomNavController.value)
-                  : 0.0;
-              final padding = EdgeInsets.fromLTRB(16, 16, 16, bottomPadding);
+          NotificationListener<ScrollNotification>(
+            onNotification: _onScrollNotification,
+            child: AnimatedBuilder(
+              animation: _bottomNavController,
+              child: bodyContent,
+              builder: (context, child) {
+                final bottomPadding = widget.showBottomNav
+                    ? (16 + 84 * _bottomNavController.value)
+                    : 0.0;
+                final padding = EdgeInsets.fromLTRB(16, 16, 16, bottomPadding);
 
-              return Positioned.fill(
-                child: SafeArea(
-                  bottom: false,
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: _onScrollNotification,
+                return Positioned.fill(
+                  child: SafeArea(
+                    bottom: false,
                     child: Padding(padding: padding, child: child),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
           AnimatedBuilder(
             animation: _bottomNavController,

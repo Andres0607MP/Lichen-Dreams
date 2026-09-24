@@ -7,12 +7,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
-import '../config/app_config.dart';
 import '../routes/route_names.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/app_notification.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/map_controls.dart';
+import '../widgets/profile_avatar.dart';
 import '../services/api_service.dart';
 import '../state/map_state.dart';
 import '../state/auth_state.dart';
@@ -1483,36 +1483,30 @@ Widget _buildMapControls() {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (showUserInfo && point.usuario != null)
+if (showUserInfo && point.usuario != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: Row(
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.15),
-                   backgroundImage: point.usuario!['foto_perfil'] != null && point.usuario!['foto_perfil'].toString().isNotEmpty
-                       ? NetworkImage(AppConfig.getImageUrl(point.usuario!['foto_perfil'].toString()))
-                      : null,
-                  child: point.usuario!['foto_perfil'] == null || point.usuario!['foto_perfil'].toString().isEmpty
-                      ? Icon(Icons.person_rounded, size: 16, color: AppTheme.primaryGreen)
-                      : null,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    point.usuario!['nombre']?.toString() ?? 'Usuario',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                ProfileAvatar(
+                    imagePath: point.usuario!['foto_perfil']?.toString(),
+                    radius: 16,
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      point.usuario!['nombre']?.toString() ?? 'Usuario',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
           ),
         Row(
           children: [
@@ -2283,38 +2277,41 @@ class MapQualityFilterBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _QualityFilterOption(
-          label: 'Saludable',
-          color: AppTheme.successColor,
-          isActive: selected == AirQualityLevel.good,
-          onTap: () => onChanged(
-            selected == AirQualityLevel.good ? null : AirQualityLevel.good,
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _QualityFilterOption(
+            label: 'Saludable',
+            color: AppTheme.successColor,
+            isActive: selected == AirQualityLevel.good,
+            onTap: () => onChanged(
+              selected == AirQualityLevel.good ? null : AirQualityLevel.good,
+            ),
           ),
-        ),
-        const SizedBox(width: 6),
-        _QualityFilterOption(
-          label: 'Moderado',
-          color: _MapExplorerScreenState.moderateYellow,
-          isActive: selected == AirQualityLevel.moderate,
-          onTap: () => onChanged(
-            selected == AirQualityLevel.moderate
-                ? null
-                : AirQualityLevel.moderate,
+          const SizedBox(width: 6),
+          _QualityFilterOption(
+            label: 'Moderado',
+            color: _MapExplorerScreenState.moderateYellow,
+            isActive: selected == AirQualityLevel.moderate,
+            onTap: () => onChanged(
+              selected == AirQualityLevel.moderate
+                  ? null
+                  : AirQualityLevel.moderate,
+            ),
           ),
-        ),
-        const SizedBox(width: 6),
-        _QualityFilterOption(
-          label: 'Contaminado',
-          color: AppTheme.errorColor,
-          isActive: selected == AirQualityLevel.poor,
-          onTap: () => onChanged(
-            selected == AirQualityLevel.poor ? null : AirQualityLevel.poor,
+          const SizedBox(width: 6),
+          _QualityFilterOption(
+            label: 'Contaminado',
+            color: AppTheme.errorColor,
+            isActive: selected == AirQualityLevel.poor,
+            onTap: () => onChanged(
+              selected == AirQualityLevel.poor ? null : AirQualityLevel.poor,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

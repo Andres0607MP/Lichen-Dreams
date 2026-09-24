@@ -607,45 +607,84 @@ class _RecentReportCard extends StatelessWidget {
                 const SizedBox(height: 18),
                 const Divider(height: 1, thickness: 1),
                 const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _ModernStatChip(
-                        icon: Icons.analytics_rounded,
-                        label: 'Análisis',
-                        value: '${stats['total_analisis'] ?? 0}',
-                        colorScheme: colorScheme,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                      Expanded(
-                        child: _ModernStatChip(
-                          icon: Icons.place_rounded,
-                          label: 'Ubicaciones',
-                          value: '${stats['ubicaciones_analizadas'] ?? 0}',
-                          colorScheme: colorScheme,
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isNarrow = constraints.maxWidth < 380;
+                    if (isNarrow) {
+                      return Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        alignment: WrapAlignment.center,
+                        children: [
+                          _ModernStatChip(
+                            icon: Icons.analytics_rounded,
+                            label: 'Análisis',
+                            value: '${stats['total_analisis'] ?? 0}',
+                            colorScheme: colorScheme,
+                          ),
+                          _ModernStatChip(
+                            icon: Icons.place_rounded,
+                            label: 'Ubicaciones',
+                            value: '${stats['ubicaciones_analizadas'] ?? 0}',
+                            colorScheme: colorScheme,
+                          ),
+                          _ModernStatChip(
+                            icon: Icons.circle_rounded,
+                            label: 'Zonas',
+                            value: '${stats['zonas_ambientales_count'] ?? 0}',
+                            colorScheme: colorScheme,
+                          ),
+                          _ModernStatChip(
+                            icon: Icons.air_rounded,
+                            label: 'Calidad',
+                            value: _translateQuality(stats['calidad_aire_predominante']?.toString() ?? 'desconocida'),
+                            colorScheme: colorScheme,
+                            accentColor: _qualityColor(stats['calidad_aire_predominante']?.toString() ?? 'desconocida'),
+                          ),
+                        ],
+                      );
+                    }
+                    return Row(
+                      children: [
+                        Expanded(
+                          child: _ModernStatChip(
+                            icon: Icons.analytics_rounded,
+                            label: 'Análisis',
+                            value: '${stats['total_analisis'] ?? 0}',
+                            colorScheme: colorScheme,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _ModernStatChip(
-                          icon: Icons.circle_rounded,
-                          label: 'Zonas',
-                          value: '${stats['zonas_ambientales_count'] ?? 0}',
-                          colorScheme: colorScheme,
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _ModernStatChip(
+                            icon: Icons.place_rounded,
+                            label: 'Ubicaciones',
+                            value: '${stats['ubicaciones_analizadas'] ?? 0}',
+                            colorScheme: colorScheme,
+                          ),
                         ),
-                      ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _ModernStatChip(
-                        icon: Icons.air_rounded,
-                        label: 'Calidad',
-                        value: _translateQuality(stats['calidad_aire_predominante']?.toString() ?? 'desconocida'),
-                        colorScheme: colorScheme,
-                        accentColor: _qualityColor(stats['calidad_aire_predominante']?.toString() ?? 'desconocida'),
-                      ),
-                    ),
-                  ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _ModernStatChip(
+                            icon: Icons.circle_rounded,
+                            label: 'Zonas',
+                            value: '${stats['zonas_ambientales_count'] ?? 0}',
+                            colorScheme: colorScheme,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _ModernStatChip(
+                            icon: Icons.air_rounded,
+                            label: 'Calidad',
+                            value: _translateQuality(stats['calidad_aire_predominante']?.toString() ?? 'desconocida'),
+                            colorScheme: colorScheme,
+                            accentColor: _qualityColor(stats['calidad_aire_predominante']?.toString() ?? 'desconocida'),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
                 ),
                 if (reportId != null) ...[
                   const SizedBox(height: 18),
@@ -821,89 +860,194 @@ class _PreviousReportCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppTheme.primaryGreen.withValues(alpha: 0.10),
-                        AppTheme.lightGreen.withValues(alpha: 0.05),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  padding: const EdgeInsets.all(10),
-                  child: Image.asset(
-                    'assets/images/vitacora.png',
-                    width: 22,
-                    height: 22,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 380;
+                if (isNarrow) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
+                      // Icono y contenido apilados verticalmente
                       Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _CompactMetric(value: '${stats['total_analisis'] ?? 0}', label: 'análisis'),
-                          const SizedBox(width: 10),
-                          _CompactMetric(value: '${stats['zonas_ambientales_count'] ?? 0}', label: 'zonas'),
-                          const SizedBox(width: 10),
-                          Text(
-                            _formatDate(fecha),
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppTheme.primaryGreen.withValues(alpha: 0.10),
+                                  AppTheme.lightGreen.withValues(alpha: 0.05),
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(10),
+                            child: Image.asset(
+                              'assets/images/vitacora.png',
+                              width: 22,
+                              height: 22,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  title,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 4,
+                                  children: [
+                                    _CompactMetric(value: '${stats['total_analisis'] ?? 0}', label: 'análisis'),
+                                    _CompactMetric(value: '${stats['zonas_ambientales_count'] ?? 0}', label: 'zonas'),
+                                    Text(
+                                      _formatDate(fecha),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11,
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
+                      const SizedBox(height: 12),
+                      // Acciones (eliminar + chevron) en su propia fila
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (onDelete != null)
+                            Tooltip(
+                              message: 'Eliminar reporte',
+                              child: InkWell(
+                                onTap: onDelete,
+                                borderRadius: BorderRadius.circular(10),
+                                child: Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.errorColor.withValues(alpha: 0.08),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 16,
+                                    color: AppTheme.errorColor.withValues(alpha: 0.85),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          const SizedBox(width: 4),
+                          Icon(Icons.chevron_right_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+                        ],
+                      ),
                     ],
-                  ),
-                ),
-                if (onDelete != null)
-                  Tooltip(
-                    message: 'Eliminar reporte',
-                    child: InkWell(
-                      onTap: onDelete,
-                      borderRadius: BorderRadius.circular(10),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: AppTheme.errorColor.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(10),
+                  );
+                }
+                // Layout original para pantallas anchas
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primaryGreen.withValues(alpha: 0.10),
+                            AppTheme.lightGreen.withValues(alpha: 0.05),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                        child: Icon(
-                          Icons.delete_outline_rounded,
-                          size: 16,
-                          color: AppTheme.errorColor.withValues(alpha: 0.85),
-                        ),
+                        shape: BoxShape.circle,
+                      ),
+                      padding: const EdgeInsets.all(10),
+                      child: Image.asset(
+                        'assets/images/vitacora.png',
+                        width: 22,
+                        height: 22,
+                        fit: BoxFit.contain,
                       ),
                     ),
-                  ),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
-              ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              _CompactMetric(value: '${stats['total_analisis'] ?? 0}', label: 'análisis'),
+                              const SizedBox(width: 10),
+                              _CompactMetric(value: '${stats['zonas_ambientales_count'] ?? 0}', label: 'zonas'),
+                              const SizedBox(width: 10),
+                              Text(
+                                _formatDate(fecha),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (onDelete != null)
+                      Tooltip(
+                        message: 'Eliminar reporte',
+                        child: InkWell(
+                          onTap: onDelete,
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: AppTheme.errorColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 16,
+                              color: AppTheme.errorColor.withValues(alpha: 0.85),
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.chevron_right_rounded, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+                  ],
+                );
+              },
             ),
           ),
         ),

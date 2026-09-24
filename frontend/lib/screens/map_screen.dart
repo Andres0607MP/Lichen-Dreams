@@ -4,11 +4,11 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
-import '../config/app_config.dart';
 import '../routes/route_names.dart';
 import '../widgets/app_theme.dart';
 import '../widgets/lichen_scaffold.dart';
 import '../widgets/map_controls.dart';
+import '../widgets/profile_avatar.dart';
 import '../services/navigation_service.dart';
 import '../state/map_state.dart';
 import '../state/auth_state.dart';
@@ -1583,18 +1583,12 @@ class _AnalysisCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (showUserInfo && point.usuario != null) ...[
-                Row(
-                  children: [
-                    CircleAvatar(
+if (showUserInfo && point.usuario != null) ...[
+              Row(
+                children: [
+                  ProfileAvatar(
+                      imagePath: point.usuario!['foto_perfil']?.toString(),
                       radius: 14,
-                      backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.15),
-                    backgroundImage: point.usuario!['foto_perfil'] != null && point.usuario!['foto_perfil'].toString().isNotEmpty
-                        ? NetworkImage(AppConfig.getImageUrl(point.usuario!['foto_perfil'].toString()))
-                          : null,
-                      child: point.usuario!['foto_perfil'] == null || point.usuario!['foto_perfil'].toString().isEmpty
-                          ? Icon(Icons.person_rounded, size: 14, color: AppTheme.primaryGreen)
-                          : null,
                     ),
                     const SizedBox(width: 8),
                     Expanded(

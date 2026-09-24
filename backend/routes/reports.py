@@ -130,7 +130,8 @@ def _calculate_environmental_stats(user_id: int, db: Session) -> dict:
     ]
 
     return {
-        'total_analisis': analysis_count,
+        'total_analisis': len(eligible_analyses),
+        'total_analisis_all': analysis_count,
         'ubicaciones_analizadas': ubicaciones_analizadas,
         'zonas_analizadas': zonas_ambientales,
         'zonas_ambientales_count': zonas_ambientales,

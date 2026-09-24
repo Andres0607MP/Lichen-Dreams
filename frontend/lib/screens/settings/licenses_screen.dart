@@ -78,7 +78,7 @@ class LicensesScreen extends StatelessWidget {
                   ),
                   child: LicensePage(
                     applicationName: 'Lichen Dreams',
-                    applicationVersion: '1.2.0',
+                    applicationVersion: '1.2.1',
                     applicationIcon: const SizedBox.shrink(),
                   ),
                 ),

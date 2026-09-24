@@ -3,14 +3,41 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../services/update_service.dart';
 import '../../services/api_service.dart';
 import '../../widgets/lichen_scaffold.dart';
 import '../../widgets/app_theme.dart';
 import '../../widgets/settings_widgets.dart';
 import '../../routes/route_names.dart';
 
-class InformationSettingsScreen extends StatelessWidget {
+class InformationSettingsScreen extends StatefulWidget {
   const InformationSettingsScreen({super.key});
+
+  @override
+  State<InformationSettingsScreen> createState() =>
+      _InformationSettingsScreenState();
+}
+
+class _InformationSettingsScreenState extends State<InformationSettingsScreen> {
+  final UpdateService _updateService = UpdateService();
+  String? _appVersion;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final version = await _updateService.getAppVersion();
+    if (mounted && version != null) {
+      setState(() => _appVersion = version);
+    }
+  }
+
+  Future<void> _handleVersionTap() async {
+    await _updateService.openDistributor();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +50,17 @@ class InformationSettingsScreen extends StatelessWidget {
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.dashboard,
+                (route) => false,
+              );
+            }
+          },
         ),
         title: Text(
           'Información',
@@ -62,8 +99,9 @@ class InformationSettingsScreen extends StatelessWidget {
                   icon: Icons.info_outline_rounded,
                   iconColor: const Color(0xFF1976D2),
                   title: 'Versión',
-                  subtitle: '1.2.0',
+                  subtitle: _appVersion ?? '1.2.1',
                   showChevron: false,
+                  onTap: _handleVersionTap,
                 ),
                 const SizedBox(height: 8),
                 SettingsTile(
@@ -74,7 +112,7 @@ class InformationSettingsScreen extends StatelessWidget {
                   onTap: () => _showTechDialog(context),
                 ),
               ],
-            ).animate().fadeIn(duration: 300.ms, delay: 100.ms).slideY(begin: 0.02),
+            ).animate().fadeIn(duration: 300.ms, delay: 100.ms).slideX(begin: 0.05),
 
             const SizedBox(height: 20),
 

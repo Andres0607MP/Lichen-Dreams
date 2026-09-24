@@ -49,11 +49,17 @@ void main() async {
   debugPrint('TOKEN FOUND: ${authState.token != null && authState.token!.isNotEmpty}');
   debugPrint('USER RESTORED: ${authState.isAuthenticated}');
   debugPrint('AUTH READY');
+
+  // Initialize AppSettingsState and load preferences
+  final appSettingsState = AppSettingsState();
+  await appSettingsState.loadSettings();
+
   runApp(LichenDreamsApp(
     authState: authState,
     apiService: apiService,
     iaMonitoringService: iaMonitoringService,
     iaMonitoringState: iaMonitoringState,
+    appSettingsState: appSettingsState,
   ));
 }
 
@@ -128,6 +134,7 @@ class LichenDreamsApp extends StatelessWidget {
   final ApiService apiService;
   final IaMonitoringService iaMonitoringService;
   final IaMonitoringState iaMonitoringState;
+  final AppSettingsState appSettingsState;
 
   const LichenDreamsApp({
     super.key,
@@ -135,6 +142,7 @@ class LichenDreamsApp extends StatelessWidget {
     required this.apiService,
     required this.iaMonitoringService,
     required this.iaMonitoringState,
+    required this.appSettingsState,
   });
 
   @override
@@ -154,7 +162,7 @@ class LichenDreamsApp extends StatelessWidget {
          ChangeNotifierProvider(create: (_) => UsersState(apiService: apiService)),
          ChangeNotifierProvider(create: (_) => AnalysisState(apiService: apiService)),
          ChangeNotifierProvider.value(value: NotificationsState.instance),
-         ChangeNotifierProvider(create: (_) => AppSettingsState()),
+         ChangeNotifierProvider.value(value: appSettingsState),
          ChangeNotifierProvider(create: (_) => ConnectivityState()),
        ],
       child: _ConnectivityOverlay(

@@ -315,8 +315,10 @@ Container(
                     child: _buildImage(profile),
                   ),
                   const SizedBox(height: 16),
-                   Row(
-                     mainAxisAlignment: MainAxisAlignment.center,
+                   Wrap(
+                     alignment: WrapAlignment.center,
+                     spacing: 12,
+                     runSpacing: 12,
                      children: [
                        ElevatedButton.icon(
                          style: ElevatedButton.styleFrom(
@@ -329,7 +331,6 @@ Container(
                          icon: const Icon(Icons.photo_library_rounded),
                          label: const Text('Galería'),
                        ),
-                       const SizedBox(width: 12),
                        ElevatedButton.icon(
                          style: ElevatedButton.styleFrom(
                            backgroundColor: AppTheme.primaryGreen,

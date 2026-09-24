@@ -864,13 +864,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               color: AppTheme.primaryGreen,
                               compact: true,
                             ),
-                          if (humedad != null)
-                            _InfoChip(
-                              icon: Icons.water_drop_rounded,
-                              label: '${humedad.toStringAsFixed(1)}%',
-                              color: AppTheme.lightGreen,
-                              compact: true,
-                            ),
+                          _InfoChip(
+                            icon: Icons.water_drop_rounded,
+                            label: humedad != null
+                                ? '${humedad.toStringAsFixed(1)}%'
+                                : 'Humedad: —',
+                            color: humedad != null
+                                ? AppTheme.lightGreen
+                                : Theme.of(context).colorScheme.onSurfaceVariant,
+                            compact: true,
+                          ),
                           if (calidadAire != null && calidadAire.isNotEmpty)
                             _InfoChip(
                               icon: Icons.air_rounded,
@@ -891,34 +894,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ],
                   ),
                 ),
-                 const SizedBox(width: 10),
+                 const SizedBox(width: 8),
                   IconButton(
-                    onPressed: onChartTap,
-                    icon: Icon(Icons.show_chart_rounded, size: 18, color: AppTheme.primaryGreen),
-                    tooltip: 'Ver perfil ambiental',
+                    onPressed: () => _showAnalysisActionSheet(
+                      record: record,
+                      onViewAnalysis: onTap!,
+                      onViewChart: onChartTap!,
+                      onDelete: onDelete,
+                      onViewMap: record.isShared
+                          ? () => Navigator.pushNamed(context, AppRoutes.mapExplorer)
+                          : null,
+                    ),
+                    icon: Icon(Icons.more_vert_rounded, size: 20, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    tooltip: 'Más opciones',
                     style: IconButton.styleFrom(
-                      backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.1),
+                      backgroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.1),
+                      minimumSize: const Size(36, 36),
+                      padding: EdgeInsets.zero,
                     ),
-                  ),
-                  if (record.isShared)
-                    IconButton(
-                      onPressed: () {
-                        Navigator.pushNamed(
-                          context,
-                          AppRoutes.mapExplorer,
-                        );
-                      },
-                      icon: Icon(Icons.map_rounded, size: 18, color: AppTheme.primaryGreen),
-                      tooltip: 'Ver en mapa',
-                      style: IconButton.styleFrom(
-                        backgroundColor: AppTheme.primaryGreen.withValues(alpha: 0.1),
-                      ),
-                    ),
-                  if (onDelete != null)
-                    _DeleteButton(
-                      onPressed: !isDeleting ? onDelete : null,
-                    ),
-              ],
+                  ),              ],
             ),
           ),
         ),
@@ -1064,6 +1058,120 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showAnalysisActionSheet({
+    required AnalysisRecord record,
+    required VoidCallback onViewAnalysis,
+    required VoidCallback onViewChart,
+    required VoidCallback? onDelete,
+    required VoidCallback? onViewMap,
+  }) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.5,
+        ),
+        decoration: const BoxDecoration(
+          color: AppTheme.surfaceColor,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.borderColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.eco_rounded, color: AppTheme.primaryGreen, size: 26),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Opciones de análisis',
+                        style: GoogleFonts.poppins(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(Icons.close_rounded, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+              ),
+            ),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                children: [
+                  _ActionSheetTile(
+                    icon: Icons.visibility_rounded,
+                    label: 'Ver análisis',
+                    color: AppTheme.primaryGreen,
+                    onTap: () {
+                      Navigator.pop(context);
+                      onViewAnalysis();
+                    },
+                  ),
+                  _ActionSheetTile(
+                    icon: Icons.show_chart_rounded,
+                    label: 'Ver perfil ambiental',
+                    color: AppTheme.primaryGreen,
+                    onTap: () {
+                      Navigator.pop(context);
+                      onViewChart();
+                    },
+                  ),
+                  if (onViewMap != null)
+                    _ActionSheetTile(
+                      icon: Icons.map_rounded,
+                      label: 'Ver en mapa',
+                      color: AppTheme.primaryGreen,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onViewMap();
+                      },
+                    ),
+                  if (onDelete != null)
+                    _ActionSheetTile(
+                      icon: Icons.delete_rounded,
+                      label: 'Eliminar',
+                      color: AppTheme.errorColor,
+                      isDestructive: true,
+                      onTap: () {
+                        Navigator.pop(context);
+                        onDelete();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1602,6 +1710,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _ActionSheetTile({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    bool isDestructive = false,
+  }) {
+    return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      leading: Icon(icon, color: color, size: 24),
+      title: Text(
+        label,
+        style: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: isDestructive ? color : Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
+      onTap: onTap,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      tileColor: isDestructive ? color.withValues(alpha: 0.08) : null,
     );
   }
 
