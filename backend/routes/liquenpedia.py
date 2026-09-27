@@ -28,6 +28,7 @@ class ArticleResponse(BaseModel):
     categoria: Optional[str]
     imagen_articulo: Optional[str] = None
     foto_perfil_articulo: Optional[str] = None
+    fuente: Optional[str] = None
     estado_publicacion: Optional[str] = None
     fecha_publicacion: datetime
     fecha_actualizacion: Optional[datetime] = None
@@ -105,6 +106,7 @@ def list_articles(
             "categoria_nombre": categoria_nombre,
             "imagen_articulo": art.imagen_articulo,
             "foto_perfil_articulo": art.foto_perfil_articulo,
+            "fuente": art.fuente,
             "estado_publicacion": art.estado_publicacion,
             "fecha_publicacion": art.fecha_publicacion,
             "fecha_actualizacion": art.fecha_actualizacion

@@ -59,7 +59,7 @@ class ArticlesState extends ChangeNotifier {
     setState(() => _loading = true);
     _error = null;
     try {
-      final items = await _apiService.getLiquenpediaArticles();
+      final items = await _apiService.getLiquenpediaArticles(limit: 100);
       _articles = items.map((json) => LiquenpediaArticle.fromJson(json)).toList();
       _lastLoadedAt = DateTime.now();
       notifyListeners();

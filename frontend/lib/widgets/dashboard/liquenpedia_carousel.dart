@@ -103,6 +103,20 @@ class _LiquenpediaCarouselState extends State<LiquenpediaCarousel> {
     Navigator.pushNamed(context, AppRoutes.liquenpedia);
   }
 
+  /// Elimina sintaxis Markdown básica para generar una preview de texto plano.
+  String _stripMarkdown(String markdown) {
+    return markdown
+        .replaceAll(RegExp(r'\*\*(.*?)\*\*'), r'$1')
+        .replaceAll(RegExp(r'\*(.*?)\*'), r'$1')
+        .replaceAll(RegExp(r'`([^`]+)`'), r'$1')
+        .replaceAll(RegExp(r'#{1,6}\s*'), '')
+        .replaceAll(RegExp(r'>\s*'), '')
+        .replaceAll(RegExp(r'\[([^\]]+)\]\([^)]+\)'), r'$1')
+        .replaceAll(RegExp(r'\n+'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+  }
+
   @override
   Widget build(BuildContext context) {
     final articlesState = context.watch<ArticlesState>();
@@ -377,9 +391,12 @@ else
                          ),
                          const SizedBox(height: 6),
                          Text(
-                           article.contenido.length > 80
-                               ? '${article.contenido.substring(0, 80)}...'
-                               : article.contenido,
+                           () {
+                             final preview = _stripMarkdown(article.contenido);
+                             return preview.length > 80
+                                 ? '${preview.substring(0, 80)}...'
+                                 : preview;
+                           }(),
                            style: GoogleFonts.poppins(
                              fontSize: 11,
                              fontWeight: FontWeight.w400,

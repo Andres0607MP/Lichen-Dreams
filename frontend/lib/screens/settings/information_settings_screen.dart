@@ -99,7 +99,7 @@ class _InformationSettingsScreenState extends State<InformationSettingsScreen> {
                   icon: Icons.info_outline_rounded,
                   iconColor: const Color(0xFF1976D2),
                   title: 'Versión',
-                  subtitle: _appVersion ?? '1.2.1',
+                  subtitle: _appVersion ?? '1.3.0',
                   showChevron: false,
                   onTap: _handleVersionTap,
                 ),

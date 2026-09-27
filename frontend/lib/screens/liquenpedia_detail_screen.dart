@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../models/liquenpedia_article.dart';
 import '../config/app_config.dart';
 import '../widgets/app_theme.dart';
@@ -365,11 +367,11 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                             ],
                           ),
                           const SizedBox(height: 20),
-                           AuthorInfo(
-                             autor: article.autor,
-                             fecha: article.fechaPublicacion,
-                             fotoPerfil: article.fotoPerfilAutor,
-                           ),
+                          AuthorInfo(
+                            autor: article.autor,
+                            fecha: article.fechaPublicacion,
+                            fotoPerfil: article.fotoPerfilAutor,
+                          ),
                         ],
                       ),
                     ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.1, end: 0),
@@ -377,6 +379,8 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                     _buildAboutSection(),
                     const SizedBox(height: 16),
                     _buildContentSection(),
+                    const SizedBox(height: 16),
+                    _buildFuenteSection(),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -431,15 +435,6 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
       ));
     }
 
-    if (article.fuente != null && article.fuente!.isNotEmpty) {
-      items.add(_AboutItem(
-        icon: Icons.source_rounded,
-        label: 'Fuente',
-        value: article.fuente!,
-        color: AppTheme.accentGreen,
-      ));
-    }
-
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Container(
@@ -480,92 +475,87 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
                   color: AppTheme.primaryGreen,
                 ),
               ),
-              const SizedBox(width: 10),
-              Text(
-                'Sobre este artículo',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface,
+            const SizedBox(width: 10),
+            Text(
+              'Sobre este artículo',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        ...List.generate(items.length, (index) {
+          final item = items[index];
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: index < items.length - 1 ? 12 : 0,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: item.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: item.imagePath != null && item.imagePath!.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            AppConfig.getImageUrl(item.imagePath!),
+                            fit: BoxFit.cover,
+                            width: 32,
+                            height: 32,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Icon(item.icon, size: 16, color: item.color);
+                            },
+                          ),
+                        )
+                      : Icon(item.icon, size: 16, color: item.color),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ...List.generate(items.length, (index) {
-            final item = items[index];
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: index < items.length - 1 ? 12 : 0,
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: item.color.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: item.imagePath != null && item.imagePath!.isNotEmpty
-                        ? ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              AppConfig.getImageUrl(item.imagePath!),
-                              fit: BoxFit.cover,
-                              width: 32,
-                              height: 32,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(item.icon, size: 16, color: item.color);
-                              },
-                            ),
-                          )
-                        : Icon(item.icon, size: 16, color: item.color),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.label,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.label,
+                        style: GoogleFonts.poppins(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
-                        const SizedBox(height: 1),
-                        Text(
-                          item.value,
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        item.value,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
-                      ],
-                    ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    ).animate().fadeIn(duration: 600.ms);
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
+    ),
+  ).animate().fadeIn(duration: 600.ms);
   }
 
   Widget _buildContentSection() {
-    final paragraphs = article.contenido
-        .split('\n')
-        .map((p) => p.trim())
-        .where((p) => p.isNotEmpty)
-        .toList();
-
-    final isEmpty = paragraphs.isEmpty || article.contenido.trim().isEmpty;
+    final content = article.contenido.trim();
+    final isEmpty = content.isEmpty;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -625,25 +615,172 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
               ),
             )
           else
-            ...List.generate(paragraphs.length, (index) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: index < paragraphs.length - 1 ? 12 : 0,
+            MarkdownBody(
+              data: content,
+              styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
+                p: GoogleFonts.poppins(
+                  fontSize: 14.5,
+                  height: 1.7,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                child: Text(
-                  paragraphs[index],
-                  style: GoogleFonts.poppins(
-                    fontSize: 14.5,
-                    height: 1.7,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                h1: GoogleFonts.poppins(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w800,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  height: 1.3,
+                ),
+                h2: GoogleFonts.poppins(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  height: 1.3,
+                ),
+                h3: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  height: 1.4,
+                ),
+                code: GoogleFonts.jetBrainsMono(
+                  fontSize: 13.5,
+                  color: Theme.of(context).colorScheme.primary,
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                ),
+                codeblockDecoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                codeblockPadding: const EdgeInsets.all(14),
+                blockquote: GoogleFonts.poppins(
+                  fontSize: 14.5,
+                  height: 1.7,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+                blockquotePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                blockquoteDecoration: BoxDecoration(
+                  color: AppTheme.primaryGreen.withValues(alpha: 0.05),
+                  border: Border(
+                    left: BorderSide(
+                      color: AppTheme.primaryGreen,
+                      width: 4,
+                    ),
                   ),
-                  textAlign: TextAlign.start,
+                  borderRadius: const BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomRight: Radius.circular(8),
+                  ),
                 ),
-              );
-            }),
+                tableHead: GoogleFonts.poppins(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                tableBody: GoogleFonts.poppins(
+                  fontSize: 13.5,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                tableBorder: TableBorder(
+                  horizontalInside: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                    width: 0.5,
+                  ),
+                  verticalInside: BorderSide(
+                    color: Theme.of(context).dividerColor,
+                    width: 0.5,
+                  ),
+                ),
+                tableColumnWidth: const FlexColumnWidth(),
+                a: GoogleFonts.poppins(
+                  fontSize: 14.5,
+                  color: AppTheme.primaryGreen,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppTheme.primaryGreen.withValues(alpha: 0.5),
+                ),
+                listBullet: GoogleFonts.poppins(
+                  fontSize: 14.5,
+                  height: 1.7,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                listIndent: 24,
+              ),
+              onTapLink: (text, href, title) {
+                if (href != null && href.isNotEmpty) {
+                  launchUrl(Uri.parse(href), mode: LaunchMode.externalApplication);
+                }
+              },
+            ),
         ],
       ),
     ).animate().fadeIn(duration: 700.ms);
+  }
+
+  Widget _buildFuenteSection() {
+    final fuente = article.fuente;
+    if (fuente == null || fuente.trim().isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.primaryGreen.withValues(alpha: 0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppTheme.primaryGreen.withValues(alpha: 0.15),
+                      AppTheme.lightGreen.withValues(alpha: 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(
+                  Icons.source_rounded,
+                  size: 20,
+                  color: AppTheme.primaryGreen,
+                ),
+              ),
+            const SizedBox(width: 10),
+            Text(
+              'Fuente',
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Text(
+          article.fuente!,
+          style: GoogleFonts.poppins(
+            fontSize: 14.5,
+            height: 1.7,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          textAlign: TextAlign.start,
+        ),
+      ],
+    ),
+  ).animate().fadeIn(duration: 700.ms);
   }
 
   String _formatDate(DateTime date) {

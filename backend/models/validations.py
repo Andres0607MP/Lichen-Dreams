@@ -154,6 +154,7 @@ class ArticuloResponse(BaseModel):
     id_categoria: Optional[int] = None
     categoria_nombre: Optional[str] = None
     autor: str
+    fuente: Optional[str] = None
     estado_publicacion: str
     fecha_publicacion: datetime
     

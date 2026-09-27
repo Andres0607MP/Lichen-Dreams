@@ -148,6 +148,80 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
   }
 
   Widget _buildCategoryFilter(ArticlesState articlesState) {
+    // Mostrar estado de carga
+    if (articlesState.loadingCategorias) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Categoría',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: CircularProgressIndicator(
+                color: AppTheme.primaryGreen,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Mostrar error si existe
+    if (articlesState.categoriasError != null) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Categoría',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppTheme.errorColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppTheme.errorColor.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline_rounded,
+                  size: 18,
+                  color: AppTheme.errorColor,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Error al cargar categorías: ${articlesState.categoriasError}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: AppTheme.errorColor,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

@@ -47,6 +47,10 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
     if (!articlesState.hasFreshData && !articlesState.loading) {
       await articlesState.loadArticles();
     }
+    // Cargar categorías para que estén disponibles en los filtros
+    if (articlesState.categorias.isEmpty && !articlesState.loadingCategorias) {
+      await articlesState.loadCategorias();
+    }
     _isAdmin = authState.isAdmin;
     if (!profileState.hasFreshData && !profileState.loading) {
       await profileState.loadProfile();
@@ -79,10 +83,29 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
       articles = state.search(_searchQuery);
     }
     if (_categoryFilterIds.isNotEmpty) {
-      articles = articles
-          .where((a) =>
-              a.idCategoria != null && _categoryFilterIds.contains(a.idCategoria))
-          .toList();
+      articles = articles.where((article) {
+        // Filtrado principal por idCategoria
+        if (article.idCategoria != null) {
+          return _categoryFilterIds.contains(article.idCategoria);
+        }
+
+        // Fallback para artículos legacy sin idCategoria
+        final categoryName = article.categoriaNombre ?? article.categoria;
+        if (categoryName == null || categoryName.trim().isEmpty) {
+          return false;
+        }
+
+        final normalizedCategoryName = categoryName.trim().toLowerCase();
+
+        // Buscar coincidencia por nombre en las categorías disponibles
+        return _categoryFilterIds.any((id) {
+          final category = state.categorias
+              .where((c) => c.idCategoria == id)
+              .firstOrNull;
+          return category != null &&
+              category.nombreCategoria.trim().toLowerCase() == normalizedCategoryName;
+        });
+      }).toList();
     }
     if (_statusFilter != null) {
       articles = articles
