@@ -120,7 +120,7 @@ class AnalisisResponse(BaseModel):
 
 
 class ArticuloCreate(BaseModel):
- 
+  
     titulo: str = Field(..., min_length=5, max_length=255)
     contenido: str = Field(..., min_length=20, max_length=50000)
     categoria: str = Field(..., min_length=3, max_length=100)
@@ -128,6 +128,7 @@ class ArticuloCreate(BaseModel):
     autor: str = Field(..., min_length=2, max_length=150)
     imagen_articulo: Optional[str] = None
     foto_perfil_articulo: Optional[str] = None
+    fuente: Optional[str] = None
     estado_publicacion: Optional[str] = Field(None, pattern=r'^(draft|published|archived)$')
 
 
@@ -140,6 +141,7 @@ class ArticuloUpdate(BaseModel):
     autor: Optional[str] = Field(None, min_length=2, max_length=150)
     imagen_articulo: Optional[str] = None
     foto_perfil_articulo: Optional[str] = None
+    fuente: Optional[str] = None
     estado_publicacion: Optional[str] = Field(None, pattern=r'^(draft|published|archived)$')
 
 

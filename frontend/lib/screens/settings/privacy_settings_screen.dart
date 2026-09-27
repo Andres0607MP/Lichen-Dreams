@@ -600,15 +600,7 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
     final analysisId = analysis['id_analisis'] as int?;
     if (analysisId == null) return;
 
-    final confirmed = await SettingsDialog.showConfirm(
-      context: context,
-      title: '¿Dejar de compartir este análisis?',
-      content:
-          'Este análisis dejará de ser visible para otros usuarios en el mapa comunitario.\n\n'
-          '¿Quieres continuar?',
-      confirmText: 'Dejar de compartir',
-      cancelText: 'Cancelar',
-    );
+    final confirmed = await _showStopSharingDialog(analysis);
 
     if (confirmed != true || !mounted) return;
 
@@ -634,6 +626,198 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
         setState(() => _processingIds.remove(analysisId));
       }
     }
+  }
+
+  Future<bool?> _showStopSharingDialog(Map<String, dynamic> analysis) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final resultado = analysis['resultado_ia']?.toString() ?? 'Desconocido';
+    final fecha = analysis['fecha_creacion']?.toString() ?? '';
+    final especie = analysis['especie_nombre_comun']?.toString() ?? analysis['especie_nombre_cientifico']?.toString();
+    final confianza = analysis['confianza'] ?? analysis['porcentaje_confianza'];
+    final confianzaText = confianza != null ? '${confianza}%' : null;
+
+    // Semantic icon and color based on resultado
+    final resultadoIcon = _getResultadoIcon(resultado);
+    final resultadoColor = _getResultadoColor(resultado);
+
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          '¿Dejar de compartir?',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w700,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Analysis preview card
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    // Semantic thumbnail
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: resultadoColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: resultadoColor.withValues(alpha: 0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Icon(
+                        resultadoIcon,
+                        size: 24,
+                        color: resultadoColor,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Analysis info
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            resultado,
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: colorScheme.onSurface,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (especie != null) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              especie,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                size: 12,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _formatDateForDialog(fecha),
+                                style: GoogleFonts.poppins(
+                                  fontSize: 11,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              if (confianzaText != null) ...[
+                                const SizedBox(width: 12),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: AppTheme.primaryGreen.withValues(alpha: 0.12),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '$confianzaText confianza',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppTheme.primaryGreen,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Este análisis dejará de aparecer en el mapa comunitario y otros usuarios no podrán verlo.',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.poppins(
+                color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: colorScheme.error,
+              foregroundColor: colorScheme.onError,
+            ),
+            child: Text(
+              'Dejar de compartir',
+              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDateForDialog(String isoString) {
+    if (isoString.isEmpty) return '';
+    try {
+      final date = DateTime.parse(isoString);
+      const months = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } catch (_) {
+      return isoString;
+    }
+  }
+
+  IconData _getResultadoIcon(String resultado) {
+    final r = resultado.toLowerCase().trim();
+    if (r.contains('liquen saludable') || r.contains('saludable')) return Icons.eco_rounded;
+    if (r.contains('liquen contaminado') || r.contains('contaminado')) return Icons.warning_amber_rounded;
+    if (r.contains('liquen desconocido') || r.contains('desconocido')) return Icons.help_outline_rounded;
+    return Icons.help_outline_rounded;
+  }
+
+  Color _getResultadoColor(String resultado) {
+    final r = resultado.toLowerCase().trim();
+    if (r.contains('liquen saludable') || r.contains('saludable')) return AppTheme.successColor;
+    if (r.contains('liquen contaminado') || r.contains('contaminado')) return AppTheme.errorColor;
+    if (r.contains('liquen desconocido') || r.contains('desconocido')) return AppTheme.textGray;
+    return AppTheme.textGray;
   }
 
   @override
@@ -758,106 +942,205 @@ class _SharedAnalysesScreenState extends State<SharedAnalysesScreen> {
     final isProcessing = _processingIds.contains(analysisId);
     final resultado = analysis['resultado_ia']?.toString() ?? 'Desconocido';
     final fecha = analysis['fecha_creacion']?.toString() ?? '';
-    final especie = analysis['nombre_especie']?.toString();
+    final especie = analysis['especie_nombre_comun']?.toString() ?? analysis['especie_nombre_cientifico']?.toString();
     final calidadAire = analysis['calidad_del_aire']?.toString();
+    final confianza = analysis['confianza'] ?? analysis['porcentaje_confianza'];
+    final confianzaText = confianza != null ? '${confianza}%' : null;
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    resultado,
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
+    final colorScheme = Theme.of(context).colorScheme;
+
+    // Semantic icon and color based on resultado
+    final resultadoIcon = _getResultadoIcon(resultado);
+    final resultadoColor = _getResultadoColor(resultado);
+
+    return Opacity(
+      opacity: isProcessing ? 0.6 : 1.0,
+      child: AbsorbPointer(
+        absorbing: isProcessing,
+        child: Card(
+          margin: const EdgeInsets.only(bottom: 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Semantic thumbnail
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: resultadoColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: resultadoColor.withValues(alpha: 0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Icon(
+                            resultadoIcon,
+                            size: 24,
+                            color: resultadoColor,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Analysis info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      resultado,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.primaryGreen,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'Compartido',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (especie != null) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  especie,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 12,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    fecha,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  if (confianzaText != null) ...[
+                                    const SizedBox(width: 12),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryGreen.withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        '$confianzaText confianza',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppTheme.primaryGreen,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  if (calidadAire != null) ...[
+                                    const SizedBox(width: 16),
+                                    Icon(Icons.air_rounded, size: 14, color: colorScheme.onSurfaceVariant),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      calidadAire,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: colorScheme.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              // Bottom action bar
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(12),
+                    bottomRight: Radius.circular(12),
+                  ),
+                  border: Border(
+                    top: BorderSide(
+                      color: colorScheme.outlineVariant,
+                      width: 1,
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryGreen,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Compartido',
-                    style: GoogleFonts.poppins(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton.icon(
+                      onPressed: isProcessing ? null : () => _stopSharing(analysis),
+                      icon: isProcessing
+                          ? SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.error,
+                              ),
+                            )
+                          : Icon(Icons.lock_outline_rounded, size: 18, color: colorScheme.error),
+                      label: Text(
+                        'Dejar de compartir',
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isProcessing ? colorScheme.onSurfaceVariant : colorScheme.error,
+                        ),
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colorScheme.error,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-            if (especie != null) ...[
-              const SizedBox(height: 4),
-              Text(
-                especie,
-                style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ],
                 ),
               ),
             ],
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.calendar_today_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                const SizedBox(width: 4),
-                Text(
-                  fecha,
-                  style: GoogleFonts.poppins(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                if (calidadAire != null) ...[
-                  const SizedBox(width: 16),
-                  Icon(Icons.air_rounded, size: 14, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 4),
-                  Text(
-                    calidadAire,
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton.icon(
-                onPressed: isProcessing ? null : () => _stopSharing(analysis),
-                icon: isProcessing
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.lock_outline_rounded, size: 18),
-                label: Text(
-                  'Dejar de compartir',
-                  style: GoogleFonts.poppins(
-                    color: isProcessing ? Theme.of(context).colorScheme.onSurfaceVariant : AppTheme.errorColor,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.errorColor,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

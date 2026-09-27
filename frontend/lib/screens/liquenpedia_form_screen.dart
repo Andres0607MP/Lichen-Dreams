@@ -31,6 +31,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
   late TextEditingController _autorController;
   late TextEditingController _categoriaController;
   late TextEditingController _imagenController;
+  late TextEditingController _fuenteController;
   File? _pickedImage;
 
   String _estadoPublicacion = 'borrador';
@@ -74,6 +75,9 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     _imagenController = TextEditingController(
       text: widget.articleToEdit?.imagenArticulo ?? '',
     );
+    _fuenteController = TextEditingController(
+      text: widget.articleToEdit?.fuente ?? '',
+    );
     _estadoPublicacion = _translateToFrontend(
       widget.articleToEdit?.estadoPublicacion ?? 'draft',
     );
@@ -99,6 +103,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
     _autorController.dispose();
     _categoriaController.dispose();
     _imagenController.dispose();
+    _fuenteController.dispose();
     super.dispose();
   }
 
@@ -170,6 +175,9 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
         final profileState = context.read<ProfileState>();
         final fotoPerfilAutor = profileState.profile?['foto_perfil']?.toString() ??
             widget.articleToEdit?.fotoPerfilAutor;
+        final fuente = _fuenteController.text.trim().isEmpty
+            ? null
+            : _fuenteController.text.trim();
         await articlesState.createArticle(
           titulo: _tituloController.text,
           contenido: _contenidoController.text,
@@ -181,10 +189,14 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
               ? _imagenController.text
               : null,
           fotoPerfilAutor: fotoPerfilAutor,
+          fuente: fuente,
         );
         if (!mounted) return;
         AppNotification.show(context, message: 'Artículo creado exitosamente');
       } else {
+        final fuente = _fuenteController.text.trim().isEmpty
+            ? null
+            : _fuenteController.text.trim();
         await articlesState.updateArticle(
           widget.articleToEdit?.id ?? 0,
           titulo: _tituloController.text,
@@ -196,6 +208,7 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
           imagenArticulo: _imagenController.text.isNotEmpty
               ? _imagenController.text
               : null,
+          fuente: fuente,
         );
         if (!mounted) return;
         AppNotification.show(context, message: 'Artículo actualizado exitosamente');
@@ -546,6 +559,25 @@ class _LiquenpediaFormScreenState extends State<LiquenpediaFormScreen> {
                               padding: const EdgeInsets.symmetric(
                                 vertical: 12,
                                 horizontal: 20,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _fuenteController,
+                            decoration: InputDecoration(
+                              labelText: 'Fuente',
+                              hintText: 'URL, referencia bibliográfica o institución',
+                              prefixIcon: const Icon(Icons.source_rounded, size: 20),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Theme.of(context).scaffoldBackgroundColor,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 14,
                               ),
                             ),
                           ),

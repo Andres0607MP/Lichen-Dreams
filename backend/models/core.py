@@ -323,6 +323,7 @@ class LiquenPedia(Base):
     autor = Column(String(100), nullable=True, default='system')
     imagen_articulo = Column(Text, nullable=True)
     foto_perfil_articulo = Column(Text, nullable=True)
+    fuente = Column(Text, nullable=True)
     estado_publicacion = Column(String(50), default='draft')
     fecha_publicacion = Column(TIMESTAMP, server_default=func.now())
     fecha_actualizacion = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

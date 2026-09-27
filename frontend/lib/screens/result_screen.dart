@@ -14,6 +14,7 @@ import '../widgets/app_notification.dart';
 import '../routes/route_names.dart';
 import '../services/api_service.dart';
 import '../state/analysis_state.dart';
+import '../state/history_state.dart';
 import '../state/notifications_state.dart';
 import '../config/app_config.dart';
 
@@ -552,6 +553,10 @@ class _ResultScreenState extends State<ResultScreen> {
         setState(() => _isShared = true);
         try {
           context.read<AnalysisState>().markLastAsShared();
+        } catch (_) {}
+        // Invalidate HistoryState so it reloads with updated visibility
+        try {
+          context.read<HistoryState>().invalidate();
         } catch (_) {}
       }
     } catch (error) {

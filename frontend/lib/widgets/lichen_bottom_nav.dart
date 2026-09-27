@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../widgets/app_theme.dart';
 
@@ -222,7 +223,24 @@ class _LichenBottomNavState extends State<LichenBottomNav> {
                       icon,
                       size: iconSize,
                       color: isSelected ? Colors.white : colorScheme.onSurfaceVariant,
-                    ),
+                    )
+                        .animate(
+                          onComplete: (controller) =>
+                              controller.repeat(reverse: true, period: 3000.ms),
+                        )
+                        .scale(
+                          begin: const Offset(1.0, 1.0),
+                          end: const Offset(1.15, 1.15),
+                          duration: 1000.ms,
+                          curve: Curves.easeInOutSine,
+                        )
+                        .move(
+                          begin: const Offset(0, 0),
+                          end: const Offset(0, -2),
+                          duration: 1000.ms,
+                          curve: Curves.easeInOutSine,
+                        )
+                        .then(delay: 300.ms),
                     const SizedBox(height: 6),
                     Text(
                       label,

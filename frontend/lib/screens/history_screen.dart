@@ -934,8 +934,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.72,
           ),
-          decoration: const BoxDecoration(
-            color: AppTheme.surfaceColor,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
@@ -946,7 +946,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: AppTheme.borderColor,
+                  color: Theme.of(context).colorScheme.outline,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -957,7 +957,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   children: [
                     Row(
                       children: [
-                        Icon(Icons.eco_rounded, color: AppTheme.primaryGreen, size: 26),
+                        Icon(Icons.eco_rounded, color: Theme.of(context).colorScheme.primary, size: 26),
                         const SizedBox(width: 12),
                         Text(
                           'Perfil ambiental',
@@ -1040,7 +1040,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         borderRadius: BorderRadius.circular(3),
                                         child: LinearProgressIndicator(
                                           value: m.value,
-                                          backgroundColor: AppTheme.borderColor.withValues(alpha: 0.5),
+                                          backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
                                           valueColor: AlwaysStoppedAnimation<Color>(m.color),
                                           minHeight: 6,
                                         ),
@@ -1078,8 +1078,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 0.5,
         ),
-        decoration: const BoxDecoration(
-          color: AppTheme.surfaceColor,
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         child: Column(
@@ -1090,7 +1090,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: AppTheme.borderColor,
+                color: Theme.of(context).colorScheme.outline,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -1101,7 +1101,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.eco_rounded, color: AppTheme.primaryGreen, size: 26),
+                      Icon(Icons.eco_rounded, color: Theme.of(context).colorScheme.primary, size: 26),
                       const SizedBox(width: 12),
                       Text(
                         'Opciones de análisis',
@@ -1132,42 +1132,47 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   _ActionSheetTile(
                     icon: Icons.visibility_rounded,
                     label: 'Ver análisis',
-                    color: AppTheme.primaryGreen,
+                    color: Theme.of(context).colorScheme.primary,
                     onTap: () {
                       Navigator.pop(context);
                       onViewAnalysis();
                     },
                   ),
+                  Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                   _ActionSheetTile(
                     icon: Icons.show_chart_rounded,
                     label: 'Ver perfil ambiental',
-                    color: AppTheme.primaryGreen,
+                    color: Theme.of(context).colorScheme.primary,
                     onTap: () {
                       Navigator.pop(context);
                       onViewChart();
                     },
                   ),
-                  if (onViewMap != null)
+                  if (onViewMap != null) ...[
+                    Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                     _ActionSheetTile(
                       icon: Icons.map_rounded,
                       label: 'Ver en mapa',
-                      color: AppTheme.primaryGreen,
+                      color: Theme.of(context).colorScheme.primary,
                       onTap: () {
                         Navigator.pop(context);
                         onViewMap();
                       },
                     ),
-                  if (onDelete != null)
+                  ],
+                  if (onDelete != null) ...[
+                    Divider(height: 1, color: Theme.of(context).colorScheme.outlineVariant),
                     _ActionSheetTile(
                       icon: Icons.delete_rounded,
                       label: 'Eliminar',
-                      color: AppTheme.errorColor,
+                      color: Theme.of(context).colorScheme.error,
                       isDestructive: true,
                       onTap: () {
                         Navigator.pop(context);
                         onDelete();
                       },
                     ),
+                  ],
                 ],
               ),
             ),
@@ -1734,7 +1739,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       ),
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      tileColor: isDestructive ? color.withValues(alpha: 0.08) : null,
+      tileColor: isDestructive
+          ? Theme.of(context).colorScheme.error.withValues(alpha: 0.08)
+          : null,
     );
   }
 
@@ -1840,7 +1847,7 @@ class _RadarChartPainter extends CustomPainter {
     }
 
     final axisPaint = Paint()
-      ..color = gridColor.withValues(alpha: 0.55)
+      ..color = gridColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.6;
 

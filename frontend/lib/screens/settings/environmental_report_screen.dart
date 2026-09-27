@@ -59,7 +59,7 @@ class _EnvironmentalReportScreenState extends State<EnvironmentalReportScreen> w
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: AppTheme.textDark),
+          icon: Icon(Icons.arrow_back_rounded, color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -638,7 +638,7 @@ class _QuickStatItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.5)),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         boxShadow: [BoxShadow(color: AppTheme.shadow05, blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Padding(
@@ -873,6 +873,8 @@ class _DonutChart extends StatelessWidget {
     final total = healthy + affected;
     if (total == 0) return const SizedBox.shrink();
 
+    final surfaceColor = Theme.of(context).colorScheme.surface;
+
     return TweenAnimationBuilder<double>(
       duration: const Duration(milliseconds: 1400),
       curve: Curves.easeOutCubic,
@@ -883,6 +885,7 @@ class _DonutChart extends StatelessWidget {
             healthy: healthy.toDouble(),
             affected: affected.toDouble(),
             progress: value,
+            holeColor: surfaceColor,
           ),
         );
       },
@@ -894,11 +897,13 @@ class _DonutChartPainter extends CustomPainter {
   final double healthy;
   final double affected;
   final double progress;
+  final Color holeColor;
 
   _DonutChartPainter({
     required this.healthy,
     required this.affected,
     required this.progress,
+    required this.holeColor,
   });
 
   @override
@@ -943,13 +948,13 @@ class _DonutChartPainter extends CustomPainter {
       currentStart += sweepAngle + 0.04;
     }
 
-    final holePaint = Paint()..color = AppTheme.surfaceColor;
+    final holePaint = Paint()..color = holeColor;
     canvas.drawCircle(center, radius - strokeWidth / 2, holePaint);
   }
 
   @override
   bool shouldRepaint(covariant _DonutChartPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return oldDelegate.progress != progress || oldDelegate.holeColor != holeColor;
   }
 }
 
@@ -1135,7 +1140,7 @@ class _AmbientChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.4)),
       ),

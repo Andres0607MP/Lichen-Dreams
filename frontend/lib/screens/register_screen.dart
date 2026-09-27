@@ -326,20 +326,10 @@ void _showMessage(String message, {bool isError = false}) {
                         child: Container(
                           padding: const EdgeInsets.all(28),
                           decoration: BoxDecoration(
-                            color: const Color.fromARGB(
-                              255,
-                              255,
-                              255,
-                              255,
-                            ).withValues(alpha: 0.72),
+                            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
                             borderRadius: AppTheme.cardRadius,
                             border: Border.all(
-                              color: const Color.fromARGB(
-                                255,
-                                69,
-                                150,
-                                96,
-                              ).withValues(alpha: 0.4),
+                              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.4),
                               width: 1,
                             ),
                             boxShadow: const [AppTheme.baseShadow],
@@ -569,7 +559,7 @@ void _showMessage(String message, {bool isError = false}) {
                                         Expanded(
                                           child: Container(
                                             height: 1,
-                                            color: AppTheme.borderColor,
+                                            color: Theme.of(context).colorScheme.outlineVariant,
                                           ),
                                         ),
                                         Padding(
@@ -586,7 +576,7 @@ void _showMessage(String message, {bool isError = false}) {
                                         Expanded(
                                           child: Container(
                                             height: 1,
-                                            color: AppTheme.borderColor,
+                                            color: Theme.of(context).colorScheme.outlineVariant,
                                           ),
                                         ),
                                       ],
@@ -686,7 +676,7 @@ void _showMessage(String message, {bool isError = false}) {
               borderSide: BorderSide(
                 color: errorText != null
                     ? Colors.red.shade300
-                    : AppTheme.borderColor,
+                    : Theme.of(context).colorScheme.outline,
                 width: 1.5,
               ),
             ),
@@ -696,7 +686,7 @@ void _showMessage(String message, {bool isError = false}) {
               borderSide: BorderSide(
                 color: errorText != null
                     ? Colors.red.shade300
-                    : AppTheme.borderColor,
+                    : Theme.of(context).colorScheme.outline,
                 width: 1.5,
               ),
             ),
@@ -723,7 +713,7 @@ void _showMessage(String message, {bool isError = false}) {
 
             filled: true,
 
-            fillColor: Colors.white.withValues(alpha: 0.75),
+            fillColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
 
             contentPadding: const EdgeInsets.symmetric(
               vertical: 16,
@@ -775,11 +765,11 @@ void _showMessage(String message, {bool isError = false}) {
         Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color: errorText != null ? Colors.red.shade300 : AppTheme.borderColor,
+              color: errorText != null ? Colors.red.shade300 : Theme.of(context).colorScheme.outline,
               width: 1.5,
             ),
             borderRadius: AppTheme.inputRadius,
-            color: Colors.white.withValues(alpha: 0.75),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
           ),
           child: DropdownButton<String>(
             value: value,
@@ -855,11 +845,12 @@ void _showMessage(String message, {bool isError = false}) {
               firstDate: DateTime(1950),
               lastDate: DateTime.now(),
               builder: (context, child) {
+                final theme = Theme.of(context);
                 return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.light(
+                  data: theme.copyWith(
+                    colorScheme: theme.colorScheme.copyWith(
                       primary: AppTheme.primaryGreen,
-                      onPrimary: Colors.white,
+                      onPrimary: theme.colorScheme.onPrimary,
                     ),
                   ),
                   child: child ?? const SizedBox.shrink(),
@@ -874,11 +865,11 @@ void _showMessage(String message, {bool isError = false}) {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
               border: Border.all(
-                color: errorText != null ? Colors.red.shade300 : AppTheme.borderColor,
+                color: errorText != null ? Colors.red.shade300 : Theme.of(context).colorScheme.outline,
                 width: 1.5,
               ),
               borderRadius: AppTheme.inputRadius,
-              color: Colors.white.withValues(alpha: 0.75),
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.75),
             ),
             child: Row(
               children: [
@@ -998,7 +989,7 @@ class _AnimatedLogoState extends State<_AnimatedLogo>
           height: 95,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: const Color(0xFFF2F0E6).withValues(alpha: 0.12),
+            color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.15),
             border: Border.all(
               color: AppTheme.primaryGreen.withValues(alpha: 0.35),
               width: 1.5,
@@ -1134,7 +1125,7 @@ class _RegisterButtonState extends State<_RegisterButton>
           onPressed: widget.loading || !widget.enabled ? null : widget.onPressed,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.darkGreen,
-            foregroundColor: Colors.white,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
             shape: RoundedRectangleBorder(borderRadius: AppTheme.defaultRadius),
             textStyle: GoogleFonts.poppins(
@@ -1231,10 +1222,10 @@ class _DatosAdicionalesSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.55),
+        color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.55),
         borderRadius: AppTheme.cardRadius,
         border: Border.all(
-          color: AppTheme.primaryGreen.withValues(alpha: 0.25),
+          color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
           width: 1,
         ),
       ),

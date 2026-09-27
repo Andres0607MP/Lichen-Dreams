@@ -8,6 +8,7 @@ class LiquenpediaArticle {
   final String? categoriaNombre;
   final String? imagenArticulo;
   final String? fotoPerfilAutor;
+  final String? fuente;
   final String estadoPublicacion;
   final DateTime? fechaPublicacion;
   final DateTime? fechaActualizacion;
@@ -22,6 +23,7 @@ class LiquenpediaArticle {
     this.categoriaNombre,
     this.imagenArticulo,
     this.fotoPerfilAutor,
+    this.fuente,
     required this.estadoPublicacion,
     this.fechaPublicacion,
     this.fechaActualizacion,
@@ -38,6 +40,7 @@ class LiquenpediaArticle {
       categoriaNombre: json['categoria_nombre'] as String?,
       imagenArticulo: json['imagen_articulo']?.toString(),
       fotoPerfilAutor: json['foto_perfil_articulo']?.toString(),
+      fuente: json['fuente']?.toString(),
       estadoPublicacion: json['estado_publicacion'] as String? ?? 'borrador',
       fechaPublicacion: json['fecha_publicacion'] != null
           ? DateTime.tryParse(json['fecha_publicacion'] as String)
@@ -59,6 +62,7 @@ class LiquenpediaArticle {
       'categoria_nombre': categoriaNombre,
       'imagen_articulo': imagenArticulo,
       'foto_perfil_articulo': fotoPerfilAutor,
+      'fuente': fuente,
       'estado_publicacion': estadoPublicacion,
       'fecha_publicacion': fechaPublicacion?.toIso8601String(),
       'fecha_actualizacion': fechaActualizacion?.toIso8601String(),
@@ -75,6 +79,7 @@ class LiquenpediaArticle {
     String? categoriaNombre,
     String? imagenArticulo,
     String? fotoPerfilAutor,
+    String? fuente,
     String? estadoPublicacion,
     DateTime? fechaPublicacion,
     DateTime? fechaActualizacion,
@@ -89,6 +94,7 @@ class LiquenpediaArticle {
       categoriaNombre: categoriaNombre ?? this.categoriaNombre,
       imagenArticulo: imagenArticulo ?? this.imagenArticulo,
       fotoPerfilAutor: fotoPerfilAutor ?? this.fotoPerfilAutor,
+      fuente: fuente ?? this.fuente,
       estadoPublicacion: estadoPublicacion ?? this.estadoPublicacion,
       fechaPublicacion: fechaPublicacion ?? this.fechaPublicacion,
       fechaActualizacion: fechaActualizacion ?? this.fechaActualizacion,

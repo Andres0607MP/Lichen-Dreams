@@ -118,6 +118,7 @@ class ArticlesState extends ChangeNotifier {
     required String estadoPublicacion,
     String? imagenArticulo,
     String? fotoPerfilAutor,
+    String? fuente,
   }) async {
     final json = await _apiService.createLiquenpediaArticle(
       titulo: titulo,
@@ -128,6 +129,7 @@ class ArticlesState extends ChangeNotifier {
       estadoPublicacion: estadoPublicacion,
       imagenArticulo: imagenArticulo,
       fotoPerfilAutor: fotoPerfilAutor,
+      fuente: fuente,
     );
     _articles.insert(0, LiquenpediaArticle.fromJson(json));
     notifyListeners();
@@ -142,6 +144,7 @@ class ArticlesState extends ChangeNotifier {
     String? estadoPublicacion,
     String? imagenArticulo,
     String? fotoPerfilAutor,
+    String? fuente,
   }) async {
     final json = await _apiService.updateLiquenpediaArticle(
       id,
@@ -153,6 +156,7 @@ class ArticlesState extends ChangeNotifier {
       estadoPublicacion: estadoPublicacion,
       imagenArticulo: imagenArticulo,
       fotoPerfilAutor: fotoPerfilAutor,
+      fuente: fuente,
     );
     final updated = LiquenpediaArticle.fromJson(json);
     final index = _articles.indexWhere((a) => a.id == id);

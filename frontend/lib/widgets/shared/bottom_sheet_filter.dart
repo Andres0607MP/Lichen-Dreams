@@ -46,11 +46,12 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
   @override
   Widget build(BuildContext context) {
     final articlesState = context.watch<ArticlesState>();
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(20),
           topRight: Radius.circular(20),
         ),
@@ -106,7 +107,7 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-                      side: BorderSide(color: AppTheme.borderColor),
+                      side: BorderSide(color: colorScheme.outlineVariant),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -288,9 +289,10 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
           spacing: 8,
           runSpacing: 8,
           children: _sortOptions.map((sort) {
+            final isSelected = _selectedSort == sort;
             return ChoiceChip(
               label: Text(sort),
-              selected: _selectedSort == sort,
+              selected: isSelected,
               onSelected: (selected) {
                 setState(() {
                   if (selected) {
@@ -300,6 +302,12 @@ class _BottomSheetFilterState extends State<BottomSheetFilter> {
                   }
                 });
               },
+              selectedColor: AppTheme.primaryGreen.withValues(alpha: 0.2),
+              labelStyle: GoogleFonts.poppins(
+                color: isSelected
+                    ? AppTheme.primaryGreen
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             );
           }).toList(),
         ),

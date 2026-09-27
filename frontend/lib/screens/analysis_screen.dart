@@ -870,7 +870,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     return GestureDetector(
       onTap: _showImageSourceOptions,
       child: ModernCard(
-        backgroundColor: Colors.white,
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -930,8 +929,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                         }
                       },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryGreen,
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 32,
                     vertical: 14,

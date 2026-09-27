@@ -176,7 +176,7 @@ class ActiveAnalysisCard extends StatelessWidget {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(3),
-                  color: AppTheme.borderColor.withValues(alpha: 0.25),
+                  color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.25),
                 ),
               ),
             ),

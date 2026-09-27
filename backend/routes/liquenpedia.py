@@ -136,7 +136,8 @@ def create_article(
         categoria=payload.categoria,
         id_categoria=payload.id_categoria,
         imagen_articulo=normalize_image_path(payload.imagen_articulo),
-        estado_publicacion=payload.estado_publicacion or 'draft'
+        estado_publicacion=payload.estado_publicacion or 'draft',
+        fuente=payload.fuente
     )
     db.add(article)
     db.commit()
@@ -169,6 +170,7 @@ def create_article(
         "categoria_nombre": categoria_nombre,
         "imagen_articulo": article.imagen_articulo,
         "foto_perfil_articulo": article.foto_perfil_articulo,
+        "fuente": article.fuente,
         "estado_publicacion": article.estado_publicacion,
         "fecha_publicacion": article.fecha_publicacion,
         "fecha_actualizacion": article.fecha_actualizacion
@@ -208,6 +210,7 @@ def get_article(
         "categoria_nombre": categoria_nombre,
         "imagen_articulo": art.imagen_articulo,
         "foto_perfil_articulo": art.foto_perfil_articulo,
+        "fuente": art.fuente,
         "estado_publicacion": art.estado_publicacion,
         "fecha_publicacion": art.fecha_publicacion,
         "fecha_actualizacion": art.fecha_actualizacion
@@ -264,6 +267,7 @@ def update_article(
         "categoria_nombre": categoria_nombre,
         "imagen_articulo": art.imagen_articulo,
         "foto_perfil_articulo": art.foto_perfil_articulo,
+        "fuente": art.fuente,
         "estado_publicacion": art.estado_publicacion,
         "fecha_publicacion": art.fecha_publicacion,
         "fecha_actualizacion": art.fecha_actualizacion

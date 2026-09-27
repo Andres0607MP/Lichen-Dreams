@@ -1561,6 +1561,7 @@ class ApiService {
     required String estadoPublicacion,
     String? imagenArticulo,
     String? fotoPerfilAutor,
+    String? fuente,
   }) async {
     final response = await _client.post(
       AppConfig.buildUri('/liquenpedia'),
@@ -1574,6 +1575,7 @@ class ApiService {
         'estado_publicacion': estadoPublicacion,
         'imagen_articulo': imagenArticulo,
         'foto_perfil_articulo': fotoPerfilAutor,
+        'fuente': fuente,
       }),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -1598,6 +1600,7 @@ class ApiService {
     String? estadoPublicacion,
     String? imagenArticulo,
     String? fotoPerfilAutor,
+    String? fuente,
   }) async {
     final payload = <String, dynamic>{};
     if (titulo != null) payload['titulo'] = titulo;
@@ -1609,6 +1612,7 @@ class ApiService {
       payload['estado_publicacion'] = estadoPublicacion;
     if (imagenArticulo != null) payload['imagen_articulo'] = imagenArticulo;
     if (fotoPerfilAutor != null) payload['foto_perfil_articulo'] = fotoPerfilAutor;
+    if (fuente != null) payload['fuente'] = fuente;
  
     final response = await _client.put(
       AppConfig.buildUri('/liquenpedia/$id'),
@@ -1854,6 +1858,7 @@ Future<Map<String, dynamic>> updateAdminSpecies(int id, Map<String, dynamic> dat
     final response = await _client.put(
       AppConfig.buildUri('/analysis/$analysisId/visibility'),
       headers: await _headers(authorized: true),
+      body: jsonEncode({'visibilidad': visibility}),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(

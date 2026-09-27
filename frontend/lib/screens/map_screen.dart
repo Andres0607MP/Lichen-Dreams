@@ -1388,6 +1388,7 @@ class _QualityGroupState extends State<_QualityGroup> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final visiblePoints = _showAll
         ? widget.points
         : widget.points.take(_initialVisibleItems).toList();
@@ -1396,12 +1397,12 @@ class _QualityGroupState extends State<_QualityGroup> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.borderColor.withValues(alpha: 0.35)),
+        border: Border.all(color: colorScheme.outlineVariant.withValues(alpha: 0.35)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: colorScheme.shadow.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1480,7 +1481,7 @@ class _QualityGroupState extends State<_QualityGroup> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Divider(height: 1, color: AppTheme.borderColor.withValues(alpha: 0.25)),
+                        Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.25)),
                         const SizedBox(height: 8),
                         ...visiblePoints.map((point) {
                           final isSelected = widget.selectedPoint?.id == point.id;
@@ -1506,7 +1507,7 @@ class _QualityGroupState extends State<_QualityGroup> {
                                   ? Icons.keyboard_arrow_up
                                   : Icons.keyboard_arrow_down,
                               size: 18,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             label: Text(
                               _showAll
@@ -1515,7 +1516,7 @@ class _QualityGroupState extends State<_QualityGroup> {
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -1549,9 +1550,10 @@ class _AnalysisCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final level = point.qualityLevel;
-    final color = _qualityColor(level);
-    final backgroundColor = _qualityBackground(level);
+    final color = _qualityColor(level, colorScheme);
+    final backgroundColor = _qualityBackground(level, colorScheme);
     final label = _qualityLabel(level);
 
     return GestureDetector(
@@ -1597,7 +1599,7 @@ if (showUserInfo && point.usuario != null) ...[
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -1633,7 +1635,7 @@ if (showUserInfo && point.usuario != null) ...[
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface,
+                            color: colorScheme.onSurface,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1643,7 +1645,7 @@ if (showUserInfo && point.usuario != null) ...[
                           point.species,
                           style: GoogleFonts.poppins(
                             fontSize: 11,
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1657,7 +1659,7 @@ if (showUserInfo && point.usuario != null) ...[
                     child: Icon(
                       Icons.expand_more_rounded,
                       size: 18,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                      color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                     ),
                   ),
                 ],
@@ -1671,7 +1673,7 @@ if (showUserInfo && point.usuario != null) ...[
                       style: GoogleFonts.poppins(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        color: colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -1692,7 +1694,7 @@ if (showUserInfo && point.usuario != null) ...[
                     ? Column(
                         children: [
                           const SizedBox(height: 10),
-                          Divider(height: 1, color: AppTheme.borderColor.withValues(alpha: 0.3)),
+                          Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
                           const SizedBox(height: 10),
                           _DetailRow(label: 'Calidad del aire', value: label),
                           const SizedBox(height: 6),
@@ -1712,25 +1714,25 @@ if (showUserInfo && point.usuario != null) ...[
     );
   }
 
-  Color _qualityColor(AirQualityLevel level) {
+  Color _qualityColor(AirQualityLevel level, ColorScheme colorScheme) {
     switch (level) {
       case AirQualityLevel.good:
-        return AppTheme.successColor;
+        return colorScheme.primary;
       case AirQualityLevel.moderate:
-        return const Color(0xFFFFC107);
+        return colorScheme.tertiary;
       case AirQualityLevel.poor:
-        return AppTheme.errorColor;
+        return colorScheme.error;
     }
   }
 
-  Color _qualityBackground(AirQualityLevel level) {
+  Color _qualityBackground(AirQualityLevel level, ColorScheme colorScheme) {
     switch (level) {
       case AirQualityLevel.good:
-        return const Color(0xFFE8F5E9);
+        return colorScheme.primaryContainer.withValues(alpha: 0.3);
       case AirQualityLevel.moderate:
-        return const Color(0xFFFFF9C4);
+        return colorScheme.tertiaryContainer.withValues(alpha: 0.3);
       case AirQualityLevel.poor:
-        return const Color(0xFFFFEBEE);
+        return colorScheme.errorContainer.withValues(alpha: 0.3);
     }
   }
 

@@ -827,6 +827,7 @@ if (_isEditing) {
   }
 
   Widget _sectionHeader(String title, IconData icon) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -834,20 +835,20 @@ if (_isEditing) {
           padding: const EdgeInsets.only(bottom: 8),
           child: Row(
             children: [
-              Icon(icon, size: 22, color: AppTheme.especiesPrimary),
+              Icon(icon, size: 22, color: colorScheme.primary),
               const SizedBox(width: 12),
               Text(
                 title,
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.especiesPrimary,
+                  color: colorScheme.onSurface,
                 ),
               ),
             ],
           ),
         ),
-        const Divider(height: 1, color: AppTheme.borderColor),
+        Divider(height: 1, color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
       ],
     );
   }
@@ -885,19 +886,19 @@ Widget _field({
           ),
           counterText: '',
           filled: true,
-          fillColor: Theme.of(context).scaffoldBackgroundColor,
+          fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
           contentPadding: AppTheme.inputContentPadding,
           border: OutlineInputBorder(
             borderRadius: AppTheme.inputRadius,
-            borderSide: BorderSide(color: colorScheme.outlineVariant),
+            borderSide: BorderSide(color: colorScheme.outline),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: AppTheme.inputRadius,
-            borderSide: BorderSide(color: colorScheme.outlineVariant),
+            borderSide: BorderSide(color: colorScheme.outline),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: AppTheme.inputRadius,
-            borderSide: BorderSide(color: AppTheme.especiesPrimary),
+            borderSide: BorderSide(color: colorScheme.primary, width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: AppTheme.inputRadius,
@@ -905,7 +906,7 @@ Widget _field({
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: AppTheme.inputRadius,
-            borderSide: BorderSide(color: colorScheme.error),
+            borderSide: BorderSide(color: colorScheme.error, width: 2),
           ),
         ),
       ),
@@ -945,9 +946,9 @@ Widget _field({
     final viewInsets = MediaQuery.viewInsetsOf(context).bottom;
 
     return Container(
-      decoration: const BoxDecoration(
-        color: AppTheme.surfaceColor,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: SafeArea(
         top: false,
@@ -976,15 +977,15 @@ Widget _field({
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            AppTheme.especiesPrimary.withValues(alpha: 0.12),
-                            AppTheme.especiesSecondary.withValues(alpha: 0.06),
+                            colorScheme.primary.withValues(alpha: 0.12),
+                            colorScheme.secondary.withValues(alpha: 0.06),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(isEditing ? Icons.edit_rounded : Icons.eco_rounded, color: AppTheme.especiesPrimary, size: 22),
+                      child: Icon(isEditing ? Icons.edit_rounded : Icons.eco_rounded, color: colorScheme.primary, size: 22),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -1110,7 +1111,7 @@ Widget _field({
                     Expanded(
                       child: FilledButton(
                         onPressed: _isSaving || !_isValid ? null : _save,
-                        style: FilledButton.styleFrom(backgroundColor: AppTheme.especiesPrimary),
+                        style: FilledButton.styleFrom(backgroundColor: colorScheme.primary),
                         child: _isSaving
                             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                             : Text(isEditing ? 'Guardar cambios' : 'Crear especie', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
@@ -1168,8 +1169,8 @@ class _ImagePickerField extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.especiesPrimary.withValues(alpha: 0.08),
-                  AppTheme.especiesSecondary.withValues(alpha: 0.04),
+                  colorScheme.primary.withValues(alpha: 0.08),
+                  colorScheme.secondary.withValues(alpha: 0.04),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1206,28 +1207,28 @@ child: localPreview != null
                           children: [
                             Container(
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                                color: colorScheme.surface.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
                                 onPressed: () async {
                                   await onPickImage();
                                 },
-                                icon: Icon(Icons.camera_alt_rounded, size: 18, color: AppTheme.especiesPrimary),
+                                icon: Icon(Icons.camera_alt_rounded, size: 18, color: colorScheme.primary),
                                 tooltip: 'Cambiar imagen',
                               ),
                             ),
                             const SizedBox(width: 4),
                             Container(
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.9),
+                                color: colorScheme.surface.withValues(alpha: 0.9),
                                 shape: BoxShape.circle,
                               ),
                               child: IconButton(
                                 onPressed: () async {
                                   await onRemoveImage();
                                 },
-                                icon: Icon(Icons.delete_outline_rounded, size: 18, color: AppTheme.errorColor),
+                                icon: Icon(Icons.delete_outline_rounded, size: 18, color: colorScheme.error),
                                 tooltip: 'Eliminar imagen',
                               ),
                             ),
@@ -1251,6 +1252,7 @@ class _PlaceholderContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () async {
         await onPickImage();
@@ -1265,25 +1267,25 @@ class _PlaceholderContent extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.especiesPrimary.withValues(alpha: 0.10),
-                  AppTheme.especiesSecondary.withValues(alpha: 0.05),
+                  colorScheme.primary.withValues(alpha: 0.10),
+                  colorScheme.secondary.withValues(alpha: 0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(Icons.add_a_photo_rounded, size: 26, color: AppTheme.especiesPrimary.withValues(alpha: 0.6)),
+            child: Icon(Icons.add_a_photo_rounded, size: 26, color: colorScheme.primary.withValues(alpha: 0.6)),
           ),
           const SizedBox(height: 10),
           Text(
             'Agregar imagen de referencia',
-            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
             'Toca para seleccionar una foto',
-            style: GoogleFonts.poppins(fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
+            style: GoogleFonts.poppins(fontSize: 11, color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7)),
           ),
         ],
       ),

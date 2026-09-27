@@ -431,6 +431,15 @@ class _LiquenpediaDetailScreenState extends State<LiquenpediaDetailScreen> {
       ));
     }
 
+    if (article.fuente != null && article.fuente!.isNotEmpty) {
+      items.add(_AboutItem(
+        icon: Icons.source_rounded,
+        label: 'Fuente',
+        value: article.fuente!,
+        color: AppTheme.accentGreen,
+      ));
+    }
+
     if (items.isEmpty) return const SizedBox.shrink();
 
     return Container(

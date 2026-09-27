@@ -579,58 +579,56 @@ class _LiquenpediaScreenState extends State<LiquenpediaScreen> {
           final gridWidth = constraints.maxWidth;
           final columnCount = _columnCountForWidth(gridWidth);
           const spacing = 16.0;
-          final textScaler = MediaQuery.textScalerOf(context).scale(1.0);
           final double cardWidth = (gridWidth - 32 - (columnCount - 1) * spacing) / columnCount;
-          final isAdmin = _isAdmin;
-          final double imageH = cardWidth * 9 / 16;
-          final double contentH = (isAdmin ? 200.0 : 150.0) * textScaler;
-          final double cellH = imageH + contentH;
 
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1120),
-              child: GridView.builder(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: columnCount,
-                  crossAxisSpacing: spacing,
-                  mainAxisSpacing: spacing,
-                  mainAxisExtent: cellH,
-                ),
-                itemCount: articles.length,
-                itemBuilder: (context, index) {
-                  final article = articles[index];
-                  return ArticleCard(
-                    article: article,
-                    isAdmin: _isAdmin,
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => LiquenpediaDetailScreen(
-                            article: article,
-                            isAdmin: _isAdmin,
-                          ),
-                        ),
-                      );
-                    },
-                    onEdit: _isAdmin
-                        ? () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => LiquenpediaFormScreen(
-                                  articleToEdit: article,
-                                ),
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.start,
+                  children: List.generate(articles.length, (index) {
+                    final article = articles[index];
+                    return SizedBox(
+                      width: cardWidth,
+                      child: ArticleCard(
+                        article: article,
+                        isAdmin: _isAdmin,
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LiquenpediaDetailScreen(
+                                article: article,
+                                isAdmin: _isAdmin,
                               ),
-                            );
-                          }
-                        : null,
-                    onDelete: _isAdmin
-                        ? () => _confirmDelete(context, articlesState, article)
-                        : null,
-                  );
-                },
+                            ),
+                          );
+                        },
+                        onEdit: _isAdmin
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => LiquenpediaFormScreen(
+                                      articleToEdit: article,
+                                    ),
+                                  ),
+                                );
+                              }
+                            : null,
+                        onDelete: _isAdmin
+                            ? () => _confirmDelete(context, articlesState, article)
+                            : null,
+                      ),
+                    );
+                  }),
+                ),
               ),
             ),
           );
